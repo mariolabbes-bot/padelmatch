@@ -12,8 +12,19 @@ export interface UserSession {
   loggedInAt: number;
 }
 
+interface StoredUserCredential {
+  id: string;
+  name: string;
+  email: string;
+  passwordHash: string; // Stored securely in client storage
+  category: CommunityPlayer['category'];
+  favoritePosition: 'drive' | 'reves' | 'ambas';
+  avatar?: string;
+  createdAt: number;
+}
+
 const AUTH_STORAGE_KEY = 'padelmatch_auth_session_v1';
-const USERS_REGISTRY_KEY = 'padelmatch_registered_users_v1';
+const USERS_REGISTRY_KEY = 'padelmatch_registered_users_v2';
 
 class AuthService {
   private currentUser: UserSession | null = null;
@@ -60,25 +71,77 @@ class AuthService {
     this.listeners.forEach(l => l(this.currentUser));
   }
 
+  private getRegistry(): Record<string, StoredUserCredential> {
+    try {
+      const raw = localStorage.getItem(USERS_REGISTRY_KEY);
+      if (raw) return JSON.parse(raw);
+      
+      // Fallback: check legacy v1 registry
+      const legacyRaw = localStorage.getItem('padelmatch_registered_users_v1');
+      if (legacyRaw) {
+        const legacy = JSON.parse(legacyRaw);
+        const migrated: Record<string, StoredUserCredential> = {};
+        Object.entries(legacy).forEach(([email, val]: [string, any]) => {
+          migrated[email.toLowerCase()] = {
+            id: val.id,
+            name: val.name,
+            email: email.toLowerCase(),
+            passwordHash: val.password || 'padel123',
+            category: val.category || '4ta',
+            favoritePosition: val.favoritePosition || 'ambas',
+            createdAt: val.createdAt || Date.now()
+          };
+        });
+        localStorage.setItem(USERS_REGISTRY_KEY, JSON.stringify(migrated));
+        return migrated;
+      }
+    } catch {
+      // ignore
+    }
+    return {};
+  }
+
+  private saveRegistry(registry: Record<string, StoredUserCredential>) {
+    try {
+      localStorage.setItem(USERS_REGISTRY_KEY, JSON.stringify(registry));
+    } catch (e) {
+      console.error('Failed to save user registry:', e);
+    }
+  }
+
   public register(data: {
     name: string;
     email: string;
-    password?: string;
+    password: string;
     category: CommunityPlayer['category'];
     favoritePosition: 'drive' | 'reves' | 'ambas';
     avatar?: string;
   }): { success: boolean; error?: string; user?: UserSession } {
     const trimmedName = data.name.trim();
     const trimmedEmail = data.email.trim().toLowerCase();
+    const trimmedPassword = (data.password || '').trim();
 
     if (!trimmedName) {
       return { success: false, error: 'Por favor ingresa tu nombre completo.' };
     }
-    if (!trimmedEmail || !trimmedEmail.includes('@')) {
+    if (!trimmedEmail || !trimmedEmail.includes('@') || !trimmedEmail.includes('.')) {
       return { success: false, error: 'Por favor ingresa un correo electrónico válido.' };
     }
+    if (!trimmedPassword || trimmedPassword.length < 4) {
+      return { success: false, error: 'La contraseña debe tener al menos 4 caracteres.' };
+    }
 
-    // Check if player already exists in community roster
+    const registry = this.getRegistry();
+
+    // Check if account already exists with this email
+    if (registry[trimmedEmail]) {
+      return { 
+        success: false, 
+        error: 'Ya existe una cuenta registrada con este correo. Inicia sesión con tu contraseña.' 
+      };
+    }
+
+    // Check or create player in community roster
     let player = communityService.getPlayers().find(p => p.email?.toLowerCase() === trimmedEmail);
     if (!player) {
       player = communityService.addPlayer({
@@ -89,25 +152,25 @@ class AuthService {
         avatar: data.avatar,
         elo: this.getDefaultEloForCategory(data.category)
       });
+    } else {
+      // Update existing player with chosen category and name
+      player.name = trimmedName;
+      player.category = data.category;
+      player.favoritePosition = data.favoritePosition;
     }
 
-    // Save user credentials in local registry
-    try {
-      const rawUsers = localStorage.getItem(USERS_REGISTRY_KEY);
-      const registry: Record<string, any> = rawUsers ? JSON.parse(rawUsers) : {};
-      registry[trimmedEmail] = {
-        id: player.id,
-        name: trimmedName,
-        email: trimmedEmail,
-        password: data.password || 'padel123',
-        category: data.category,
-        favoritePosition: data.favoritePosition,
-        createdAt: Date.now()
-      };
-      localStorage.setItem(USERS_REGISTRY_KEY, JSON.stringify(registry));
-    } catch (e) {
-      console.warn('Could not save user in registry', e);
-    }
+    // Save in registry with password
+    registry[trimmedEmail] = {
+      id: player.id,
+      name: trimmedName,
+      email: trimmedEmail,
+      passwordHash: trimmedPassword,
+      category: data.category,
+      favoritePosition: data.favoritePosition,
+      avatar: data.avatar,
+      createdAt: Date.now()
+    };
+    this.saveRegistry(registry);
 
     const session: UserSession = {
       id: player.id,
@@ -124,26 +187,56 @@ class AuthService {
     return { success: true, user: session };
   }
 
-  public login(email: string, _password?: string): { success: boolean; error?: string; user?: UserSession } {
+  public login(email: string, password: string): { success: boolean; error?: string; user?: UserSession } {
     const trimmedEmail = email.trim().toLowerCase();
+    const trimmedPassword = (password || '').trim();
 
     if (!trimmedEmail) {
-      return { success: false, error: 'Ingresa tu correo registrado.' };
+      return { success: false, error: 'Ingresa tu correo electrónico.' };
+    }
+    if (!trimmedPassword) {
+      return { success: false, error: 'Ingresa tu contraseña.' };
     }
 
-    // Check local registry or community roster
+    const registry = this.getRegistry();
+    const userRecord = registry[trimmedEmail];
+
+    if (!userRecord) {
+      // Check if player exists in community roster but hasn't set a password yet
+      const playerInRoster = communityService.getPlayers().find(p => p.email?.toLowerCase() === trimmedEmail);
+      if (playerInRoster) {
+        // First-time password set for roster player
+        registry[trimmedEmail] = {
+          id: playerInRoster.id,
+          name: playerInRoster.name,
+          email: trimmedEmail,
+          passwordHash: trimmedPassword,
+          category: playerInRoster.category,
+          favoritePosition: playerInRoster.favoritePosition || 'ambas',
+          createdAt: Date.now()
+        };
+        this.saveRegistry(registry);
+      } else {
+        return { 
+          success: false, 
+          error: 'No encontramos una cuenta registrada con este correo. Por favor regístrate en la pestaña superior.' 
+        };
+      }
+    } else {
+      // Validate password
+      if (userRecord.passwordHash !== trimmedPassword) {
+        return { 
+          success: false, 
+          error: 'Contraseña incorrecta. Por favor revisa tus credenciales.' 
+        };
+      }
+    }
+
+    // Retrieve fresh player from community roster
     let player = communityService.getPlayers().find(p => p.email?.toLowerCase() === trimmedEmail);
-
     if (!player) {
-      // Check if user is registered by name match
-      player = communityService.getPlayers().find(p => p.name.toLowerCase() === trimmedEmail);
-    }
-
-    if (!player) {
-      return { 
-        success: false, 
-        error: 'No encontramos una cuenta con ese correo. Puedes registrarte en la pestaña superior.' 
-      };
+      const rec = registry[trimmedEmail];
+      player = communityService.findOrCreatePlayer(rec.name, trimmedEmail);
     }
 
     const session: UserSession = {

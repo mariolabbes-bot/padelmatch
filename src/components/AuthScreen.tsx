@@ -2,7 +2,20 @@ import React, { useState } from 'react';
 import { authService } from '../services/authService';
 import type { UserSession } from '../services/authService';
 import type { CommunityPlayer } from '../types/padel';
-import { Trophy, User, Mail, Lock, ShieldCheck, Play, ArrowRight, Sparkles } from 'lucide-react';
+import { 
+  Trophy, 
+  User, 
+  Mail, 
+  Lock, 
+  ShieldCheck, 
+  Play, 
+  ArrowRight, 
+  Sparkles, 
+  Eye, 
+  EyeOff, 
+  CheckCircle2, 
+  AlertCircle 
+} from 'lucide-react';
 
 interface Props {
   onAuthenticated: (user: UserSession) => void;
@@ -10,17 +23,30 @@ interface Props {
 
 export const AuthScreen: React.FC<Props> = ({ onAuthenticated }) => {
   const [mode, setMode] = useState<'login' | 'register'>('login');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
+  
+  // Login State
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
+
+  // Register State
+  const [registerName, setRegisterName] = useState('');
+  const [registerEmail, setRegisterEmail] = useState('');
+  const [registerPassword, setRegisterPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showRegisterPassword, setShowRegisterPassword] = useState(false);
   const [category, setCategory] = useState<CommunityPlayer['category']>('4ta');
   const [favoritePosition, setFavoritePosition] = useState<'drive' | 'reves' | 'ambas'>('drive');
+
   const [error, setError] = useState<string | null>(null);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    const res = authService.login(email, password);
+    setSuccessMsg(null);
+
+    const res = authService.login(loginEmail, loginPassword);
     if (res.success && res.user) {
       onAuthenticated(res.user);
     } else {
@@ -31,15 +57,31 @@ export const AuthScreen: React.FC<Props> = ({ onAuthenticated }) => {
   const handleRegister = (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setSuccessMsg(null);
+
+    if (registerPassword.length < 4) {
+      setError('La contraseña debe tener al menos 4 caracteres.');
+      return;
+    }
+
+    if (registerPassword !== confirmPassword) {
+      setError('Las contraseñas no coinciden. Por favor verifícalas.');
+      return;
+    }
+
     const res = authService.register({
-      name,
-      email,
-      password,
+      name: registerName,
+      email: registerEmail,
+      password: registerPassword,
       category,
       favoritePosition
     });
+
     if (res.success && res.user) {
-      onAuthenticated(res.user);
+      setSuccessMsg('¡Perfil registrado exitosamente!');
+      setTimeout(() => {
+        onAuthenticated(res.user!);
+      }, 400);
     } else {
       setError(res.error || 'Error al registrar jugador.');
     }
@@ -47,11 +89,12 @@ export const AuthScreen: React.FC<Props> = ({ onAuthenticated }) => {
 
   const handleQuickDemoUser = () => {
     const demoEmail = 'mario@padelmatch.pro';
-    let user = authService.login(demoEmail).user;
+    let user = authService.login(demoEmail, 'padel123').user;
     if (!user) {
       user = authService.register({
         name: 'Mario Labbé',
         email: demoEmail,
+        password: 'padel123',
         category: '4ta',
         favoritePosition: 'drive'
       }).user;
@@ -69,17 +112,17 @@ export const AuthScreen: React.FC<Props> = ({ onAuthenticated }) => {
 
       <div style={cardStyle} className="glass-panel">
         {/* Header / Brand */}
-        <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+        <div style={{ textAlign: 'center', marginBottom: '22px' }}>
           <div style={logoBadgeStyle}>
             <div className="pulsing-dot" style={{ color: 'var(--team1-primary)' }} />
-            <span style={{ fontWeight: 900, letterSpacing: '-0.02em', fontSize: '1.25rem' }}>
+            <span style={{ fontWeight: 900, letterSpacing: '-0.02em', fontSize: '1.25rem', color: '#fff' }}>
               PADEL<span style={{ color: 'var(--team1-primary)' }}>MATCH</span>
             </span>
           </div>
-          <h1 style={{ fontSize: '1.6rem', fontWeight: 800, marginTop: '12px', letterSpacing: '-0.02em' }}>
+          <h1 style={{ fontSize: '1.5rem', fontWeight: 900, marginTop: '12px', letterSpacing: '-0.02em', color: '#fff' }}>
             Marcador Inteligente en Cancha
           </h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '4px' }}>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginTop: '4px' }}>
             Arbitraje por voz, hardware smartwatch y comunidad competitiva
           </p>
         </div>
@@ -88,7 +131,7 @@ export const AuthScreen: React.FC<Props> = ({ onAuthenticated }) => {
         <div style={tabContainerStyle}>
           <button
             type="button"
-            onClick={() => { setMode('login'); setError(null); }}
+            onClick={() => { setMode('login'); setError(null); setSuccessMsg(null); }}
             style={{
               ...tabBtnStyle,
               background: mode === 'login' ? 'var(--bg-card)' : 'transparent',
@@ -100,7 +143,7 @@ export const AuthScreen: React.FC<Props> = ({ onAuthenticated }) => {
           </button>
           <button
             type="button"
-            onClick={() => { setMode('register'); setError(null); }}
+            onClick={() => { setMode('register'); setError(null); setSuccessMsg(null); }}
             style={{
               ...tabBtnStyle,
               background: mode === 'register' ? 'var(--bg-card)' : 'transparent',
@@ -108,31 +151,40 @@ export const AuthScreen: React.FC<Props> = ({ onAuthenticated }) => {
               borderBottom: mode === 'register' ? '2px solid var(--team1-primary)' : '2px solid transparent'
             }}
           >
-            Crear Perfil
+            Crear Perfil con Contraseña
           </button>
         </div>
 
         {error && (
           <div style={errorBannerStyle}>
-            <span>⚠️ {error}</span>
+            <AlertCircle size={16} style={{ flexShrink: 0 }} />
+            <span>{error}</span>
           </div>
         )}
 
-        {/* Form */}
+        {successMsg && (
+          <div style={successBannerStyle}>
+            <CheckCircle2 size={16} style={{ flexShrink: 0 }} />
+            <span>{successMsg}</span>
+          </div>
+        )}
+
+        {/* Form: LOGIN */}
         {mode === 'login' ? (
           <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <div>
               <label style={labelStyle}>
                 <Mail size={14} color="var(--team1-primary)" />
-                Correo Electrónico
+                Correo Electrónico (Tu Identificador)
               </label>
               <input
                 type="email"
                 required
-                value={email}
-                onChange={e => setEmail(e.target.value)}
+                value={loginEmail}
+                onChange={e => setLoginEmail(e.target.value)}
                 placeholder="ejemplo@padel.cl"
                 style={inputStyle}
+                autoComplete="email"
               />
             </div>
 
@@ -141,14 +193,26 @@ export const AuthScreen: React.FC<Props> = ({ onAuthenticated }) => {
                 <Lock size={14} color="var(--team1-primary)" />
                 Contraseña
               </label>
-              <input
-                type="password"
-                required
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                placeholder="••••••••"
-                style={inputStyle}
-              />
+              <div style={{ position: 'relative' }}>
+                <input
+                  type={showLoginPassword ? 'text' : 'password'}
+                  required
+                  value={loginPassword}
+                  onChange={e => setLoginPassword(e.target.value)}
+                  placeholder="Tu contraseña registrada"
+                  style={inputStyle}
+                  autoComplete="current-password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowLoginPassword(!showLoginPassword)}
+                  style={eyeIconBtnStyle}
+                  title={showLoginPassword ? 'Ocultar contraseña' : 'Ver contraseña'}
+                  aria-label="Ver u ocultar contraseña"
+                >
+                  {showLoginPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
             </div>
 
             <button type="submit" style={primaryActionBtnStyle}>
@@ -157,6 +221,7 @@ export const AuthScreen: React.FC<Props> = ({ onAuthenticated }) => {
             </button>
           </form>
         ) : (
+          /* Form: REGISTER */
           <form onSubmit={handleRegister} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
             <div>
               <label style={labelStyle}>
@@ -166,29 +231,85 @@ export const AuthScreen: React.FC<Props> = ({ onAuthenticated }) => {
               <input
                 type="text"
                 required
-                value={name}
-                onChange={e => setName(e.target.value)}
+                value={registerName}
+                onChange={e => setRegisterName(e.target.value)}
                 placeholder="Ej: Mario Labbé"
                 style={inputStyle}
+                autoComplete="name"
               />
             </div>
 
             <div>
               <label style={labelStyle}>
                 <Mail size={14} color="var(--team1-primary)" />
-                Correo Electrónico
+                Correo Electrónico (Tu Usuario)
               </label>
               <input
                 type="email"
                 required
-                value={email}
-                onChange={e => setEmail(e.target.value)}
+                value={registerEmail}
+                onChange={e => setRegisterEmail(e.target.value)}
                 placeholder="tu@correo.com"
                 style={inputStyle}
+                autoComplete="email"
               />
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+            {/* Passwords Row */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+              <div>
+                <label style={labelStyle}>
+                  <Lock size={14} color="var(--team1-primary)" />
+                  Contraseña
+                </label>
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type={showRegisterPassword ? 'text' : 'password'}
+                    required
+                    value={registerPassword}
+                    onChange={e => setRegisterPassword(e.target.value)}
+                    placeholder="Mínimo 4 car."
+                    style={{ ...inputStyle, paddingRight: '36px' }}
+                    autoComplete="new-password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowRegisterPassword(!showRegisterPassword)}
+                    style={eyeIconBtnStyle}
+                    title="Mostrar contraseña"
+                    aria-label="Mostrar contraseña"
+                  >
+                    {showRegisterPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label style={labelStyle}>
+                  <Lock size={14} color="var(--team1-primary)" />
+                  Repetir Contraseña
+                </label>
+                <input
+                  type={showRegisterPassword ? 'text' : 'password'}
+                  required
+                  value={confirmPassword}
+                  onChange={e => setConfirmPassword(e.target.value)}
+                  placeholder="Confirmar"
+                  style={{
+                    ...inputStyle,
+                    borderColor: confirmPassword && registerPassword !== confirmPassword 
+                      ? 'var(--danger-primary)' 
+                      : confirmPassword && registerPassword === confirmPassword 
+                        ? 'var(--team1-primary)' 
+                        : 'var(--border-medium)'
+                  }}
+                  autoComplete="new-password"
+                />
+              </div>
+            </div>
+
+            {/* Category & Side of Play */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
               <div>
                 <label style={labelStyle}>
                   <Trophy size={14} color="var(--gold-primary)" />
@@ -227,7 +348,7 @@ export const AuthScreen: React.FC<Props> = ({ onAuthenticated }) => {
             </div>
 
             <button type="submit" style={primaryActionBtnStyle}>
-              <span>Crear Perfil e Iniciar</span>
+              <span>Crear Cuenta e Iniciar</span>
               <Sparkles size={18} />
             </button>
           </form>
@@ -236,7 +357,7 @@ export const AuthScreen: React.FC<Props> = ({ onAuthenticated }) => {
         {/* Demo Shortcut */}
         <div style={{ marginTop: '20px', paddingTop: '16px', borderTop: '1px solid var(--border-subtle)', textAlign: 'center' }}>
           <p style={{ fontSize: '0.8rem', color: 'var(--text-dim)', marginBottom: '8px' }}>
-            ¿Prueba rápida en cancha sin registrarse?
+            ¿Acceso rápido para prueba en cancha?
           </p>
           <button
             type="button"
@@ -244,7 +365,7 @@ export const AuthScreen: React.FC<Props> = ({ onAuthenticated }) => {
             style={demoBtnStyle}
           >
             <Play size={14} color="var(--team1-primary)" />
-            <span>Entrar como Anfitrión Rápido</span>
+            <span>Entrar como Mario Labbé (Anfitrión Rápido)</span>
           </button>
         </div>
       </div>
@@ -258,7 +379,7 @@ const containerStyle: React.CSSProperties = {
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  padding: 'clamp(16px, 4vw, 32px)',
+  padding: 'clamp(14px, 3.5vw, 28px)',
   background: 'var(--bg-deep)',
   position: 'relative',
   overflow: 'hidden'
@@ -287,7 +408,7 @@ const ambientGlowBottom: React.CSSProperties = {
 const cardStyle: React.CSSProperties = {
   width: '100%',
   maxWidth: '460px',
-  padding: 'clamp(20px, 5vw, 36px)',
+  padding: 'clamp(20px, 4.5vw, 32px)',
   zIndex: 1,
   boxShadow: 'var(--shadow-lg)',
   borderRadius: 'var(--radius-lg)'
@@ -309,23 +430,24 @@ const tabContainerStyle: React.CSSProperties = {
   background: 'rgba(0, 0, 0, 0.3)',
   borderRadius: 'var(--radius-md)',
   padding: '4px',
-  marginBottom: '20px'
+  marginBottom: '18px'
 };
 
 const tabBtnStyle: React.CSSProperties = {
-  padding: '10px 14px',
+  padding: '10px 12px',
   borderRadius: 'var(--radius-sm)',
   fontWeight: 700,
-  fontSize: '0.9rem',
+  fontSize: '0.85rem',
   cursor: 'pointer',
-  transition: 'all var(--transition-fast)'
+  transition: 'all var(--transition-fast)',
+  textAlign: 'center'
 };
 
 const labelStyle: React.CSSProperties = {
   display: 'flex',
   alignItems: 'center',
   gap: '6px',
-  fontSize: '0.8rem',
+  fontSize: '0.78rem',
   fontWeight: 600,
   color: 'var(--text-muted)',
   marginBottom: '6px'
@@ -333,25 +455,40 @@ const labelStyle: React.CSSProperties = {
 
 const inputStyle: React.CSSProperties = {
   width: '100%',
-  padding: '12px 14px',
-  background: 'var(--bg-elevated)',
-  border: '1px solid var(--border-medium)',
-  borderRadius: 'var(--radius-md)',
-  color: '#fff',
-  fontSize: '0.95rem',
-  outline: 'none',
-  transition: 'border-color var(--transition-fast)'
-};
-
-const selectStyle: React.CSSProperties = {
-  width: '100%',
-  padding: '12px 14px',
+  padding: '11px 14px',
   background: 'var(--bg-elevated)',
   border: '1px solid var(--border-medium)',
   borderRadius: 'var(--radius-md)',
   color: '#fff',
   fontSize: '0.9rem',
-  outline: 'none'
+  outline: 'none',
+  boxSizing: 'border-box'
+};
+
+const eyeIconBtnStyle: React.CSSProperties = {
+  position: 'absolute',
+  right: '10px',
+  top: '50%',
+  transform: 'translateY(-50%)',
+  background: 'transparent',
+  border: 'none',
+  color: 'var(--text-muted)',
+  cursor: 'pointer',
+  display: 'flex',
+  alignItems: 'center',
+  padding: '4px'
+};
+
+const selectStyle: React.CSSProperties = {
+  width: '100%',
+  padding: '11px 12px',
+  background: 'var(--bg-elevated)',
+  border: '1px solid var(--border-medium)',
+  borderRadius: 'var(--radius-md)',
+  color: '#fff',
+  fontSize: '0.85rem',
+  outline: 'none',
+  boxSizing: 'border-box'
 };
 
 const primaryActionBtnStyle: React.CSSProperties = {
@@ -360,7 +497,7 @@ const primaryActionBtnStyle: React.CSSProperties = {
   background: 'var(--team1-gradient)',
   color: '#070a10',
   fontWeight: 900,
-  fontSize: '1rem',
+  fontSize: '0.95rem',
   borderRadius: 'var(--radius-md)',
   display: 'flex',
   alignItems: 'center',
@@ -380,18 +517,35 @@ const demoBtnStyle: React.CSSProperties = {
   border: '1px solid var(--border-subtle)',
   borderRadius: 'var(--radius-full)',
   color: 'var(--text-main)',
-  fontSize: '0.85rem',
+  fontSize: '0.82rem',
   fontWeight: 600,
   cursor: 'pointer'
 };
 
 const errorBannerStyle: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: '8px',
   padding: '10px 14px',
   background: 'rgba(255, 61, 113, 0.15)',
   border: '1px solid var(--danger-primary)',
   borderRadius: 'var(--radius-md)',
   color: '#ff80a0',
-  fontSize: '0.85rem',
+  fontSize: '0.82rem',
   fontWeight: 600,
+  marginBottom: '16px'
+};
+
+const successBannerStyle: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: '8px',
+  padding: '10px 14px',
+  background: 'rgba(0, 230, 118, 0.15)',
+  border: '1px solid var(--team1-primary)',
+  borderRadius: 'var(--radius-md)',
+  color: 'var(--team1-primary)',
+  fontSize: '0.82rem',
+  fontWeight: 700,
   marginBottom: '16px'
 };

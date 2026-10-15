@@ -2,14 +2,17 @@
  * PadelMatch - Smartwatch & Apple Watch Remote Controller Service
  * 
  * Works with watchOS (Apple Watch Series 1, 2, 3, 4, 5, 6, 7, 8, Ultra, SE)
- * and Wear OS / HarmonyOS via the HTML5 Media Session API + Background Silent Audio Loop.
+ * and Wear OS / HarmonyOS via HTML5 Media Session API + Background Audio Loop.
  * 
- * Why this is required on Apple Watch:
- * watchOS does not allow generic Bluetooth HID keyboard pairing directly to iPhone.
- * Safari / WebKit deactivates the Media Session API unless audio is actively playing.
- * By playing an inaudible, continuous 0-volume silent audio stream, iOS keeps the Media Session
- * active in the background, allowing the Apple Watch "Now Playing" (En Reproducción) screen
- * to stay open on the user's wrist and receive Previous / Next / Pause hardware events!
+ * Technical Fix for Apple Watch Series 1 & iOS Safari:
+ * 1. An actual audio file (/silence.wav) with real duration is required so iOS Safari
+ *    recognizes it as a seekable media track.
+ * 2. setPositionState({ duration: 600, position: 300 }) is set so iOS/watchOS leaves
+ *    BOTH [⏮] Previous and [⏭] Next buttons permanently enabled (not greyed out).
+ * 3. Both previoustrack/seekbackward and nexttrack/seekforward are bound to ensure
+ *    compatibility whether watchOS is in Track mode or Scrub/Podcast mode.
+ * 4. Pause and Play are bound with immediate playback resumption so iOS never drops
+ *    the active audio session.
  */
 
 export interface SmartwatchState {
@@ -30,9 +33,9 @@ class SmartwatchService {
   private lastCommand: string | null = null;
   private lastCommandTime: number | null = null;
 
-  // Base64 1-second inaudible WAV audio loop
-  private readonly SILENT_WAV_BASE64 = 
-    'data:audio/wav;base64,UklGRjIAAABXQVZFZm10IBIAAAABAAEAQB8AAEAfAAABAAgAAABmYWN0BAAAAAAAAABkYXRhAAAAAA==';
+  // 5-second PCM 8kHz mono silent WAV base64 fallback
+  private readonly FALLBACK_SILENT_WAV = 
+    'data:audio/wav;base64,UklGRiRxAgBXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQBxAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==';
 
   constructor() {
     this.initAudioElement();
@@ -43,12 +46,20 @@ class SmartwatchService {
 
     try {
       const audio = new Audio();
-      audio.src = this.SILENT_WAV_BASE64;
+      // Prefer real public URL /silence.wav for proper range headers & duration
+      audio.src = '/silence.wav';
       audio.loop = true;
-      audio.volume = 0.01; // Inaudible
+      audio.volume = 0.05; // Audible enough for iOS audio daemon, practically silent
+      audio.preload = 'auto';
       (audio as any).playsInline = true;
       audio.setAttribute('playsinline', '');
       audio.setAttribute('webkit-playsinline', '');
+
+      audio.onerror = () => {
+        // Fallback to data URI if offline / path issues
+        audio.src = this.FALLBACK_SILENT_WAV;
+      };
+
       this.audioElement = audio;
     } catch (e) {
       console.warn('SmartwatchService: audio element init error', e);
@@ -66,15 +77,21 @@ class SmartwatchService {
 
     try {
       if (this.audioElement) {
+        // Seek to 1 second so iOS knows it has duration and position
+        try {
+          this.audioElement.currentTime = 1.0;
+        } catch {
+          // ignore
+        }
         await this.audioElement.play();
       }
       this.isActive = true;
       this.setupMediaSessionHandlers();
+      this.forceKeepPlayingState();
       this.notifyState();
       return true;
     } catch (err) {
-      console.warn('SmartwatchService: could not play background audio', err);
-      // Even if autoplay fails initially, keep active flag and retry on next interaction
+      console.warn('SmartwatchService: audio play error', err);
       this.isActive = true;
       this.setupMediaSessionHandlers();
       this.notifyState();
@@ -91,6 +108,9 @@ class SmartwatchService {
       }
     }
     this.isActive = false;
+    if (typeof navigator !== 'undefined' && 'mediaSession' in navigator) {
+      navigator.mediaSession.playbackState = 'none';
+    }
     this.notifyState();
   }
 
@@ -137,7 +157,7 @@ class SmartwatchService {
           : '';
 
       const title = `🎾 ${params.team1Score} - ${params.team2Score}${stateSuffix}`;
-      const artist = `${params.team1Name} (${params.team1Games}) vs ${params.team2Name} (${params.team2Games}) - Set ${params.currentSetNum}`;
+      const artist = `${params.team1Name} (${params.team1Games}) vs ${params.team2Name} (${params.team2Games}) • Set ${params.currentSetNum}`;
       const album = `${params.courtName} | PadelMatch`;
 
       navigator.mediaSession.metadata = new MediaMetadata({
@@ -149,8 +169,32 @@ class SmartwatchService {
           { src: '/favicon.svg', sizes: '192x192', type: 'image/svg+xml' }
         ]
       });
+
+      this.forceKeepPlayingState();
     } catch (e) {
       // mediaSession metadata might fail on older browsers
+    }
+  }
+
+  /**
+   * Forces iOS / watchOS to see an active playing track in the middle of playback.
+   * This ensures the Previous and Next track buttons are ALWAYS ACTIVE and never disabled.
+   */
+  private forceKeepPlayingState() {
+    if (typeof navigator === 'undefined' || !('mediaSession' in navigator)) return;
+
+    try {
+      navigator.mediaSession.playbackState = 'playing';
+
+      if ('setPositionState' in navigator.mediaSession) {
+        navigator.mediaSession.setPositionState({
+          duration: 600, // 10 minutes simulated duration
+          playbackRate: 1.0,
+          position: 300  // Exactly in the middle so [⏮] and [⏭] are both enabled!
+        });
+      }
+    } catch {
+      // ignore
     }
   }
 
@@ -158,43 +202,57 @@ class SmartwatchService {
     if (typeof navigator === 'undefined' || !('mediaSession' in navigator)) return;
 
     try {
-      // Apple Watch "Previous Track" button [⏮] -> Point Team 1
+      // 1. Previous Track [⏮] -> Point Team 1
       navigator.mediaSession.setActionHandler('previoustrack', () => {
         this.triggerCommand('team1');
+        this.forceKeepPlayingState();
       });
 
-      // Apple Watch "Next Track" button [⏭] -> Point Team 2
+      // 2. Seek Backward (watchOS Scrub Mode [↺15]) -> Point Team 1
+      navigator.mediaSession.setActionHandler('seekbackward', () => {
+        this.triggerCommand('team1');
+        this.forceKeepPlayingState();
+      });
+
+      // 3. Next Track [⏭] -> Point Team 2
       navigator.mediaSession.setActionHandler('nexttrack', () => {
         this.triggerCommand('team2');
+        this.forceKeepPlayingState();
       });
 
-      // Apple Watch "Pause" button [⏸] -> Undo last point
+      // 4. Seek Forward (watchOS Scrub Mode [↻15]) -> Point Team 2
+      navigator.mediaSession.setActionHandler('seekforward', () => {
+        this.triggerCommand('team2');
+        this.forceKeepPlayingState();
+      });
+
+      // 5. Pause Button [⏸] -> Undo last point (and immediately resume playback)
       navigator.mediaSession.setActionHandler('pause', () => {
         this.triggerCommand('undo');
-        // Resume silent loop so audio session stays active
+        // Resume silent loop immediately so iOS never releases audio session
         if (this.isActive && this.audioElement) {
           setTimeout(() => {
             this.audioElement?.play().catch(() => {});
-          }, 200);
+            this.forceKeepPlayingState();
+          }, 80);
         }
       });
 
-      // Apple Watch "Play" button [▶] -> Repeat score announcement
+      // 6. Play Button [▶] -> Repeat score announcement (and resume playback)
       navigator.mediaSession.setActionHandler('play', () => {
         this.triggerCommand('repeat');
         if (this.isActive && this.audioElement) {
           this.audioElement.play().catch(() => {});
+          this.forceKeepPlayingState();
         }
       });
 
-      // Seek actions for compatibility with clickers
-      navigator.mediaSession.setActionHandler('seekbackward', () => {
-        this.triggerCommand('undo');
+      // 7. Stop Button
+      navigator.mediaSession.setActionHandler('stop', () => {
+        this.triggerCommand('repeat');
+        this.forceKeepPlayingState();
       });
 
-      navigator.mediaSession.setActionHandler('seekforward', () => {
-        this.triggerCommand('repeat');
-      });
     } catch (e) {
       console.warn('SmartwatchService: media session handlers setup error', e);
     }
@@ -204,10 +262,10 @@ class SmartwatchService {
     this.lastCommand = command;
     this.lastCommandTime = Date.now();
 
-    // Haptic feedback on device if supported
+    // Haptic feedback on phone
     if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
       try {
-        navigator.vibrate(command === 'undo' ? [50, 50, 50] : [70]);
+        navigator.vibrate(command === 'undo' ? [60, 40, 60] : [80]);
       } catch {
         // ignore
       }

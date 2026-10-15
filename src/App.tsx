@@ -189,9 +189,12 @@ export function App() {
 
   // Undo Callback
   const handleUndo = useCallback(() => {
-    if (history.length === 0) return;
-
     ttsService.unlockAudioContext();
+    if (history.length === 0) {
+      ttsService.speak('Marcador en cero iguales. Sin puntos para deshacer.', ttsSettings);
+      return;
+    }
+
     const lastSnapshot = history[history.length - 1];
     setHistory(prev => prev.slice(0, prev.length - 1));
     setState(lastSnapshot.state);
@@ -203,10 +206,11 @@ export function App() {
   // Repeat Score Announcement
   const handleRepeatAnnouncement = useCallback(() => {
     ttsService.unlockAudioContext();
-    if (state.lastEventAnnouncement) {
-      ttsService.speak(state.lastEventAnnouncement, ttsSettings);
-    }
-  }, [state.lastEventAnnouncement, ttsSettings]);
+    const curSet = state.sets[state.currentSetIndex] || { team1: 0, team2: 0 };
+    const scoreText = state.lastEventAnnouncement || 
+      `Marcador actual: ${teams.team1.name} ${state.currentGame.team1}, ${teams.team2.name} ${state.currentGame.team2}. Games: ${curSet.team1} a ${curSet.team2}.`;
+    ttsService.speak(scoreText, ttsSettings);
+  }, [state, teams, ttsSettings]);
 
   // Connect Smartwatch Commands
   useEffect(() => {
