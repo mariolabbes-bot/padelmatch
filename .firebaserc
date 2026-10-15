@@ -1,0 +1,14 @@
+{
+  "projects": {
+    "default": "sync-593d0"
+  },
+  "targets": {
+    "sync-593d0": {
+      "hosting": {
+        "padelmatch": [
+          "padelmatch"
+        ]
+      }
+    }
+  }
+}

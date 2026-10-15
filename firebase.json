@@ -1,5 +1,6 @@
 {
   "hosting": {
+    "target": "padelmatch",
     "public": "dist",
     "ignore": [
       "firebase.json",
