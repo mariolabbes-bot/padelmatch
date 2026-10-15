@@ -1,8 +1,19 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import confetti from 'canvas-confetti';
 import type { MatchScoreState, Team } from '../types/padel';
 import { calculatePadelElo } from '../engine/eloEngine';
-import { Trophy, RefreshCw, Flame, Clock } from 'lucide-react';
+import { 
+  Trophy, 
+  RefreshCw, 
+  Flame, 
+  Clock, 
+  Share2, 
+  Sparkles, 
+  Award, 
+  Zap, 
+  CheckCircle2,
+  X
+} from 'lucide-react';
 
 interface Props {
   isOpen: boolean;
@@ -19,6 +30,9 @@ export const MatchVictoryModal: React.FC<Props> = ({
   onRematch,
   onNewMatch
 }) => {
+  const [showProModal, setShowProModal] = useState(false);
+  const [proSuccess, setProSuccess] = useState(false);
+
   useEffect(() => {
     if (isOpen && state.winner) {
       const end = Date.now() + 2.5 * 1000;
@@ -48,6 +62,33 @@ export const MatchVictoryModal: React.FC<Props> = ({
   }, [isOpen, state.winner]);
 
   if (!isOpen) return null;
+
+  const handleShareWhatsApp = () => {
+    const setsScoreStr = state.sets.map((s, idx) => `Set ${idx + 1}: ${s.team1}-${s.team2}`).join(' | ');
+    const winnerText = state.winner ? `🏆 Ganadores: *${teams[state.winner].name}*` : '⏱️ Partido concluido por tiempo de cancha';
+
+    const text = 
+      `🎾 *PADEL MATCH • RESULTADO OFICIAL* 🏆\n\n` +
+      `⚔️ *${teams.team1.name}* (${teams.team1.player1.name} & ${teams.team1.player2.name})\n` +
+      `   vs\n` +
+      `⚔️ *${teams.team2.name}* (${teams.team2.player1.name} & ${teams.team2.player2.name})\n\n` +
+      `📊 *Marcador:* ${setsScoreStr}\n` +
+      `${winnerText}\n\n` +
+      `📈 Revisa la ficha de jugadores, ranking ELO y estadísticas avanzadas:\n` +
+      `https://padelmatch.web.app`;
+
+    if (navigator.share) {
+      navigator.share({
+        title: 'PadelMatch - Resultado de Partido',
+        text: text,
+        url: 'https://padelmatch.web.app'
+      }).catch(() => {
+        window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+      });
+    } else {
+      window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+    }
+  };
 
   // Render Incomplete / Unfinished Match Summary
   if (!state.winner) {
@@ -88,7 +129,17 @@ export const MatchVictoryModal: React.FC<Props> = ({
             </div>
           </div>
 
-          <div style={{ padding: '12px', background: 'rgba(255, 255, 255, 0.04)', borderRadius: 'var(--radius-md)', margin: '16px 0', border: '1px solid var(--border-subtle)', textAlign: 'center' }}>
+          {/* WhatsApp Share Button */}
+          <button 
+            type="button" 
+            onClick={handleShareWhatsApp} 
+            style={whatsappShareBtnStyle}
+          >
+            <Share2 size={16} />
+            <span>Enviar Ficha por WhatsApp a Jugadores ($0)</span>
+          </button>
+
+          <div style={{ padding: '12px', background: 'rgba(255, 255, 255, 0.04)', borderRadius: 'var(--radius-md)', margin: '14px 0', border: '1px solid var(--border-subtle)', textAlign: 'center' }}>
             <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0 }}>
               ℹ️ Este partido ha sido computado en el total de partidos jugados de los 4 participantes, preservando el puntaje ELO y las rachas invictas.
             </p>
@@ -122,31 +173,31 @@ export const MatchVictoryModal: React.FC<Props> = ({
     <div style={overlayStyle}>
       <div style={modalStyle} className="glass-panel">
         {/* Trophy icon */}
-        <div style={{ textAlign: 'center', marginBottom: '16px' }}>
+        <div style={{ textAlign: 'center', marginBottom: '14px' }}>
           <div style={trophyCircleStyle}>
-            <Trophy size={48} color="var(--gold-primary)" />
+            <Trophy size={44} color="var(--gold-primary)" />
           </div>
-          <span className="badge badge-gold" style={{ marginTop: '12px' }}>
+          <span className="badge badge-gold" style={{ marginTop: '10px' }}>
             ¡Victoria de Partido!
           </span>
-          <h1 style={{ fontSize: '1.8rem', fontWeight: 900, marginTop: '8px', color: '#fff' }}>
+          <h1 style={{ fontSize: '1.75rem', fontWeight: 900, marginTop: '6px', color: '#fff' }}>
             {winnerTeam.name}
           </h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem' }}>
             {winnerTeam.player1.name} & {winnerTeam.player2.name}
           </p>
         </div>
 
         {/* Final Sets Scoreboard Card */}
         <div style={setsCardStyle}>
-          <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', marginBottom: '8px' }}>
+          <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', marginBottom: '8px' }}>
             Resultado Final Oficial
           </div>
-          <div style={{ display: 'flex', justifyContent: 'center', gap: '16px' }}>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '14px' }}>
             {state.sets.map((set, idx) => (
               <div key={idx} style={setScoreBadge}>
-                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>SET {idx + 1}</div>
-                <div style={{ fontSize: '1.5rem', fontWeight: 900, fontFamily: 'var(--font-mono)', color: '#fff' }}>
+                <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>SET {idx + 1}</div>
+                <div style={{ fontSize: '1.4rem', fontWeight: 900, fontFamily: 'var(--font-mono)', color: '#fff' }}>
                   <span style={{ color: set.team1 > set.team2 ? 'var(--team1-primary)' : '#94a3b8' }}>{set.team1}</span>
                   <span style={{ opacity: 0.4 }}> - </span>
                   <span style={{ color: set.team2 > set.team1 ? 'var(--team2-primary)' : '#94a3b8' }}>{set.team2}</span>
@@ -161,11 +212,11 @@ export const MatchVictoryModal: React.FC<Props> = ({
           </div>
         </div>
 
-        {/* ELO Rating Changes (Módulo D: Ranking Dinámico) */}
-        <div style={{ marginBottom: '24px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '10px' }}>
-            <Flame size={16} color="var(--gold-primary)" />
-            <span style={{ fontSize: '0.8rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--gold-primary)' }}>
+        {/* ELO Rating Changes */}
+        <div style={{ marginBottom: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
+            <Flame size={15} color="var(--gold-primary)" />
+            <span style={{ fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--gold-primary)' }}>
               Ajuste de Ranking ELO de Comunidad
             </span>
           </div>
@@ -173,7 +224,7 @@ export const MatchVictoryModal: React.FC<Props> = ({
           <div style={eloGridStyle}>
             {/* Team 1 Players */}
             <div style={{ ...eloTeamCard, borderColor: state.winner === 'team1' ? 'var(--team1-primary)' : 'var(--border-subtle)' }}>
-              <div style={{ fontWeight: 800, fontSize: '0.85rem', color: 'var(--team1-primary)', marginBottom: '6px' }}>
+              <div style={{ fontWeight: 800, fontSize: '0.82rem', color: 'var(--team1-primary)', marginBottom: '4px' }}>
                 {teams.team1.name}
               </div>
               <div style={eloPlayerRow}>
@@ -192,7 +243,7 @@ export const MatchVictoryModal: React.FC<Props> = ({
 
             {/* Team 2 Players */}
             <div style={{ ...eloTeamCard, borderColor: state.winner === 'team2' ? 'var(--team2-primary)' : 'var(--border-subtle)' }}>
-              <div style={{ fontWeight: 800, fontSize: '0.85rem', color: 'var(--team2-primary)', marginBottom: '6px' }}>
+              <div style={{ fontWeight: 800, fontSize: '0.82rem', color: 'var(--team2-primary)', marginBottom: '4px' }}>
                 {teams.team2.name}
               </div>
               <div style={eloPlayerRow}>
@@ -211,6 +262,40 @@ export const MatchVictoryModal: React.FC<Props> = ({
           </div>
         </div>
 
+        {/* WhatsApp Share Button */}
+        <button 
+          type="button" 
+          onClick={handleShareWhatsApp} 
+          style={whatsappShareBtnStyle}
+        >
+          <Share2 size={16} />
+          <span>Enviar Ficha por WhatsApp a Jugadores ($0)</span>
+        </button>
+
+        {/* Player Pass Pro Founder Offer Card ($9.990 CLP Lifetime) */}
+        <div style={proFounderCardStyle}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '0.72rem', fontWeight: 900, color: 'var(--gold-primary)', letterSpacing: '0.04em' }}>
+              <Sparkles size={13} color="var(--gold-primary)" />
+              PLAYER PASS PRO • FUNDADORES
+            </span>
+            <span style={{ fontSize: '0.72rem', fontWeight: 900, color: 'var(--team1-primary)', background: 'rgba(0, 230, 118, 0.1)', padding: '2px 8px', borderRadius: '6px' }}>
+              CLP $9.990 VITALICIO
+            </span>
+          </div>
+          <p style={{ fontSize: '0.76rem', color: 'var(--text-muted)', margin: '4px 0 8px', lineHeight: 1.35 }}>
+            Paga una sola vez y desbloquea tu <strong>Ficha Completa de Rendimiento</strong>: estadísticas Luz Día vs Foco Noche, Algoritmo de Pareja Ideal, control Smartwatch y voz sin límites.
+          </p>
+          <button 
+            type="button"
+            onClick={() => setShowProModal(true)}
+            style={proCtaBtnStyle}
+          >
+            <Zap size={14} />
+            <span>Activar Player Pass Pro ($9.990)</span>
+          </button>
+        </div>
+
         {/* Action Buttons */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
           <button onClick={onRematch} style={rematchBtnStyle}>
@@ -220,6 +305,73 @@ export const MatchVictoryModal: React.FC<Props> = ({
             Nuevo Partido
           </button>
         </div>
+
+        {/* Pro Pass Modal */}
+        {showProModal && (
+          <div style={proModalOverlayStyle}>
+            <div style={proModalCardStyle} className="glass-panel">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Award size={22} color="var(--gold-primary)" />
+                  <span style={{ fontWeight: 900, fontSize: '1.1rem', color: '#fff' }}>Player Pass Pro Vitalicio</span>
+                </div>
+                <button 
+                  onClick={() => setShowProModal(false)}
+                  style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div style={{ textAlign: 'center', margin: '14px 0' }}>
+                <div style={{ fontSize: '2rem', fontWeight: 900, color: 'var(--team1-primary)' }}>
+                  $9.990 <span style={{ fontSize: '0.9rem', color: 'var(--text-dim)' }}>CLP</span>
+                </div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--gold-primary)', fontWeight: 700 }}>
+                  Pago Único Para Siempre • Sin suscripciones mensuales
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', margin: '14px 0', fontSize: '0.82rem', color: '#e2e8f0' }}>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <CheckCircle2 size={16} color="var(--team1-primary)" />
+                  <span>Historial ilimitado de partidos y fichas de juego</span>
+                </div>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <CheckCircle2 size={16} color="var(--team1-primary)" />
+                  <span>Analítica Día vs Noche (Luz Natural vs Artificial)</span>
+                </div>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <CheckCircle2 size={16} color="var(--team1-primary)" />
+                  <span>Algoritmo de Sinergia (Tu Pareja Ideal y Tu Némesis)</span>
+                </div>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <CheckCircle2 size={16} color="var(--team1-primary)" />
+                  <span>Control desde Apple Watch & Samsung Galaxy Watch</span>
+                </div>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <CheckCircle2 size={16} color="var(--team1-primary)" />
+                  <span>Árbitro por voz inteligente ilimitado</span>
+                </div>
+              </div>
+
+              {proSuccess ? (
+                <div style={{ padding: '12px', background: 'rgba(0, 230, 118, 0.15)', borderRadius: '10px', color: 'var(--team1-primary)', textAlign: 'center', fontWeight: 800, fontSize: '0.85rem' }}>
+                  ¡Suscripción Pro Fundador Registrada! Gracias por apoyar a PadelMatch.
+                </div>
+              ) : (
+                <button 
+                  type="button"
+                  onClick={() => setProSuccess(true)}
+                  style={proCheckoutBtnStyle}
+                >
+                  <Sparkles size={16} />
+                  <span>Confirmar Player Pass Pro ($9.990 CLP)</span>
+                </button>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -320,5 +472,87 @@ const newMatchBtnStyle: React.CSSProperties = {
   color: '#050c18',
   fontWeight: 900,
   fontSize: '0.95rem',
+  boxShadow: '0 4px 16px var(--team1-glow)'
+};
+
+const whatsappShareBtnStyle: React.CSSProperties = {
+  width: '100%',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: '8px',
+  padding: '12px',
+  borderRadius: '12px',
+  background: 'linear-gradient(135deg, #25D366 0%, #128C7E 100%)',
+  color: '#ffffff',
+  fontWeight: 800,
+  fontSize: '0.88rem',
+  border: 'none',
+  cursor: 'pointer',
+  marginBottom: '14px',
+  boxShadow: '0 4px 14px rgba(37, 211, 102, 0.25)'
+};
+
+const proFounderCardStyle: React.CSSProperties = {
+  background: 'linear-gradient(135deg, rgba(255, 214, 0, 0.08) 0%, rgba(0, 230, 118, 0.05) 100%)',
+  border: '1px solid rgba(255, 214, 0, 0.3)',
+  borderRadius: '14px',
+  padding: '12px 14px',
+  marginBottom: '14px'
+};
+
+const proCtaBtnStyle: React.CSSProperties = {
+  width: '100%',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: '6px',
+  padding: '9px 12px',
+  borderRadius: '10px',
+  background: 'linear-gradient(135deg, #ffd600 0%, #ffab00 100%)',
+  color: '#070a10',
+  fontWeight: 900,
+  fontSize: '0.82rem',
+  border: 'none',
+  cursor: 'pointer',
+  boxShadow: '0 2px 10px rgba(255, 214, 0, 0.3)'
+};
+
+const proModalOverlayStyle: React.CSSProperties = {
+  position: 'fixed',
+  inset: 0,
+  backgroundColor: 'rgba(0, 0, 0, 0.85)',
+  backdropFilter: 'blur(8px)',
+  zIndex: 1100,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  padding: '16px'
+};
+
+const proModalCardStyle: React.CSSProperties = {
+  width: '100%',
+  maxWidth: '440px',
+  background: '#0d1527',
+  border: '1px solid rgba(255, 214, 0, 0.4)',
+  borderRadius: '20px',
+  padding: '24px',
+  boxShadow: '0 20px 50px rgba(0, 0, 0, 0.9), 0 0 30px rgba(255, 214, 0, 0.15)'
+};
+
+const proCheckoutBtnStyle: React.CSSProperties = {
+  width: '100%',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: '8px',
+  padding: '13px',
+  borderRadius: '12px',
+  background: 'var(--team1-gradient)',
+  color: '#050c18',
+  fontWeight: 900,
+  fontSize: '0.92rem',
+  border: 'none',
+  cursor: 'pointer',
   boxShadow: '0 4px 16px var(--team1-glow)'
 };

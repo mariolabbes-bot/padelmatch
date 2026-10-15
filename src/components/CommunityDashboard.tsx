@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import type { PlayerCategory } from '../types/padel';
+import type { PlayerCategory, DominantHand } from '../types/padel';
 import { communityService } from '../services/communityService';
 import { 
   Trophy, 
@@ -30,6 +30,8 @@ export const CommunityDashboard: React.FC<Props> = ({ onBackToScoreboard }) => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
+  const [city, setCity] = useState('');
+  const [dominantHand, setDominantHand] = useState<DominantHand>('diestro');
   const [category, setCategory] = useState<PlayerCategory>('4ta');
   const [initialElo, setInitialElo] = useState<number>(1200);
   const [position, setPosition] = useState<'drive' | 'reves' | 'ambas'>('ambas');
@@ -62,6 +64,8 @@ export const CommunityDashboard: React.FC<Props> = ({ onBackToScoreboard }) => {
       name,
       email: email.trim() || undefined,
       phone: phone.trim() || undefined,
+      city: city.trim() || undefined,
+      dominantHand,
       category,
       elo: initialElo,
       favoritePosition: position
@@ -70,6 +74,8 @@ export const CommunityDashboard: React.FC<Props> = ({ onBackToScoreboard }) => {
     setName('');
     setEmail('');
     setPhone('');
+    setCity('');
+    setDominantHand('diestro');
     setIsAddModalOpen(false);
     setRefreshKey(k => k + 1);
   };
@@ -172,9 +178,16 @@ export const CommunityDashboard: React.FC<Props> = ({ onBackToScoreboard }) => {
                         <Users size={22} color="#fff" />
                       </div>
                       <div>
-                        <h3 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#fff' }}>{player.name}</h3>
-                        <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                          {player.category} Categoría • Posición {player.favoritePosition.toUpperCase()}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <h3 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#fff', margin: 0 }}>{player.name}</h3>
+                          {player.dominantHand === 'zurdo' && (
+                            <span style={{ fontSize: '0.65rem', background: 'rgba(255, 214, 0, 0.2)', color: 'var(--gold-primary)', padding: '1px 5px', borderRadius: '4px', fontWeight: 800 }}>
+                              ⭐ ZURDO
+                            </span>
+                          )}
+                        </div>
+                        <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                          {player.category} Categoría • {player.favoritePosition.toUpperCase()} {player.city ? `• 📍 ${player.city}` : ''}
                         </div>
                       </div>
                     </div>
@@ -277,10 +290,19 @@ export const CommunityDashboard: React.FC<Props> = ({ onBackToScoreboard }) => {
                             <Users size={14} color="#00e676" />
                           </div>
                           <div>
-                            <span style={{ fontWeight: 800, color: '#fff' }}>{player.name}</span>
-                            {player.phone && (
-                              <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>{player.phone}</div>
-                            )}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <span style={{ fontWeight: 800, color: '#fff' }}>{player.name}</span>
+                              {player.dominantHand === 'zurdo' && (
+                                <span style={{ fontSize: '0.62rem', background: 'rgba(255, 214, 0, 0.2)', color: 'var(--gold-primary)', padding: '1px 5px', borderRadius: '4px', fontWeight: 800 }}>
+                                  ⭐ ZURDO
+                                </span>
+                              )}
+                            </div>
+                            <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)', display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                              <span>{player.favoritePosition === 'drive' ? 'Drive' : player.favoritePosition === 'reves' ? 'Revés' : 'Ambos'}</span>
+                              {player.city && <span>• 📍 {player.city}</span>}
+                              {player.phone && <span>• 📲 {player.phone}</span>}
+                            </div>
                           </div>
                         </div>
                       </td>
@@ -514,6 +536,31 @@ export const CommunityDashboard: React.FC<Props> = ({ onBackToScoreboard }) => {
                     placeholder="+56 9 1234 5678"
                     value={phone}
                     onChange={e => setPhone(e.target.value)}
+                    style={fieldInputStyle}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '12px' }}>
+                <div>
+                  <label style={fieldLabelStyle}>Mano Hábil</label>
+                  <select
+                    value={dominantHand}
+                    onChange={e => setDominantHand(e.target.value as DominantHand)}
+                    style={fieldSelectStyle}
+                  >
+                    <option value="diestro">Diestro 🎾</option>
+                    <option value="zurdo">Zurdo ⭐ (Pareja Oro)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label style={fieldLabelStyle}>Ciudad / Club (Opcional)</label>
+                  <input
+                    type="text"
+                    placeholder="Ej: Santiago / Club Padel"
+                    value={city}
+                    onChange={e => setCity(e.target.value)}
                     style={fieldInputStyle}
                   />
                 </div>

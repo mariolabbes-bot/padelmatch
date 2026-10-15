@@ -1,4 +1,4 @@
-import type { CommunityPlayer, MatchRecord, HeadToHeadStats, SetScore } from '../types/padel';
+import type { CommunityPlayer, MatchRecord, HeadToHeadStats, SetScore, DominantHand, UserPlan, TimeOfDay } from '../types/padel';
 
 const PLAYERS_STORAGE_KEY = 'padelmatch_community_players_v2';
 const MATCHES_STORAGE_KEY = 'padelmatch_community_matches_v2';
@@ -60,6 +60,11 @@ class CommunityService {
     elo?: number;
     category?: CommunityPlayer['category'];
     favoritePosition?: 'drive' | 'reves' | 'ambas';
+    dominantHand?: DominantHand;
+    city?: string;
+    club?: string;
+    plan?: UserPlan;
+    leadSource?: 'direct_registration' | 'qr_guest';
   }): CommunityPlayer {
     const newPlayer: CommunityPlayer = {
       id: 'cp-' + Date.now().toString(36) + '-' + Math.random().toString(36).substring(2, 6),
@@ -72,7 +77,21 @@ class CommunityService {
       matchesPlayed: 0,
       matchesWon: 0,
       winStreak: 0,
-      favoritePosition: playerData.favoritePosition || 'ambas'
+      favoritePosition: playerData.favoritePosition || 'ambas',
+      dominantHand: playerData.dominantHand || 'diestro',
+      city: playerData.city?.trim() || undefined,
+      club: playerData.club?.trim() || undefined,
+      plan: playerData.plan || 'free',
+      leadSource: playerData.leadSource || 'direct_registration',
+      registeredAt: Date.now(),
+      dayMatchesPlayed: 0,
+      dayMatchesWon: 0,
+      nightMatchesPlayed: 0,
+      nightMatchesWon: 0,
+      goldenPointsPlayed: 0,
+      goldenPointsWon: 0,
+      tieBreaksPlayed: 0,
+      tieBreaksWon: 0
     };
 
     this.players.push(newPlayer);
@@ -87,9 +106,15 @@ class CommunityService {
       p.name.toLowerCase() === name.trim().toLowerCase()
     );
 
-    if (existing) return existing;
+    if (existing) {
+      if (phone && !existing.phone) {
+        existing.phone = phone;
+        this.savePlayers();
+      }
+      return existing;
+    }
 
-    return this.addPlayer({ name, email, phone });
+    return this.addPlayer({ name, email, phone, leadSource: 'qr_guest' });
   }
 
   public deletePlayer(id: string) {
@@ -117,10 +142,19 @@ class CommunityService {
     sets: SetScore[],
     winner: 'team1' | 'team2' | 'none',
     eloDelta: number,
-    status: 'completed' | 'unfinished' | 'retired' = 'completed'
+    status: 'completed' | 'unfinished' | 'retired' = 'completed',
+    extra?: {
+      goldenPointsCount?: number;
+      tieBreaksCount?: number;
+      durationSeconds?: number;
+    }
   ): MatchRecord {
     const team1SetsWon = sets.filter(s => s.team1 > s.team2).length;
     const team2SetsWon = sets.filter(s => s.team2 > s.team1).length;
+
+    // Detect if match was played with Natural Light (08:00 - 18:30) or Artificial Light (18:30+)
+    const currentHour = new Date().getHours();
+    const timeOfDay: TimeOfDay = (currentHour >= 8 && currentHour < 19) ? 'day' : 'night';
 
     const record: MatchRecord = {
       id: 'match-' + Date.now().toString(36),
@@ -131,7 +165,11 @@ class CommunityService {
       sets,
       winner,
       eloDelta: winner === 'none' ? 0 : eloDelta,
-      status
+      status,
+      timeOfDay,
+      goldenPointsCount: extra?.goldenPointsCount || 0,
+      tieBreaksCount: extra?.tieBreaksCount || 0,
+      durationSeconds: extra?.durationSeconds || 75 * 60
     };
 
     this.matches.unshift(record);
@@ -142,45 +180,132 @@ class CommunityService {
       this.findOrCreatePlayer(pName);
     });
 
+    const isDay = timeOfDay === 'day';
+    const isNight = timeOfDay === 'night';
+    const gpCount = extra?.goldenPointsCount || 0;
+    const tbCount = extra?.tieBreaksCount || 0;
+
     if (winner !== 'none') {
       const winningNames = winner === 'team1' ? team1PlayerNames : team2PlayerNames;
       const losingNames = winner === 'team1' ? team2PlayerNames : team1PlayerNames;
 
       this.players = this.players.map(p => {
         if (winningNames.includes(p.name)) {
-          return {
+          const updated: CommunityPlayer = {
             ...p,
             matchesPlayed: p.matchesPlayed + 1,
             matchesWon: p.matchesWon + 1,
             winStreak: p.winStreak + 1,
-            elo: p.elo + Math.abs(eloDelta)
+            elo: p.elo + Math.abs(eloDelta),
+            dayMatchesPlayed: (p.dayMatchesPlayed || 0) + (isDay ? 1 : 0),
+            dayMatchesWon: (p.dayMatchesWon || 0) + (isDay ? 1 : 0),
+            nightMatchesPlayed: (p.nightMatchesPlayed || 0) + (isNight ? 1 : 0),
+            nightMatchesWon: (p.nightMatchesWon || 0) + (isNight ? 1 : 0),
+            goldenPointsPlayed: (p.goldenPointsPlayed || 0) + gpCount,
+            goldenPointsWon: (p.goldenPointsWon || 0) + Math.ceil(gpCount * 0.6), // Estimación proporcional
+            tieBreaksPlayed: (p.tieBreaksPlayed || 0) + tbCount,
+            tieBreaksWon: (p.tieBreaksWon || 0) + (tbCount > 0 ? 1 : 0)
           };
+          return updated;
         }
         if (losingNames.includes(p.name)) {
-          return {
+          const updated: CommunityPlayer = {
             ...p,
             matchesPlayed: p.matchesPlayed + 1,
             winStreak: 0,
-            elo: Math.max(600, p.elo - Math.abs(eloDelta))
+            elo: Math.max(600, p.elo - Math.abs(eloDelta)),
+            dayMatchesPlayed: (p.dayMatchesPlayed || 0) + (isDay ? 1 : 0),
+            dayMatchesWon: p.dayMatchesWon || 0,
+            nightMatchesPlayed: (p.nightMatchesPlayed || 0) + (isNight ? 1 : 0),
+            nightMatchesWon: p.nightMatchesWon || 0,
+            goldenPointsPlayed: (p.goldenPointsPlayed || 0) + gpCount,
+            goldenPointsWon: (p.goldenPointsWon || 0) + Math.floor(gpCount * 0.4),
+            tieBreaksPlayed: (p.tieBreaksPlayed || 0) + tbCount,
+            tieBreaksWon: p.tieBreaksWon || 0
           };
+          return updated;
         }
         return p;
       });
     } else {
-      // Unfinished match without declared winner: register match played, preserve streaks and ELO
+      // Unfinished match without declared winner
       this.players = this.players.map(p => {
         if ([...team1PlayerNames, ...team2PlayerNames].includes(p.name)) {
           return {
             ...p,
-            matchesPlayed: p.matchesPlayed + 1
+            matchesPlayed: p.matchesPlayed + 1,
+            dayMatchesPlayed: (p.dayMatchesPlayed || 0) + (isDay ? 1 : 0),
+            nightMatchesPlayed: (p.nightMatchesPlayed || 0) + (isNight ? 1 : 0)
           };
         }
         return p;
       });
     }
 
+    // Recalculate Pair Chemistry (Best Partner & Nemesis)
+    [...team1PlayerNames, ...team2PlayerNames].forEach(pName => {
+      this.recalculateSynergyAndNemesis(pName);
+    });
+
     this.savePlayers();
     return record;
+  }
+
+  private recalculateSynergyAndNemesis(playerName: string) {
+    const player = this.players.find(p => p.name.toLowerCase() === playerName.toLowerCase());
+    if (!player) return;
+
+    const partnerStats: Record<string, { matches: number; wins: number }> = {};
+    const rivalStats: Record<string, { matches: number; losses: number }> = {};
+
+    this.matches.forEach(m => {
+      const isTeam1 = m.team1.playerNames.includes(player.name);
+      const isTeam2 = m.team2.playerNames.includes(player.name);
+      if (!isTeam1 && !isTeam2) return;
+
+      const myTeam = isTeam1 ? m.team1 : m.team2;
+      const rivalTeam = isTeam1 ? m.team2 : m.team1;
+      const won = (m.winner === 'team1' && isTeam1) || (m.winner === 'team2' && isTeam2);
+
+      // Partner
+      const partner = myTeam.playerNames.find(p => p !== player.name);
+      if (partner) {
+        if (!partnerStats[partner]) partnerStats[partner] = { matches: 0, wins: 0 };
+        partnerStats[partner].matches++;
+        if (won) partnerStats[partner].wins++;
+      }
+
+      // Rivals
+      rivalTeam.playerNames.forEach(rival => {
+        if (!rivalStats[rival]) rivalStats[rival] = { matches: 0, losses: 0 };
+        rivalStats[rival].matches++;
+        if (!won && m.winner !== 'none') rivalStats[rival].losses++;
+      });
+    });
+
+    // Best Partner: partner with highest win rate (min 1 match)
+    let bestPartner: { name: string; winRate: number; matchesTogether: number } | undefined;
+    let maxPartnerScore = -1;
+    Object.entries(partnerStats).forEach(([name, s]) => {
+      const rate = Math.round((s.wins / s.matches) * 100);
+      if (s.matches >= 1 && (rate > maxPartnerScore || (rate === maxPartnerScore && s.matches > (bestPartner?.matchesTogether || 0)))) {
+        maxPartnerScore = rate;
+        bestPartner = { name, winRate: rate, matchesTogether: s.matches };
+      }
+    });
+
+    // Nemesis: rival against whom player has most losses / highest loss rate
+    let nemesis: { name: string; lossRate: number; matchesAgainst: number } | undefined;
+    let maxNemesisLosses = 0;
+    Object.entries(rivalStats).forEach(([name, s]) => {
+      if (s.losses > maxNemesisLosses) {
+        maxNemesisLosses = s.losses;
+        nemesis = { name, lossRate: Math.round((s.losses / s.matches) * 100), matchesAgainst: s.matches };
+      }
+    });
+
+    player.bestPartner = bestPartner;
+    player.nemesis = nemesis;
   }
 
   public getHeadToHead(playerNames1: string[], playerNames2: string[]): HeadToHeadStats {

@@ -1,12 +1,17 @@
-import type { CommunityPlayer } from '../types/padel';
+import type { CommunityPlayer, DominantHand, UserPlan } from '../types/padel';
 import { communityService } from './communityService';
 
 export interface UserSession {
   id: string;
   name: string;
   email: string;
+  phone?: string;
   category: CommunityPlayer['category'];
   favoritePosition: 'drive' | 'reves' | 'ambas';
+  dominantHand?: DominantHand;
+  city?: string;
+  club?: string;
+  plan?: UserPlan;
   avatar?: string;
   elo: number;
   loggedInAt: number;
@@ -16,9 +21,14 @@ interface StoredUserCredential {
   id: string;
   name: string;
   email: string;
+  phone?: string;
   passwordHash: string; // Stored securely in client storage
   category: CommunityPlayer['category'];
   favoritePosition: 'drive' | 'reves' | 'ambas';
+  dominantHand?: DominantHand;
+  city?: string;
+  club?: string;
+  plan?: UserPlan;
   avatar?: string;
   createdAt: number;
 }
@@ -45,6 +55,11 @@ class AuthService {
           if (fresh) {
             this.currentUser.elo = fresh.elo;
             this.currentUser.category = fresh.category;
+            this.currentUser.phone = fresh.phone;
+            this.currentUser.dominantHand = fresh.dominantHand;
+            this.currentUser.city = fresh.city;
+            this.currentUser.club = fresh.club;
+            this.currentUser.plan = fresh.plan;
           }
         }
       }
@@ -113,12 +128,17 @@ class AuthService {
     name: string;
     email: string;
     password: string;
+    phone?: string;
     category: CommunityPlayer['category'];
     favoritePosition: 'drive' | 'reves' | 'ambas';
+    dominantHand?: DominantHand;
+    city?: string;
+    club?: string;
     avatar?: string;
   }): { success: boolean; error?: string; user?: UserSession } {
     const trimmedName = data.name.trim();
     const trimmedEmail = data.email.trim().toLowerCase();
+    const trimmedPhone = data.phone ? data.phone.trim() : undefined;
     const trimmedPassword = (data.password || '').trim();
 
     if (!trimmedName) {
@@ -147,16 +167,24 @@ class AuthService {
       player = communityService.addPlayer({
         name: trimmedName,
         email: trimmedEmail,
+        phone: trimmedPhone,
         category: data.category,
         favoritePosition: data.favoritePosition,
+        dominantHand: data.dominantHand || 'diestro',
+        city: data.city,
+        club: data.club,
         avatar: data.avatar,
         elo: this.getDefaultEloForCategory(data.category)
       });
     } else {
-      // Update existing player with chosen category and name
+      // Update existing player with chosen category and profile data
       player.name = trimmedName;
       player.category = data.category;
       player.favoritePosition = data.favoritePosition;
+      if (trimmedPhone) player.phone = trimmedPhone;
+      if (data.dominantHand) player.dominantHand = data.dominantHand;
+      if (data.city) player.city = data.city;
+      if (data.club) player.club = data.club;
     }
 
     // Save in registry with password
@@ -164,9 +192,13 @@ class AuthService {
       id: player.id,
       name: trimmedName,
       email: trimmedEmail,
+      phone: trimmedPhone,
       passwordHash: trimmedPassword,
       category: data.category,
       favoritePosition: data.favoritePosition,
+      dominantHand: data.dominantHand || 'diestro',
+      city: data.city,
+      club: data.club,
       avatar: data.avatar,
       createdAt: Date.now()
     };
@@ -176,8 +208,13 @@ class AuthService {
       id: player.id,
       name: player.name,
       email: trimmedEmail,
+      phone: player.phone,
       category: player.category,
       favoritePosition: player.favoritePosition || 'ambas',
+      dominantHand: player.dominantHand,
+      city: player.city,
+      club: player.club,
+      plan: player.plan || 'free',
       avatar: player.avatar,
       elo: player.elo,
       loggedInAt: Date.now()
@@ -210,9 +247,13 @@ class AuthService {
           id: playerInRoster.id,
           name: playerInRoster.name,
           email: trimmedEmail,
+          phone: playerInRoster.phone,
           passwordHash: trimmedPassword,
           category: playerInRoster.category,
           favoritePosition: playerInRoster.favoritePosition || 'ambas',
+          dominantHand: playerInRoster.dominantHand,
+          city: playerInRoster.city,
+          club: playerInRoster.club,
           createdAt: Date.now()
         };
         this.saveRegistry(registry);
@@ -236,15 +277,20 @@ class AuthService {
     let player = communityService.getPlayers().find(p => p.email?.toLowerCase() === trimmedEmail);
     if (!player) {
       const rec = registry[trimmedEmail];
-      player = communityService.findOrCreatePlayer(rec.name, trimmedEmail);
+      player = communityService.findOrCreatePlayer(rec.name, trimmedEmail, rec.phone);
     }
 
     const session: UserSession = {
       id: player.id,
       name: player.name,
       email: player.email || trimmedEmail,
+      phone: player.phone || userRecord?.phone,
       category: player.category,
       favoritePosition: player.favoritePosition || 'ambas',
+      dominantHand: player.dominantHand || userRecord?.dominantHand,
+      city: player.city || userRecord?.city,
+      club: player.club || userRecord?.club,
+      plan: player.plan || 'free',
       avatar: player.avatar,
       elo: player.elo,
       loggedInAt: Date.now()

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { authService } from '../services/authService';
 import type { UserSession } from '../services/authService';
-import type { CommunityPlayer } from '../types/padel';
+import type { CommunityPlayer, DominantHand } from '../types/padel';
 import { 
   Trophy, 
   User, 
@@ -14,7 +14,10 @@ import {
   Eye, 
   EyeOff, 
   CheckCircle2, 
-  AlertCircle 
+  AlertCircle,
+  Phone,
+  MapPin,
+  Hand
 } from 'lucide-react';
 
 interface Props {
@@ -32,11 +35,14 @@ export const AuthScreen: React.FC<Props> = ({ onAuthenticated }) => {
   // Register State
   const [registerName, setRegisterName] = useState('');
   const [registerEmail, setRegisterEmail] = useState('');
+  const [registerPhone, setRegisterPhone] = useState('');
   const [registerPassword, setRegisterPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showRegisterPassword, setShowRegisterPassword] = useState(false);
   const [category, setCategory] = useState<CommunityPlayer['category']>('4ta');
   const [favoritePosition, setFavoritePosition] = useState<'drive' | 'reves' | 'ambas'>('drive');
+  const [dominantHand, setDominantHand] = useState<DominantHand>('diestro');
+  const [registerCity, setRegisterCity] = useState('');
 
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
@@ -73,6 +79,9 @@ export const AuthScreen: React.FC<Props> = ({ onAuthenticated }) => {
       name: registerName,
       email: registerEmail,
       password: registerPassword,
+      phone: registerPhone.trim() || undefined,
+      dominantHand,
+      city: registerCity.trim() || undefined,
       category,
       favoritePosition
     });
@@ -95,6 +104,9 @@ export const AuthScreen: React.FC<Props> = ({ onAuthenticated }) => {
         name: 'Mario Labbé',
         email: demoEmail,
         password: 'padel123',
+        phone: '+56912345678',
+        dominantHand: 'diestro',
+        city: 'Santiago',
         category: '4ta',
         favoritePosition: 'drive'
       }).user;
@@ -255,6 +267,25 @@ export const AuthScreen: React.FC<Props> = ({ onAuthenticated }) => {
               />
             </div>
 
+            {/* Phone / WhatsApp for match recap delivery */}
+            <div>
+              <label style={labelStyle}>
+                <Phone size={14} color="var(--team1-primary)" />
+                WhatsApp / Teléfono Móvil
+              </label>
+              <input
+                type="tel"
+                value={registerPhone}
+                onChange={e => setRegisterPhone(e.target.value)}
+                placeholder="+56 9 1234 5678"
+                style={inputStyle}
+                autoComplete="tel"
+              />
+              <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)', marginTop: '3px', display: 'block' }}>
+                📲 Te enviamos tu ficha de partido, estadísticas y tarjetas de juego
+              </span>
+            </div>
+
             {/* Passwords Row */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
               <div>
@@ -344,6 +375,38 @@ export const AuthScreen: React.FC<Props> = ({ onAuthenticated }) => {
                   <option value="reves">Revés (Izquierda)</option>
                   <option value="ambas">Ambos lados</option>
                 </select>
+              </div>
+            </div>
+
+            {/* Dominant Hand & City */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+              <div>
+                <label style={labelStyle}>
+                  <Hand size={14} color="var(--gold-primary)" />
+                  Mano Hábil
+                </label>
+                <select
+                  value={dominantHand}
+                  onChange={e => setDominantHand(e.target.value as DominantHand)}
+                  style={selectStyle}
+                >
+                  <option value="diestro">Diestro 🎾</option>
+                  <option value="zurdo">Zurdo (¡Pareja Oro!) ⭐</option>
+                </select>
+              </div>
+
+              <div>
+                <label style={labelStyle}>
+                  <MapPin size={14} color="var(--team1-primary)" />
+                  Ciudad / Club
+                </label>
+                <input
+                  type="text"
+                  value={registerCity}
+                  onChange={e => setRegisterCity(e.target.value)}
+                  placeholder="Ej: Santiago / Club Padel"
+                  style={inputStyle}
+                />
               </div>
             </div>
 

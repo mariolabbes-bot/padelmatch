@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import type { MatchRules } from '../types/padel';
+import type { MatchRules, CommunityPlayer } from '../types/padel';
 import type { UserSession } from '../services/authService';
 import { communityService } from '../services/communityService';
 import { 
@@ -7,7 +7,10 @@ import {
   Watch, 
   LogOut, 
   ChevronRight, 
-  Flame
+  Flame,
+  Sun,
+  Moon,
+  Zap
 } from 'lucide-react';
 
 interface Props {
@@ -37,7 +40,23 @@ export const HostDashboardView: React.FC<Props> = ({
   const [sideChangeRestSeconds, setSideChangeRestSeconds] = useState(rules.sideChangeRestSeconds !== undefined ? rules.sideChangeRestSeconds : 90);
 
   // Retrieve player stats
-  const player = communityService.searchPlayer(user.name).find(p => p.id === user.id);
+  const player = communityService.searchPlayer(user.name).find(p => p.id === user.id) || communityService.getPlayers().find((p: CommunityPlayer) => p.name.toLowerCase() === user.name.toLowerCase());
+
+  const totalMatches = player?.matchesPlayed || 0;
+  const winRate = totalMatches > 0 ? Math.round(((player?.matchesWon || 0) / totalMatches) * 100) : 0;
+  const dayPlayed = player?.dayMatchesPlayed || 0;
+  const dayWon = player?.dayMatchesWon || 0;
+  const dayRate = dayPlayed > 0 ? Math.round((dayWon / dayPlayed) * 100) : null;
+  const nightPlayed = player?.nightMatchesPlayed || 0;
+  const nightWon = player?.nightMatchesWon || 0;
+  const nightRate = nightPlayed > 0 ? Math.round((nightWon / nightPlayed) * 100) : null;
+  const gpPlayed = player?.goldenPointsPlayed || 0;
+  const gpWon = player?.goldenPointsWon || 0;
+  const tbPlayed = player?.tieBreaksPlayed || 0;
+  const tbWon = player?.tieBreaksWon || 0;
+  const dominant = player?.dominantHand || user.dominantHand || 'diestro';
+  const pos = player?.favoritePosition || user.favoritePosition || 'drive';
+  const city = player?.city || user.city;
 
   const handleStartMatchSetup = (e: React.FormEvent) => {
     e.preventDefault();
@@ -74,22 +93,37 @@ export const HostDashboardView: React.FC<Props> = ({
       <div style={mainGridStyle}>
         {/* Left Column: User Profile & Stats */}
         <div style={profileCardStyle} className="glass-panel">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '14px' }}>
             <div style={avatarStyle}>
               {user.name.charAt(0).toUpperCase()}
             </div>
             <div>
-              <div style={{ fontSize: '0.8rem', color: 'var(--text-dim)', textTransform: 'uppercase' }}>
-                Bienvenido a la Cancha
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                  Ficha Oficial del Jugador
+                </span>
+                {user.plan === 'pro_founder' && (
+                  <span style={{ fontSize: '0.65rem', fontWeight: 900, color: 'var(--gold-primary)', background: 'rgba(255, 214, 0, 0.15)', padding: '1px 6px', borderRadius: '4px' }}>
+                    PRO FUNDADOR
+                  </span>
+                )}
               </div>
-              <h2 style={{ fontSize: '1.3rem', fontWeight: 800 }}>{user.name}</h2>
-              <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+              <h2 style={{ fontSize: '1.3rem', fontWeight: 800, margin: '2px 0 4px' }}>{user.name}</h2>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                 <span className="badge badge-team1" style={{ fontSize: '0.7rem' }}>
                   {user.category} Cat
                 </span>
                 <span className="badge badge-gold" style={{ fontSize: '0.7rem' }}>
                   ELO {player?.elo || user.elo}
                 </span>
+                <span style={{ fontSize: '0.7rem', padding: '2px 8px', borderRadius: '12px', background: 'var(--bg-elevated)', border: '1px solid var(--border-subtle)', color: '#e2e8f0' }}>
+                  {dominant === 'zurdo' ? '⭐ Zurdo' : '🎾 Diestro'} • {pos === 'drive' ? 'Drive' : pos === 'reves' ? 'Revés' : 'Ambos'}
+                </span>
+                {city && (
+                  <span style={{ fontSize: '0.7rem', padding: '2px 8px', borderRadius: '12px', background: 'var(--bg-elevated)', border: '1px solid var(--border-subtle)', color: 'var(--text-muted)' }}>
+                    📍 {city}
+                  </span>
+                )}
               </div>
             </div>
           </div>
@@ -97,7 +131,7 @@ export const HostDashboardView: React.FC<Props> = ({
           {/* Quick Metrics */}
           <div style={metricsGridStyle}>
             <div style={metricItemStyle}>
-              <div style={metricNumStyle}>{player?.matchesPlayed || 0}</div>
+              <div style={metricNumStyle}>{totalMatches}</div>
               <div style={metricLabelStyle}>Partidos</div>
             </div>
             <div style={metricItemStyle}>
@@ -107,6 +141,12 @@ export const HostDashboardView: React.FC<Props> = ({
               <div style={metricLabelStyle}>Victorias</div>
             </div>
             <div style={metricItemStyle}>
+              <div style={{ ...metricNumStyle, color: '#38bdf8' }}>
+                {winRate}%
+              </div>
+              <div style={metricLabelStyle}>Efectividad</div>
+            </div>
+            <div style={metricItemStyle}>
               <div style={{ ...metricNumStyle, color: 'var(--gold-primary)' }}>
                 {player?.winStreak || 0}
               </div>
@@ -114,8 +154,73 @@ export const HostDashboardView: React.FC<Props> = ({
             </div>
           </div>
 
+          {/* Analítica Situacional: Luz Día vs Noche Artificial */}
+          <div style={{ background: 'var(--bg-elevated)', borderRadius: 'var(--radius-md)', padding: '12px', marginTop: '12px', border: '1px solid var(--border-subtle)' }}>
+            <div style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--text-dim)', textTransform: 'uppercase', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Sun size={13} color="#facc15" />
+              <span>Rendimiento por Horario e Iluminación</span>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+              <div style={{ background: 'rgba(250, 204, 21, 0.06)', border: '1px solid rgba(250, 204, 21, 0.2)', borderRadius: '8px', padding: '8px 10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.72rem', color: '#facc15', fontWeight: 700 }}>
+                  <Sun size={12} /> Luz Natural (Día)
+                </div>
+                <div style={{ fontSize: '1.1rem', fontWeight: 900, color: '#fff', marginTop: '2px' }}>
+                  {dayRate !== null ? `${dayRate}%` : '---'}
+                </div>
+                <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>
+                  {dayWon}W de {dayPlayed} PJ
+                </div>
+              </div>
+
+              <div style={{ background: 'rgba(56, 189, 248, 0.06)', border: '1px solid rgba(56, 189, 248, 0.2)', borderRadius: '8px', padding: '8px 10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.72rem', color: '#38bdf8', fontWeight: 700 }}>
+                  <Moon size={12} /> Foco Noche (Artificial)
+                </div>
+                <div style={{ fontSize: '1.1rem', fontWeight: 900, color: '#fff', marginTop: '2px' }}>
+                  {nightRate !== null ? `${nightRate}%` : '---'}
+                </div>
+                <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>
+                  {nightWon}W de {nightPlayed} PJ
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Factor Clutch & Sinergia */}
+          <div style={{ background: 'var(--bg-elevated)', borderRadius: 'var(--radius-md)', padding: '12px', marginTop: '10px', border: '1px solid var(--border-subtle)' }}>
+            <div style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--text-dim)', textTransform: 'uppercase', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Zap size={13} color="var(--gold-primary)" />
+              <span>Factor Clutch & Algoritmo de Parejas</span>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '8px' }}>
+              <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                ⚡ Puntos de Oro: <strong style={{ color: '#fff' }}>{gpWon}/{gpPlayed}</strong> ({gpPlayed > 0 ? Math.round((gpWon / gpPlayed) * 100) : 0}%)
+              </div>
+              <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                🎯 Tie-Breaks: <strong style={{ color: '#fff' }}>{tbWon}/{tbPlayed}</strong> ({tbPlayed > 0 ? Math.round((tbWon / tbPlayed) * 100) : 0}%)
+              </div>
+            </div>
+
+            <div style={{ paddingTop: '8px', borderTop: '1px solid var(--border-subtle)', display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '0.75rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: 'var(--text-dim)' }}>🤝 Pareja Ideal:</span>
+                <span style={{ fontWeight: 700, color: 'var(--team1-primary)' }}>
+                  {player?.bestPartner ? `${player.bestPartner.name} (${player.bestPartner.winRate}%)` : 'Por computar'}
+                </span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: 'var(--text-dim)' }}>⚔️ Némesis en Cancha:</span>
+                <span style={{ fontWeight: 700, color: 'var(--danger-primary)' }}>
+                  {player?.nemesis ? `${player.nemesis.name} (${player.nemesis.lossRate}% derrotas)` : 'Sin némesis'}
+                </span>
+              </div>
+            </div>
+          </div>
+
           {/* Quick Links */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '16px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '14px' }}>
             <button onClick={onOpenCommunity} style={secondaryLinkBtnStyle}>
               <Trophy size={16} color="var(--gold-primary)" />
               <span>Ver Ranking ELO de la Comunidad</span>
@@ -123,7 +228,7 @@ export const HostDashboardView: React.FC<Props> = ({
             </button>
             <button onClick={onOpenBluetoothModal} style={secondaryLinkBtnStyle}>
               <Watch size={16} color="var(--team1-primary)" />
-              <span>Configurar Apple Watch & Pulsadores</span>
+              <span>Configurar Apple Watch & Samsung Watch</span>
               <ChevronRight size={16} style={{ marginLeft: 'auto' }} />
             </button>
           </div>

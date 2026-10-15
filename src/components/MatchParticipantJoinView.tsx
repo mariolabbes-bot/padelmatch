@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import type { CommunityPlayer, PlayerCategory } from '../types/padel';
+import type { CommunityPlayer, PlayerCategory, DominantHand } from '../types/padel';
 import type { SyncedMatchRoom } from '../services/matchSyncService';
 import type { UserSession } from '../services/authService';
 import { matchSyncService } from '../services/matchSyncService';
+import { communityService } from '../services/communityService';
 import { 
   Users, 
   CheckCircle2, 
@@ -14,7 +15,9 @@ import {
   Clock, 
   Eye,
   LogOut,
-  ArrowLeft
+  ArrowLeft,
+  Phone,
+  Hand
 } from 'lucide-react';
 
 interface Props {
@@ -42,6 +45,8 @@ export const MatchParticipantJoinView: React.FC<Props> = ({
     (room.slots.slot4 && (room.slots.slot4.id === myPlayerId || room.slots.slot4.name === myPlayerName)) ? 'slot4' : null;
 
   const [name, setName] = useState(currentUser?.name || '');
+  const [phone, setPhone] = useState(currentUser?.phone || '');
+  const [dominantHand, setDominantHand] = useState<DominantHand>(currentUser?.dominantHand || 'diestro');
   const [category, setCategory] = useState<PlayerCategory>(currentUser?.category || '4ta');
   const [position, setPosition] = useState<'drive' | 'reves' | 'ambas'>(currentUser?.favoritePosition || 'ambas');
   const [selectedSlotKey, setSelectedSlotKey] = useState<'slot2' | 'slot3' | 'slot4'>(() => {
@@ -70,13 +75,20 @@ export const MatchParticipantJoinView: React.FC<Props> = ({
     const newPlayer: CommunityPlayer = {
       id: currentUser?.id || 'guest-' + Math.random().toString(36).substring(2, 8),
       name: name.trim(),
+      phone: phone.trim() || undefined,
+      dominantHand,
       category,
       favoritePosition: position,
       elo: currentUser?.elo || 1200,
       matchesPlayed: currentUser ? 1 : 0,
       matchesWon: 0,
-      winStreak: 0
+      winStreak: 0,
+      plan: currentUser?.plan || 'free',
+      leadSource: 'qr_guest'
     };
+
+    // Keep lead registered in community directory for post-match recaps
+    communityService.addPlayer(newPlayer);
 
     const success = await matchSyncService.joinSlot(room.id, selectedSlotKey, newPlayer);
     setIsSubmitting(false);
@@ -328,6 +340,57 @@ export const MatchParticipantJoinView: React.FC<Props> = ({
                   placeholder="Ej: Fernando Belasteguín"
                   style={inputStyle}
                 />
+              </div>
+
+              {/* WhatsApp Phone for match stats & card recap */}
+              <div style={{ marginBottom: '14px' }}>
+                <label style={labelStyle}>
+                  <Phone size={13} color="var(--team1-primary)" style={{ display: 'inline', marginRight: '5px' }} />
+                  Tu WhatsApp (Para recibir tu tarjeta de estadísticas al terminar)
+                </label>
+                <input
+                  type="tel"
+                  value={phone}
+                  onChange={e => setPhone(e.target.value)}
+                  placeholder="+56 9 1234 5678"
+                  style={inputStyle}
+                  autoComplete="tel"
+                />
+                <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)', marginTop: '4px', display: 'block' }}>
+                  📲 Te enviaremos tu ficha con el resultado, Puntos de Oro y estadísticas del partido
+                </span>
+              </div>
+
+              {/* Dominant Hand */}
+              <div style={{ marginBottom: '14px' }}>
+                <label style={labelStyle}>
+                  <Hand size={13} color="var(--gold-primary)" style={{ display: 'inline', marginRight: '5px' }} />
+                  Mano Hábil
+                </label>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                  {[
+                    { id: 'diestro', label: '🎾 Diestro' },
+                    { id: 'zurdo', label: '⭐ Zurdo (Pareja Oro)' }
+                  ].map(h => (
+                    <button
+                      key={h.id}
+                      type="button"
+                      onClick={() => setDominantHand(h.id as DominantHand)}
+                      style={{
+                        padding: '8px 4px',
+                        borderRadius: '8px',
+                        fontSize: '0.78rem',
+                        fontWeight: 800,
+                        textAlign: 'center',
+                        background: dominantHand === h.id ? 'rgba(0, 230, 118, 0.15)' : 'var(--bg-elevated)',
+                        color: dominantHand === h.id ? 'var(--team1-primary)' : 'var(--text-muted)',
+                        border: '1px solid ' + (dominantHand === h.id ? 'var(--team1-primary)' : 'var(--border-subtle)')
+                      }}
+                    >
+                      {h.label}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               {/* Category */}

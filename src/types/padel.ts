@@ -6,6 +6,10 @@ export type SuperTieBreakTarget = 10 | 12 | 13;
 
 export type PlayerCategory = '1ra' | '2da' | '3ra' | '4ta' | '5ta' | '6ta' | '7ma' | 'Iniciación';
 
+export type DominantHand = 'diestro' | 'zurdo';
+export type UserPlan = 'free' | 'pro_founder' | 'captain' | 'club';
+export type TimeOfDay = 'day' | 'night'; // ☀️ Luz Natural vs 🌙 Luz Artificial
+
 export interface Player {
   id: string;
   name: string;
@@ -15,6 +19,9 @@ export interface Player {
   category?: PlayerCategory;
   phone?: string;
   email?: string;
+  dominantHand?: DominantHand;
+  city?: string;
+  club?: string;
 }
 
 export interface CommunityPlayer {
@@ -29,6 +36,26 @@ export interface CommunityPlayer {
   matchesWon: number;
   winStreak: number;
   favoritePosition: 'drive' | 'reves' | 'ambas';
+  dominantHand?: DominantHand;
+  city?: string;
+  club?: string;
+  plan?: UserPlan;
+  leadSource?: 'direct_registration' | 'qr_guest';
+  registeredAt?: number;
+  
+  // Analítica de Rendimiento Situacional
+  dayMatchesPlayed?: number; // Partidos con Luz Natural (08:00 - 18:30)
+  dayMatchesWon?: number;
+  nightMatchesPlayed?: number; // Partidos con Luz Artificial (18:30 en adelante)
+  nightMatchesWon?: number;
+  goldenPointsPlayed?: number; // Puntos de Oro disputados
+  goldenPointsWon?: number;   // Puntos de Oro ganados (Factor Clutch)
+  tieBreaksPlayed?: number;
+  tieBreaksWon?: number;
+  
+  // Algoritmo de Sinergia y Rivalidad
+  bestPartner?: { name: string; winRate: number; matchesTogether: number };
+  nemesis?: { name: string; lossRate: number; matchesAgainst: number };
 }
 
 export interface Team {
@@ -113,6 +140,10 @@ export interface MatchRecord {
   winner: 'team1' | 'team2' | 'none';
   eloDelta: number;
   status?: 'completed' | 'unfinished' | 'retired';
+  timeOfDay?: TimeOfDay;
+  goldenPointsCount?: number;
+  tieBreaksCount?: number;
+  durationSeconds?: number;
 }
 
 export interface HeadToHeadStats {
