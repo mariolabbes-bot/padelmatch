@@ -1,0 +1,419 @@
+import React, { useState } from 'react';
+import type { MatchRules } from '../types/padel';
+import type { UserSession } from '../services/authService';
+import { communityService } from '../services/communityService';
+import { 
+  Trophy, 
+  Watch, 
+  LogOut, 
+  ChevronRight, 
+  Flame
+} from 'lucide-react';
+
+interface Props {
+  user: UserSession;
+  rules: MatchRules;
+  onUpdateRules: (newRules: MatchRules) => void;
+  onProceedToLobby: () => void;
+  onOpenCommunity: () => void;
+  onOpenBluetoothModal: () => void;
+  onLogout: () => void;
+}
+
+export const HostDashboardView: React.FC<Props> = ({
+  user,
+  rules,
+  onUpdateRules,
+  onProceedToLobby,
+  onOpenCommunity,
+  onOpenBluetoothModal,
+  onLogout
+}) => {
+  const [courtName, setCourtName] = useState(rules.courtName || 'Pista Central - Club Padel');
+  const [format, setFormat] = useState(rules.format);
+  const [gameRule, setGameRule] = useState(rules.gameRule);
+  const [thirdSetRule, setThirdSetRule] = useState(rules.thirdSetRule);
+
+  // Retrieve player stats
+  const player = communityService.searchPlayer(user.name).find(p => p.id === user.id);
+
+  const handleStartMatchSetup = (e: React.FormEvent) => {
+    e.preventDefault();
+    onUpdateRules({
+      ...rules,
+      courtName,
+      format,
+      gameRule,
+      thirdSetRule,
+      superTieBreakTarget: 10
+    });
+    onProceedToLobby();
+  };
+
+  return (
+    <div style={containerStyle}>
+      {/* Top Bar */}
+      <header style={topBarStyle}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div className="pulsing-dot" style={{ color: 'var(--team1-primary)' }} />
+          <span style={{ fontWeight: 900, letterSpacing: '-0.02em', fontSize: '1.1rem' }}>
+            PADEL<span style={{ color: 'var(--team1-primary)' }}>MATCH</span>
+          </span>
+        </div>
+
+        <button onClick={onLogout} style={logoutBtnStyle} title="Cerrar sesión">
+          <LogOut size={16} />
+          <span>Salir</span>
+        </button>
+      </header>
+
+      <div style={mainGridStyle}>
+        {/* Left Column: User Profile & Stats */}
+        <div style={profileCardStyle} className="glass-panel">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '16px' }}>
+            <div style={avatarStyle}>
+              {user.name.charAt(0).toUpperCase()}
+            </div>
+            <div>
+              <div style={{ fontSize: '0.8rem', color: 'var(--text-dim)', textTransform: 'uppercase' }}>
+                Bienvenido a la Cancha
+              </div>
+              <h2 style={{ fontSize: '1.3rem', fontWeight: 800 }}>{user.name}</h2>
+              <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+                <span className="badge badge-team1" style={{ fontSize: '0.7rem' }}>
+                  {user.category} Cat
+                </span>
+                <span className="badge badge-gold" style={{ fontSize: '0.7rem' }}>
+                  ELO {player?.elo || user.elo}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Quick Metrics */}
+          <div style={metricsGridStyle}>
+            <div style={metricItemStyle}>
+              <div style={metricNumStyle}>{player?.matchesPlayed || 0}</div>
+              <div style={metricLabelStyle}>Partidos</div>
+            </div>
+            <div style={metricItemStyle}>
+              <div style={{ ...metricNumStyle, color: 'var(--team1-primary)' }}>
+                {player?.matchesWon || 0}
+              </div>
+              <div style={metricLabelStyle}>Victorias</div>
+            </div>
+            <div style={metricItemStyle}>
+              <div style={{ ...metricNumStyle, color: 'var(--gold-primary)' }}>
+                {player?.winStreak || 0}
+              </div>
+              <div style={metricLabelStyle}>Racha</div>
+            </div>
+          </div>
+
+          {/* Quick Links */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '16px' }}>
+            <button onClick={onOpenCommunity} style={secondaryLinkBtnStyle}>
+              <Trophy size={16} color="var(--gold-primary)" />
+              <span>Ver Ranking ELO de la Comunidad</span>
+              <ChevronRight size={16} style={{ marginLeft: 'auto' }} />
+            </button>
+            <button onClick={onOpenBluetoothModal} style={secondaryLinkBtnStyle}>
+              <Watch size={16} color="var(--team1-primary)" />
+              <span>Configurar Apple Watch & Pulsadores</span>
+              <ChevronRight size={16} style={{ marginLeft: 'auto' }} />
+            </button>
+          </div>
+        </div>
+
+        {/* Right Column: Create New Match & Parameters */}
+        <div style={matchSetupCardStyle} className="glass-panel">
+          <div style={{ marginBottom: '20px' }}>
+            <span className="badge badge-team1" style={{ marginBottom: '8px' }}>
+              <Flame size={12} />
+              PASO 1 DE 3
+            </span>
+            <h2 style={{ fontSize: '1.4rem', fontWeight: 800 }}>Configuración de Partido</h2>
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '4px' }}>
+              Define las reglas y genera el código QR para sumar a los otros 3 jugadores
+            </p>
+          </div>
+
+          <form onSubmit={handleStartMatchSetup} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            {/* Court Name */}
+            <div>
+              <label style={labelStyle}>Nombre de Cancha o Club</label>
+              <input
+                type="text"
+                required
+                value={courtName}
+                onChange={e => setCourtName(e.target.value)}
+                placeholder="Ej: Cancha Central, Club Deportivo..."
+                style={inputStyle}
+              />
+            </div>
+
+            {/* Match Format */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '10px' }}>
+              <div>
+                <label style={labelStyle}>Formato de Partido</label>
+                <div style={radioGroupStyle}>
+                  <button
+                    type="button"
+                    onClick={() => setFormat('best_of_3')}
+                    style={{
+                      ...radioBtnStyle,
+                      background: format === 'best_of_3' ? 'var(--team1-dark)' : 'var(--bg-elevated)',
+                      borderColor: format === 'best_of_3' ? 'var(--team1-primary)' : 'var(--border-subtle)',
+                      color: format === 'best_of_3' ? 'var(--team1-primary)' : 'var(--text-muted)'
+                    }}
+                  >
+                    Mejor de 3 Sets
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFormat('single_set')}
+                    style={{
+                      ...radioBtnStyle,
+                      background: format === 'single_set' ? 'var(--team1-dark)' : 'var(--bg-elevated)',
+                      borderColor: format === 'single_set' ? 'var(--team1-primary)' : 'var(--border-subtle)',
+                      color: format === 'single_set' ? 'var(--team1-primary)' : 'var(--text-muted)'
+                    }}
+                  >
+                    1 Set Pro (a 9)
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label style={labelStyle}>Regla en 40-40</label>
+                <div style={radioGroupStyle}>
+                  <button
+                    type="button"
+                    onClick={() => setGameRule('golden_point')}
+                    style={{
+                      ...radioBtnStyle,
+                      background: gameRule === 'golden_point' ? 'rgba(255, 214, 0, 0.15)' : 'var(--bg-elevated)',
+                      borderColor: gameRule === 'golden_point' ? 'var(--gold-primary)' : 'var(--border-subtle)',
+                      color: gameRule === 'golden_point' ? 'var(--gold-primary)' : 'var(--text-muted)'
+                    }}
+                  >
+                    Punto de Oro (No-Ad)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setGameRule('advantage')}
+                    style={{
+                      ...radioBtnStyle,
+                      background: gameRule === 'advantage' ? 'var(--team2-dark)' : 'var(--bg-elevated)',
+                      borderColor: gameRule === 'advantage' ? 'var(--team2-primary)' : 'var(--border-subtle)',
+                      color: gameRule === 'advantage' ? 'var(--team2-primary)' : 'var(--text-muted)'
+                    }}
+                  >
+                    Ventajas (Deuce)
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Tie-break rule */}
+            {format === 'best_of_3' && (
+              <div>
+                <label style={labelStyle}>Desempate en 3er Set</label>
+                <div style={radioGroupStyle}>
+                  <button
+                    type="button"
+                    onClick={() => setThirdSetRule('super_tiebreak')}
+                    style={{
+                      ...radioBtnStyle,
+                      background: thirdSetRule === 'super_tiebreak' ? 'var(--team1-dark)' : 'var(--bg-elevated)',
+                      borderColor: thirdSetRule === 'super_tiebreak' ? 'var(--team1-primary)' : 'var(--border-subtle)',
+                      color: thirdSetRule === 'super_tiebreak' ? 'var(--team1-primary)' : 'var(--text-muted)'
+                    }}
+                  >
+                    Súper Tie-break (a 10 puntos)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setThirdSetRule('full_set')}
+                    style={{
+                      ...radioBtnStyle,
+                      background: thirdSetRule === 'full_set' ? 'var(--bg-card)' : 'var(--bg-elevated)',
+                      borderColor: thirdSetRule === 'full_set' ? 'var(--border-medium)' : 'var(--border-subtle)',
+                      color: thirdSetRule === 'full_set' ? '#fff' : 'var(--text-muted)'
+                    }}
+                  >
+                    Set Completo a 6 juegos
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* CTA Button */}
+            <button type="submit" style={primaryActionBtnStyle}>
+              <span>Generar Código QR y Sala de Espera</span>
+              <ChevronRight size={20} />
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Styles
+const containerStyle: React.CSSProperties = {
+  minHeight: '100dvh',
+  padding: 'clamp(14px, 3vw, 28px)',
+  background: 'var(--bg-deep)',
+  color: 'var(--text-main)',
+  boxSizing: 'border-box'
+};
+
+const topBarStyle: React.CSSProperties = {
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  marginBottom: '20px',
+  paddingBottom: '12px',
+  borderBottom: '1px solid var(--border-subtle)'
+};
+
+const logoutBtnStyle: React.CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '6px',
+  padding: '6px 12px',
+  background: 'rgba(255, 61, 113, 0.1)',
+  border: '1px solid rgba(255, 61, 113, 0.3)',
+  borderRadius: 'var(--radius-sm)',
+  color: 'var(--danger-primary)',
+  fontSize: '0.8rem',
+  fontWeight: 700
+};
+
+const mainGridStyle: React.CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+  gap: '20px',
+  maxWidth: '1000px',
+  margin: '0 auto'
+};
+
+const profileCardStyle: React.CSSProperties = {
+  padding: '24px',
+  borderRadius: 'var(--radius-lg)'
+};
+
+const avatarStyle: React.CSSProperties = {
+  width: '52px',
+  height: '52px',
+  borderRadius: '50%',
+  background: 'var(--team1-gradient)',
+  color: '#070a10',
+  fontWeight: 900,
+  fontSize: '1.4rem',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  boxShadow: '0 0 20px var(--team1-glow)'
+};
+
+const metricsGridStyle: React.CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(3, 1fr)',
+  gap: '10px',
+  padding: '14px',
+  background: 'var(--bg-elevated)',
+  borderRadius: 'var(--radius-md)',
+  textAlign: 'center'
+};
+
+const metricItemStyle: React.CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center'
+};
+
+const metricNumStyle: React.CSSProperties = {
+  fontSize: '1.4rem',
+  fontWeight: 900,
+  fontFamily: 'var(--font-mono)'
+};
+
+const metricLabelStyle: React.CSSProperties = {
+  fontSize: '0.7rem',
+  color: 'var(--text-muted)',
+  textTransform: 'uppercase',
+  marginTop: '2px'
+};
+
+const secondaryLinkBtnStyle: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: '10px',
+  padding: '12px 14px',
+  background: 'var(--bg-elevated)',
+  borderRadius: 'var(--radius-md)',
+  border: '1px solid var(--border-subtle)',
+  color: '#fff',
+  fontSize: '0.85rem',
+  fontWeight: 600,
+  textAlign: 'left'
+};
+
+const matchSetupCardStyle: React.CSSProperties = {
+  padding: '24px',
+  borderRadius: 'var(--radius-lg)'
+};
+
+const labelStyle: React.CSSProperties = {
+  display: 'block',
+  fontSize: '0.8rem',
+  fontWeight: 700,
+  color: 'var(--text-muted)',
+  marginBottom: '6px'
+};
+
+const inputStyle: React.CSSProperties = {
+  width: '100%',
+  padding: '12px 14px',
+  background: 'var(--bg-elevated)',
+  border: '1px solid var(--border-medium)',
+  borderRadius: 'var(--radius-md)',
+  color: '#fff',
+  fontSize: '0.95rem',
+  outline: 'none'
+};
+
+const radioGroupStyle: React.CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: '1fr',
+  gap: '6px'
+};
+
+const radioBtnStyle: React.CSSProperties = {
+  padding: '10px 12px',
+  borderRadius: 'var(--radius-sm)',
+  border: '1px solid',
+  fontSize: '0.85rem',
+  fontWeight: 700,
+  textAlign: 'left',
+  cursor: 'pointer',
+  transition: 'all var(--transition-fast)'
+};
+
+const primaryActionBtnStyle: React.CSSProperties = {
+  width: '100%',
+  padding: '16px',
+  background: 'var(--team1-gradient)',
+  color: '#070a10',
+  borderRadius: 'var(--radius-md)',
+  fontWeight: 900,
+  fontSize: '1rem',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: '8px',
+  marginTop: '10px',
+  boxShadow: '0 4px 20px var(--team1-glow)'
+};

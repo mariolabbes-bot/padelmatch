@@ -4,7 +4,7 @@ export type TieBreakRule = 'standard' | 'long_set'; // A 7 puntos vs diferencia 
 export type ThirdSetRule = 'full_set' | 'super_tiebreak'; // Set completo vs Super Tie-break
 export type SuperTieBreakTarget = 10 | 12 | 13;
 
-export type PlayerCategory = '1ra' | '2da' | '3ra' | '4ta' | '5ta' | '6ta' | 'Iniciación';
+export type PlayerCategory = '1ra' | '2da' | '3ra' | '4ta' | '5ta' | '6ta' | '7ma' | 'Iniciación';
 
 export interface Player {
   id: string;
@@ -117,4 +117,11 @@ export interface HeadToHeadStats {
   recentResults: { date: number; winner: 'team1' | 'team2'; score: string }[];
 }
 
-export type AppViewMode = 'scoreboard' | 'court_enrollment' | 'community' | 'court_tv';
+export type AppViewMode = 
+  | 'auth' 
+  | 'host_dashboard' 
+  | 'lobby_qr' 
+  | 'court_enrollment' 
+  | 'scoreboard' 
+  | 'community' 
+  | 'court_tv';

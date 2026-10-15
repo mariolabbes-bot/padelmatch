@@ -133,6 +133,31 @@ export const BluetoothCalibrationModal: React.FC<Props> = ({
               );
             })}
           </div>
+
+          {/* Special Apple Watch Series 1 - Ultra Callout */}
+          <div style={{
+            marginTop: '12px',
+            padding: '12px 14px',
+            background: 'rgba(0, 176, 255, 0.08)',
+            border: '1px solid rgba(0, 176, 255, 0.3)',
+            borderRadius: 'var(--radius-md)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '6px'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '1.2rem' }}>⌚</span>
+              <span style={{ fontWeight: 800, fontSize: '0.9rem', color: 'var(--team2-primary)' }}>
+                ¿Cómo conectar Apple Watch (Serie 1 a Ultra) y Wear OS?
+              </span>
+            </div>
+            <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: 1.4 }}>
+              <strong>1.</strong> Activa el botón <strong>WATCH</strong> en la barra superior del marcador (inicia audio silencioso para mantener activo Safari en segundo plano).<br />
+              <strong>2.</strong> En tu Apple Watch, abre la aplicación nativa <strong>"En Reproducción"</strong>.<br />
+              <strong>3.</strong> Pulsa <strong>[⏮]</strong> para punto Pareja 1, <strong>[⏭]</strong> para punto Pareja 2 y <strong>[⏯]</strong> para Deshacer.<br />
+              <em>Nota técnica: watchOS no soporta emulación de teclado Bluetooth HID directo, por lo que el estándar universal oficial de Apple es Media Session.</em>
+            </p>
+          </div>
         </div>
 
         {/* Live Hardware Listener Test Bench */}
