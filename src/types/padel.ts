@@ -130,4 +130,5 @@ export type AppViewMode =
   | 'court_enrollment' 
   | 'scoreboard' 
   | 'community' 
-  | 'court_tv';
+  | 'court_tv'
+  | 'participant_join';

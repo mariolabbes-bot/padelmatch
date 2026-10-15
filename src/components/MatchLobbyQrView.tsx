@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { MatchRules, CommunityPlayer } from '../types/padel';
 import { communityService } from '../services/communityService';
 import type { UserSession } from '../services/authService';
+import { matchSyncService } from '../services/matchSyncService';
 import { 
   QrCode, 
   Users, 
@@ -43,6 +44,68 @@ export const MatchLobbyQrView: React.FC<Props> = ({
   const [copiedLink, setCopiedLink] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
+  // Real-time synchronization with Firestore
+  useEffect(() => {
+    const p1 = slot1;
+    // 1. Create or sync room document so guest phones scanning the QR can connect
+    matchSyncService.createOrUpdateMatchRoom({
+      id: matchId,
+      hostId: hostUser.id,
+      hostName: hostUser.name,
+      courtName: rules.courtName || 'Pista Central',
+      rules,
+      status: 'lobby',
+      slots: {
+        slot1: p1,
+        slot2,
+        slot3,
+        slot4
+      },
+      teams: {
+        team1: {
+          id: 'team1',
+          name: 'Pareja 1',
+          color: '#00e676',
+          player1: { id: p1.id, name: p1.name, position: 'drive', elo: p1.elo },
+          player2: { id: 'p2', name: 'Jugador 2', position: 'reves', elo: 1200 }
+        },
+        team2: {
+          id: 'team2',
+          name: 'Pareja 2',
+          color: '#00b0ff',
+          player1: { id: 'p3', name: 'Jugador 3', position: 'drive', elo: 1200 },
+          player2: { id: 'p4', name: 'Jugador 4', position: 'reves', elo: 1200 }
+        }
+      },
+      scoreState: {
+        sets: [{ team1: 0, team2: 0 }],
+        currentSetIndex: 0,
+        currentGame: { team1: '0', team2: '0' },
+        isTieBreak: false,
+        isSuperTieBreak: false,
+        servingTeam: 'team1',
+        servingPlayer: 1,
+        sideChangeNeeded: false,
+        isMatchOver: false,
+        lastEventAnnouncement: 'Listo para jugar'
+      },
+      createdAt: Date.now(),
+      updatedAt: Date.now()
+    });
+
+    // 2. Listen to guest enrollments in real time
+    const unsubscribe = matchSyncService.subscribeMatchRoom(matchId, (room) => {
+      if (!room) return;
+      if (room.slots) {
+        if (room.slots.slot2 !== undefined) setSlot2(room.slots.slot2);
+        if (room.slots.slot3 !== undefined) setSlot3(room.slots.slot3);
+        if (room.slots.slot4 !== undefined) setSlot4(room.slots.slot4);
+      }
+    });
+
+    return () => unsubscribe();
+  }, [matchId, hostUser.id, hostUser.name, rules]);
+
   // Available real players from roster (excluding already picked)
   const pickedIds = [slot1?.id, slot2?.id, slot3?.id, slot4?.id].filter(Boolean);
   const availablePlayers = communityService.getPlayers().filter(p => 
@@ -64,12 +127,26 @@ export const MatchLobbyQrView: React.FC<Props> = ({
   };
 
   const handleSelectPlayer = (player: CommunityPlayer) => {
-    if (activeSlotTarget === 2) setSlot2(player);
-    else if (activeSlotTarget === 3) setSlot3(player);
-    else if (activeSlotTarget === 4) setSlot4(player);
+    if (activeSlotTarget === 2) {
+      setSlot2(player);
+      matchSyncService.joinSlot(matchId, 'slot2', player);
+    } else if (activeSlotTarget === 3) {
+      setSlot3(player);
+      matchSyncService.joinSlot(matchId, 'slot3', player);
+    } else if (activeSlotTarget === 4) {
+      setSlot4(player);
+      matchSyncService.joinSlot(matchId, 'slot4', player);
+    }
     setActiveSlotTarget(null);
     setNewPlayerName('');
     setSearchQuery('');
+  };
+
+  const handleRemoveSlot = (slotKey: 'slot2' | 'slot3' | 'slot4') => {
+    if (slotKey === 'slot2') setSlot2(null);
+    if (slotKey === 'slot3') setSlot3(null);
+    if (slotKey === 'slot4') setSlot4(null);
+    matchSyncService.leaveSlot(matchId, slotKey);
   };
 
   const handleCreateAndAssignPlayer = (e: React.FormEvent) => {
@@ -89,6 +166,7 @@ export const MatchLobbyQrView: React.FC<Props> = ({
 
   const handleProceed = () => {
     if (allPlayersReady) {
+      matchSyncService.updateMatchStatus(matchId, 'court_enrollment');
       onConfirmPlayers([slot1, slot2!, slot3!, slot4!]);
     }
   };
@@ -270,9 +348,9 @@ export const MatchLobbyQrView: React.FC<Props> = ({
           {/* Slots List */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             {renderSlotCard(1, slot1)}
-            {renderSlotCard(2, slot2, () => setSlot2(null), () => setActiveSlotTarget(2))}
-            {renderSlotCard(3, slot3, () => setSlot3(null), () => setActiveSlotTarget(3))}
-            {renderSlotCard(4, slot4, () => setSlot4(null), () => setActiveSlotTarget(4))}
+            {renderSlotCard(2, slot2, () => handleRemoveSlot('slot2'), () => setActiveSlotTarget(2))}
+            {renderSlotCard(3, slot3, () => handleRemoveSlot('slot3'), () => setActiveSlotTarget(3))}
+            {renderSlotCard(4, slot4, () => handleRemoveSlot('slot4'), () => setActiveSlotTarget(4))}
           </div>
 
           {/* CTA Button when 4 ready */}

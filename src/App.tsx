@@ -17,6 +17,8 @@ import { communityService } from './services/communityService';
 import { authService } from './services/authService';
 import type { UserSession } from './services/authService';
 import { smartwatchService } from './services/smartwatchService';
+import { matchSyncService } from './services/matchSyncService';
+import type { SyncedMatchRoom } from './services/matchSyncService';
 
 // Flow Views
 import { AuthScreen } from './components/AuthScreen';
@@ -24,6 +26,7 @@ import { HostDashboardView } from './components/HostDashboardView';
 import { MatchLobbyQrView } from './components/MatchLobbyQrView';
 import { CourtEnrollmentView } from './components/CourtEnrollmentView';
 import { Scoreboard } from './components/Scoreboard';
+import { MatchParticipantJoinView } from './components/MatchParticipantJoinView';
 import { CommunityDashboard } from './components/CommunityDashboard';
 import { CourtTvDisplay } from './components/CourtTvDisplay';
 
@@ -35,6 +38,12 @@ import { QrShareModal } from './components/QrShareModal';
 import { MatchVictoryModal } from './components/MatchVictoryModal';
 import { FinishMatchEarlyModal } from './components/FinishMatchEarlyModal';
 
+function parseMatchIdFromHash(): string | null {
+  if (typeof window === 'undefined') return null;
+  const match = window.location.hash.match(/match=([^&]+)/);
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
 export function App() {
   // 1. User Authentication Session
   const [currentUser, setCurrentUser] = useState<UserSession | null>(() => authService.getCurrentUser());
@@ -44,15 +53,66 @@ export function App() {
     return () => unsubscribe();
   }, []);
 
-  // 2. Active View Navigation
+  // 2. Match Identification & Host/Guest Differentiation
+  const [hostCreatedMatchId, setHostCreatedMatchId] = useState<string>(() => {
+    const hashId = parseMatchIdFromHash();
+    const saved = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('padel_created_match_id') : null;
+    if (hashId && hashId !== saved) {
+      return ''; // User scanned someone else's match QR code
+    }
+    if (saved) return saved;
+    const newId = 'PADEL-' + Math.random().toString(36).substring(2, 7).toUpperCase();
+    if (typeof sessionStorage !== 'undefined') {
+      sessionStorage.setItem('padel_created_match_id', newId);
+    }
+    return newId;
+  });
+
+  const [hashMatchId, setHashMatchId] = useState<string | null>(parseMatchIdFromHash);
+  const activeMatchId = hashMatchId || hostCreatedMatchId;
+
+  // Synced Room State from Firestore
+  const [syncedRoom, setSyncedRoom] = useState<SyncedMatchRoom | null>(null);
+  const [isLoadingRoom, setIsLoadingRoom] = useState<boolean>(() => !!parseMatchIdFromHash());
+
+  // Determine whether this client is the host or an invited participant
+  const isHost = !hashMatchId || 
+                 hashMatchId === hostCreatedMatchId || 
+                 (!!syncedRoom && !!currentUser && syncedRoom.hostId === currentUser.id);
+
+  // 3. Active View Navigation
   const [currentView, setCurrentView] = useState<AppViewMode>(() => {
-    if (typeof window !== 'undefined' && window.location.hash.includes('match=')) {
-      return 'lobby_qr';
+    const hash = typeof window !== 'undefined' ? window.location.hash : '';
+    if (hash.includes('match=')) {
+      const hId = parseMatchIdFromHash();
+      const saved = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('padel_created_match_id') : null;
+      if (hId && hId === saved) {
+        return 'lobby_qr';
+      }
+      return 'participant_join';
     }
     return authService.isAuthenticated() ? 'host_dashboard' : 'auth';
   });
 
-  // 3. Match Rules & Configuration
+  // Listen to hash changes (e.g. scanning QR code while app tab is open)
+  useEffect(() => {
+    const handleHashChange = () => {
+      const newHashId = parseMatchIdFromHash();
+      setHashMatchId(newHashId);
+      if (newHashId) {
+        const saved = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('padel_created_match_id') : null;
+        if (newHashId !== saved) {
+          setCurrentView('participant_join');
+          setIsLoadingRoom(true);
+        }
+      }
+    };
+
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
+
+  // 4. Match Rules & Configuration
   const [rules, setRules] = useState<MatchRules>({
     format: 'best_of_3',
     gameRule: 'golden_point',
@@ -62,7 +122,7 @@ export function App() {
     courtName: 'Pista Central - Club Padel Pro'
   });
 
-  // 4. Teams & Players
+  // 5. Teams & Players
   const [teams, setTeams] = useState<{ team1: Team; team2: Team }>({
     team1: {
       id: 'team1',
@@ -79,9 +139,6 @@ export function App() {
       player2: { id: 'p4', name: 'Jugador 4', position: 'reves', elo: 1200 }
     }
   });
-
-  // 5. Match ID
-  const [matchId] = useState(() => 'PADEL-' + Math.random().toString(36).substring(2, 7).toUpperCase());
 
   // 6. Score State & Undo History
   const [state, setState] = useState<MatchScoreState>(() => createInitialMatchState(rules));
@@ -108,6 +165,40 @@ export function App() {
   const [isAudioSpeaking, setIsAudioSpeaking] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isSmartwatchActive, setIsSmartwatchActive] = useState(false);
+
+  // Real-time synchronization of match room
+  useEffect(() => {
+    if (!activeMatchId) return;
+
+    const unsubscribe = matchSyncService.subscribeMatchRoom(activeMatchId, (room) => {
+      setSyncedRoom(room);
+      setIsLoadingRoom(false);
+
+      if (!room) return;
+
+      // For participants (invited devices), automatically follow host updates
+      if (!isHost) {
+        if (room.rules) {
+          setRules(room.rules);
+        }
+        if (room.teams) {
+          setTeams(room.teams);
+        }
+        if (room.scoreState) {
+          setState(room.scoreState);
+        }
+
+        // Automatic transitions
+        if (room.status === 'scoreboard') {
+          setCurrentView(prev => prev !== 'scoreboard' ? 'scoreboard' : prev);
+        } else if (room.status === 'lobby' && currentView !== 'scoreboard') {
+          setCurrentView(prev => prev !== 'participant_join' ? 'participant_join' : prev);
+        }
+      }
+    });
+
+    return () => unsubscribe();
+  }, [activeMatchId, isHost, currentView]);
 
   // Subscribe to speech synthesis state
   useEffect(() => {
@@ -168,12 +259,16 @@ export function App() {
         if (nextRemaining <= 0) {
           const serverTeamName = teams[s.servingTeam].name;
           ttsService.speak(`Tiempo cumplido. A jugar. Al saque ${serverTeamName}.`, ttsSettings);
-          return {
+          const nextState = {
             ...s,
             isResting: false,
             restSecondsRemaining: 0,
             sideChangeNeeded: false
           };
+          if (isHost && activeMatchId) {
+            matchSyncService.updateMatchScore(activeMatchId, nextState);
+          }
+          return nextState;
         }
         return {
           ...s,
@@ -183,7 +278,7 @@ export function App() {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [state.isResting, state.isPaused, state.isMatchOver, teams, ttsSettings]);
+  }, [state.isResting, state.isPaused, state.isMatchOver, teams, ttsSettings, isHost, activeMatchId]);
 
   // Handle Match Over & Save to Community History
   useEffect(() => {
@@ -208,15 +303,21 @@ export function App() {
   // Skip Rest immediately (from phone button or Apple Watch button)
   const handleSkipRest = useCallback(() => {
     ttsService.unlockAudioContext();
-    setState(s => ({
-      ...s,
-      isResting: false,
-      restSecondsRemaining: 0,
-      sideChangeNeeded: false
-    }));
+    setState(s => {
+      const next = {
+        ...s,
+        isResting: false,
+        restSecondsRemaining: 0,
+        sideChangeNeeded: false
+      };
+      if (activeMatchId) {
+        matchSyncService.updateMatchScore(activeMatchId, next);
+      }
+      return next;
+    });
     const serverTeamName = teams[state.servingTeam].name;
     ttsService.speak(`A jugar. Al saque ${serverTeamName}.`, ttsSettings);
-  }, [teams, state.servingTeam, ttsSettings]);
+  }, [teams, state.servingTeam, ttsSettings, activeMatchId]);
 
   // Toggle Pause match
   const handleTogglePause = useCallback(() => {
@@ -229,12 +330,16 @@ export function App() {
         const serverTeamName = teams[s.servingTeam].name;
         ttsService.speak(`Partido reanudado. Al saque ${serverTeamName}.`, ttsSettings);
       }
-      return {
+      const next = {
         ...s,
         isPaused: willBePaused
       };
+      if (activeMatchId) {
+        matchSyncService.updateMatchScore(activeMatchId, next);
+      }
+      return next;
     });
-  }, [teams, ttsSettings]);
+  }, [teams, ttsSettings, activeMatchId]);
 
   // Finish match early with custom status (e.g. unfinished, time expired, retired)
   const handleConfirmEarlyFinish = useCallback((params: {
@@ -245,14 +350,20 @@ export function App() {
     ttsService.unlockAudioContext();
     setIsFinishEarlyModalOpen(false);
 
-    setState(s => ({
-      ...s,
+    const finalState: MatchScoreState = {
+      ...state,
       isMatchOver: true,
       winner: params.winner === 'none' ? undefined : params.winner,
       isResting: false,
       isPaused: false,
       lastEventAnnouncement: params.reasonText
-    }));
+    };
+
+    setState(finalState);
+    if (activeMatchId) {
+      matchSyncService.updateMatchStatus(activeMatchId, 'completed');
+      matchSyncService.updateMatchScore(activeMatchId, finalState);
+    }
 
     communityService.saveMatchResult(
       rules.courtName || 'Cancha Central',
@@ -268,7 +379,7 @@ export function App() {
 
     ttsService.speak(params.reasonText, ttsSettings);
     setIsVictoryModalOpen(true);
-  }, [rules.courtName, teams, state.sets, ttsSettings]);
+  }, [rules.courtName, teams, state, ttsSettings, activeMatchId]);
 
   // Core Scoring Callback
   const handleScore = useCallback((scoringTeam: 'team1' | 'team2') => {
@@ -300,9 +411,13 @@ export function App() {
         ttsService.speak(result.announcement, ttsSettings);
       }
 
+      if (activeMatchId) {
+        matchSyncService.updateMatchScore(activeMatchId, result.nextState);
+      }
+
       return result.nextState;
     });
-  }, [state.isPaused, state.isResting, handleSkipRest, rules, teams, ttsSettings]);
+  }, [state.isPaused, state.isResting, handleSkipRest, rules, teams, ttsSettings, activeMatchId]);
 
   // Undo Callback
   const handleUndo = useCallback(() => {
@@ -316,9 +431,13 @@ export function App() {
     setHistory(prev => prev.slice(0, prev.length - 1));
     setState(lastSnapshot.state);
 
+    if (activeMatchId) {
+      matchSyncService.updateMatchScore(activeMatchId, lastSnapshot.state);
+    }
+
     const undoMsg = 'Punto deshecho. Marcador corregido.';
     ttsService.speak(undoMsg, ttsSettings);
-  }, [history, ttsSettings]);
+  }, [history, ttsSettings, activeMatchId]);
 
   // Repeat Score Announcement
   const handleRepeatAnnouncement = useCallback(() => {
@@ -332,12 +451,10 @@ export function App() {
   // Connect Smartwatch Commands
   useEffect(() => {
     const unsubscribe = smartwatchService.subscribeCommand(cmd => {
-      // If resting on side change: any interaction skips rest and starts next game!
       if (state.isResting) {
         handleSkipRest();
         return;
       }
-      // If paused: any interaction resumes match
       if (state.isPaused) {
         handleTogglePause();
         return;
@@ -410,11 +527,21 @@ export function App() {
   // Flow Step 1: User logs in or registers
   const handleUserAuthenticated = (user: UserSession) => {
     setCurrentUser(user);
-    setCurrentView('host_dashboard');
+    if (!hashMatchId) {
+      setCurrentView('host_dashboard');
+    }
   };
 
   // Flow Step 2: Host confirms match parameters and goes to QR Lobby
   const handleProceedToLobby = () => {
+    let mId = hostCreatedMatchId;
+    if (!mId) {
+      mId = 'PADEL-' + Math.random().toString(36).substring(2, 7).toUpperCase();
+      setHostCreatedMatchId(mId);
+      if (typeof sessionStorage !== 'undefined') {
+        sessionStorage.setItem('padel_created_match_id', mId);
+      }
+    }
     setCurrentView('lobby_qr');
   };
 
@@ -440,15 +567,24 @@ export function App() {
     };
 
     setTeams(newTeams);
+    if (activeMatchId) {
+      matchSyncService.updateMatchStatus(activeMatchId, 'court_enrollment', newTeams);
+    }
     setCurrentView('court_enrollment');
   };
 
   // Flow Step 4: Court alignment confirmed -> Start live match!
   const handleStartMatchFromCourt = () => {
-    setState(createInitialMatchState(rules));
+    const initialState = createInitialMatchState(rules);
+    setState(initialState);
     setHistory([]);
     setIsVictoryModalOpen(false);
     setCurrentView('scoreboard');
+
+    if (activeMatchId) {
+      matchSyncService.updateMatchStatus(activeMatchId, 'scoreboard', teams);
+      matchSyncService.updateMatchScore(activeMatchId, initialState);
+    }
 
     const startMsg = `Alineación confirmada. Inicia el partido. ${teams.team1.name} contra ${teams.team2.name}. ¡A jugar!`;
     ttsService.speak(startMsg, ttsSettings);
@@ -456,16 +592,24 @@ export function App() {
 
   // Rematch Handler
   const handleRematch = () => {
-    setState(createInitialMatchState(rules));
+    const rematchState = createInitialMatchState(rules);
+    setState(rematchState);
     setHistory([]);
     setIsVictoryModalOpen(false);
+    if (activeMatchId) {
+      matchSyncService.updateMatchScore(activeMatchId, rematchState);
+    }
     ttsService.speak('Comienza la revancha. ¡Al saque!', ttsSettings);
   };
 
   // Reset Score to 0-0
   const handleResetMatch = () => {
-    setState(createInitialMatchState(rules));
+    const resetState = createInitialMatchState(rules);
+    setState(resetState);
     setHistory([]);
+    if (activeMatchId) {
+      matchSyncService.updateMatchScore(activeMatchId, resetState);
+    }
     ttsService.speak('Marcador reiniciado a cero iguales.', ttsSettings);
   };
 
@@ -509,7 +653,7 @@ export function App() {
             elo: 1200,
             loggedInAt: Date.now()
           }}
-          matchId={matchId}
+          matchId={activeMatchId}
           onConfirmPlayers={handleConfirmLobbyPlayers}
           onBackToDashboard={() => setCurrentView(currentUser ? 'host_dashboard' : 'auth')}
         />
@@ -519,7 +663,12 @@ export function App() {
       {currentView === 'court_enrollment' && (
         <CourtEnrollmentView
           teams={teams}
-          onUpdateTeams={setTeams}
+          onUpdateTeams={(newTeams) => {
+            setTeams(newTeams);
+            if (activeMatchId) {
+              matchSyncService.updateMatchStatus(activeMatchId, 'court_enrollment', newTeams);
+            }
+          }}
           onProceedToScoreboard={handleStartMatchFromCourt}
           courtName={rules.courtName || 'Pista Central'}
         />
@@ -544,14 +693,80 @@ export function App() {
           onToggleFullscreen={toggleFullscreen}
           currentUser={currentUser}
           onResetMatch={handleResetMatch}
-          onNewMatch={() => setCurrentView('host_dashboard')}
+          onNewMatch={() => {
+            if (!isHost && typeof window !== 'undefined') {
+              window.location.hash = '';
+            }
+            setCurrentView(currentUser ? 'host_dashboard' : 'auth');
+          }}
           onLogout={handleLogout}
           isSmartwatchActive={isSmartwatchActive}
           onToggleSmartwatch={handleToggleSmartwatch}
           onSkipRest={handleSkipRest}
           onTogglePause={handleTogglePause}
           onOpenFinishEarlyModal={() => setIsFinishEarlyModalOpen(true)}
+          isGuestViewer={!isHost}
+          hostName={syncedRoom?.hostName}
         />
+      )}
+
+      {/* FLOW 6: Participant Join View for QR Scans */}
+      {currentView === 'participant_join' && (
+        syncedRoom ? (
+          <MatchParticipantJoinView
+            room={syncedRoom}
+            currentUser={currentUser}
+            onViewLiveScoreboard={() => setCurrentView('scoreboard')}
+            onLogout={handleLogout}
+            onExitRoom={() => {
+              if (typeof window !== 'undefined') {
+                window.location.hash = '';
+              }
+              setCurrentView(currentUser ? 'host_dashboard' : 'auth');
+            }}
+          />
+        ) : (
+          <div style={{
+            minHeight: '100dvh',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background: 'var(--bg-deep)',
+            color: '#fff',
+            padding: '24px',
+            textAlign: 'center'
+          }}>
+            {isLoadingRoom ? (
+              <>
+                <div className="pulsing-dot" style={{ width: '42px', height: '42px', color: 'var(--team1-primary)', marginBottom: '16px' }} />
+                <h2 style={{ fontSize: '1.25rem', fontWeight: 800 }}>Conectando a la Cancha...</h2>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginTop: '6px' }}>
+                  Sincronizando partido en tiempo real
+                </p>
+              </>
+            ) : (
+              <>
+                <h2 style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--danger-primary)', marginBottom: '8px' }}>
+                  Partido no encontrado
+                </h2>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', maxWidth: '360px', marginBottom: '20px' }}>
+                  El código del partido no existe o la sala ya ha sido cerrada por el anfitrión.
+                </p>
+                <button
+                  onClick={() => {
+                    if (typeof window !== 'undefined') window.location.hash = '';
+                    setCurrentView(currentUser ? 'host_dashboard' : 'auth');
+                  }}
+                  className="btn btn-primary"
+                  style={{ padding: '10px 20px', borderRadius: '10px' }}
+                >
+                  Ir al Inicio
+                </button>
+              </>
+            )}
+          </div>
+        )
       )}
 
       {/* VIEW: Community Leaderboard & ELO Rankings */}
@@ -596,9 +811,14 @@ export function App() {
         onStartMatch={(newRules, newTeams) => {
           setRules(newRules);
           setTeams(newTeams);
-          setState(createInitialMatchState(newRules));
+          const newInit = createInitialMatchState(newRules);
+          setState(newInit);
           setHistory([]);
           setIsSetupModalOpen(false);
+          if (activeMatchId) {
+            matchSyncService.updateMatchStatus(activeMatchId, 'scoreboard', newTeams);
+            matchSyncService.updateMatchScore(activeMatchId, newInit);
+          }
           setCurrentView('scoreboard');
         }}
       />
@@ -607,7 +827,7 @@ export function App() {
       <QrShareModal
         isOpen={isQrModalOpen}
         onClose={() => setIsQrModalOpen(false)}
-        matchId={matchId}
+        matchId={activeMatchId}
         courtName={rules.courtName || 'Pista Central'}
         team1Name={teams.team1.name}
         team2Name={teams.team2.name}

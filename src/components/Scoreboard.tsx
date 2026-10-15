@@ -42,6 +42,8 @@ interface Props {
   onSkipRest: () => void;
   onTogglePause: () => void;
   onOpenFinishEarlyModal: () => void;
+  isGuestViewer?: boolean;
+  hostName?: string;
 }
 
 export const Scoreboard: React.FC<Props> = ({
@@ -67,7 +69,9 @@ export const Scoreboard: React.FC<Props> = ({
   onToggleSmartwatch,
   onSkipRest,
   onTogglePause,
-  onOpenFinishEarlyModal
+  onOpenFinishEarlyModal,
+  isGuestViewer,
+  hostName
 }) => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
@@ -92,6 +96,11 @@ export const Scoreboard: React.FC<Props> = ({
 
         {/* Center: Court / Game Status */}
         <div style={centerStatusStyle}>
+          {isGuestViewer && (
+            <span style={{ ...courtMiniBadge, background: 'rgba(0, 176, 255, 0.15)', borderColor: 'var(--team2-primary)', color: 'var(--team2-primary)' }}>
+              👁️ EN VIVO
+            </span>
+          )}
           {isGoldenPointNow ? (
             <span style={goldenPointMiniBadge}>
               <Sparkles size={12} />
@@ -104,7 +113,7 @@ export const Scoreboard: React.FC<Props> = ({
             </span>
           ) : (
             <span style={courtMiniBadge}>
-              {rules.courtName || 'Cancha'}
+              {hostName ? `${hostName} • ${rules.courtName || 'Cancha'}` : (rules.courtName || 'Cancha')}
             </span>
           )}
         </div>
