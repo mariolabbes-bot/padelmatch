@@ -33,6 +33,7 @@ import { AudioSettingsModal } from './components/AudioSettingsModal';
 import { MatchSetupModal } from './components/MatchSetupModal';
 import { QrShareModal } from './components/QrShareModal';
 import { MatchVictoryModal } from './components/MatchVictoryModal';
+import { FinishMatchEarlyModal } from './components/FinishMatchEarlyModal';
 
 export function App() {
   // 1. User Authentication Session
@@ -92,6 +93,7 @@ export function App() {
   const [isSetupModalOpen, setIsSetupModalOpen] = useState(false);
   const [isQrModalOpen, setIsQrModalOpen] = useState(false);
   const [isVictoryModalOpen, setIsVictoryModalOpen] = useState(false);
+  const [isFinishEarlyModalOpen, setIsFinishEarlyModalOpen] = useState(false);
 
   // 8. Hardware & Audio State
   const [keyMapping, setKeyMapping] = useState<HardwareKeyMapping>(loadSavedKeyMapping);
@@ -127,7 +129,7 @@ export function App() {
     return () => unsubscribe();
   }, []);
 
-  // Update Apple Watch display whenever score changes
+  // Update Apple Watch display whenever score, rest or pause changes
   useEffect(() => {
     const curSet = state.sets[state.currentSetIndex] || { team1: 0, team2: 0 };
     smartwatchService.updateScoreDisplay({
@@ -140,9 +142,48 @@ export function App() {
       currentSetNum: state.currentSetIndex + 1,
       courtName: rules.courtName || 'PadelMatch',
       isGoldenPoint: !state.isTieBreak && rules.gameRule === 'golden_point' && state.currentGame.team1 === '40' && state.currentGame.team2 === '40',
-      isTieBreak: state.isTieBreak
+      isTieBreak: state.isTieBreak,
+      isResting: state.isResting,
+      restSecondsRemaining: state.restSecondsRemaining,
+      isPaused: state.isPaused,
+      servingTeamName: teams[state.servingTeam].name
     });
   }, [state, teams, rules]);
+
+  // Rest countdown timer (decrements every 1 second during side change rest)
+  useEffect(() => {
+    if (!state.isResting || state.isPaused || state.isMatchOver) return;
+
+    if ((state.restSecondsRemaining ?? 0) <= 0) {
+      setState(s => ({ ...s, isResting: false, restSecondsRemaining: 0 }));
+      const serverTeamName = teams[state.servingTeam].name;
+      ttsService.speak(`Tiempo cumplido. A jugar. Al saque ${serverTeamName}.`, ttsSettings);
+      return;
+    }
+
+    const timer = setInterval(() => {
+      setState(s => {
+        if (!s.isResting || s.isPaused) return s;
+        const nextRemaining = (s.restSecondsRemaining ?? 1) - 1;
+        if (nextRemaining <= 0) {
+          const serverTeamName = teams[s.servingTeam].name;
+          ttsService.speak(`Tiempo cumplido. A jugar. Al saque ${serverTeamName}.`, ttsSettings);
+          return {
+            ...s,
+            isResting: false,
+            restSecondsRemaining: 0,
+            sideChangeNeeded: false
+          };
+        }
+        return {
+          ...s,
+          restSecondsRemaining: nextRemaining
+        };
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [state.isResting, state.isPaused, state.isMatchOver, teams, ttsSettings]);
 
   // Handle Match Over & Save to Community History
   useEffect(() => {
@@ -158,14 +199,90 @@ export function App() {
         [teams.team2.player1.name, teams.team2.player2.name],
         state.sets,
         state.winner,
-        18 // ELO delta
+        18,
+        'completed'
       );
     }
   }, [state.isMatchOver, state.winner, rules.courtName, teams, state.sets]);
 
+  // Skip Rest immediately (from phone button or Apple Watch button)
+  const handleSkipRest = useCallback(() => {
+    ttsService.unlockAudioContext();
+    setState(s => ({
+      ...s,
+      isResting: false,
+      restSecondsRemaining: 0,
+      sideChangeNeeded: false
+    }));
+    const serverTeamName = teams[state.servingTeam].name;
+    ttsService.speak(`A jugar. Al saque ${serverTeamName}.`, ttsSettings);
+  }, [teams, state.servingTeam, ttsSettings]);
+
+  // Toggle Pause match
+  const handleTogglePause = useCallback(() => {
+    ttsService.unlockAudioContext();
+    setState(s => {
+      const willBePaused = !s.isPaused;
+      if (willBePaused) {
+        ttsService.speak('Partido en pausa.', ttsSettings);
+      } else {
+        const serverTeamName = teams[s.servingTeam].name;
+        ttsService.speak(`Partido reanudado. Al saque ${serverTeamName}.`, ttsSettings);
+      }
+      return {
+        ...s,
+        isPaused: willBePaused
+      };
+    });
+  }, [teams, ttsSettings]);
+
+  // Finish match early with custom status (e.g. unfinished, time expired, retired)
+  const handleConfirmEarlyFinish = useCallback((params: {
+    status: 'unfinished' | 'completed' | 'retired';
+    winner: 'team1' | 'team2' | 'none';
+    reasonText: string;
+  }) => {
+    ttsService.unlockAudioContext();
+    setIsFinishEarlyModalOpen(false);
+
+    setState(s => ({
+      ...s,
+      isMatchOver: true,
+      winner: params.winner === 'none' ? undefined : params.winner,
+      isResting: false,
+      isPaused: false,
+      lastEventAnnouncement: params.reasonText
+    }));
+
+    communityService.saveMatchResult(
+      rules.courtName || 'Cancha Central',
+      teams.team1.name,
+      [teams.team1.player1.name, teams.team1.player2.name],
+      teams.team2.name,
+      [teams.team2.player1.name, teams.team2.player2.name],
+      state.sets,
+      params.winner,
+      18,
+      params.status
+    );
+
+    ttsService.speak(params.reasonText, ttsSettings);
+    setIsVictoryModalOpen(true);
+  }, [rules.courtName, teams, state.sets, ttsSettings]);
+
   // Core Scoring Callback
   const handleScore = useCallback((scoringTeam: 'team1' | 'team2') => {
     ttsService.unlockAudioContext();
+
+    if (state.isPaused) {
+      ttsService.speak('Partido en pausa. Reanuda para continuar.', ttsSettings);
+      return;
+    }
+
+    // If resting when user taps score, clear rest and proceed with point
+    if (state.isResting) {
+      handleSkipRest();
+    }
 
     setState(prevState => {
       setHistory(prevHistory => [
@@ -185,7 +302,7 @@ export function App() {
 
       return result.nextState;
     });
-  }, [rules, teams, ttsSettings]);
+  }, [state.isPaused, state.isResting, handleSkipRest, rules, teams, ttsSettings]);
 
   // Undo Callback
   const handleUndo = useCallback(() => {
@@ -215,6 +332,17 @@ export function App() {
   // Connect Smartwatch Commands
   useEffect(() => {
     const unsubscribe = smartwatchService.subscribeCommand(cmd => {
+      // If resting on side change: any interaction skips rest and starts next game!
+      if (state.isResting) {
+        handleSkipRest();
+        return;
+      }
+      // If paused: any interaction resumes match
+      if (state.isPaused) {
+        handleTogglePause();
+        return;
+      }
+
       if (cmd === 'team1') {
         handleScore('team1');
       } else if (cmd === 'team2') {
@@ -226,7 +354,7 @@ export function App() {
       }
     });
     return () => unsubscribe();
-  }, [handleScore, handleUndo, handleRepeatAnnouncement]);
+  }, [state.isResting, state.isPaused, handleScore, handleUndo, handleRepeatAnnouncement, handleSkipRest, handleTogglePause]);
 
   // Hardware Bluetooth Keyboard & Shutter Remote Listeners
   useEffect(() => {
@@ -420,6 +548,9 @@ export function App() {
           onLogout={handleLogout}
           isSmartwatchActive={isSmartwatchActive}
           onToggleSmartwatch={handleToggleSmartwatch}
+          onSkipRest={handleSkipRest}
+          onTogglePause={handleTogglePause}
+          onOpenFinishEarlyModal={() => setIsFinishEarlyModalOpen(true)}
         />
       )}
 
@@ -480,6 +611,15 @@ export function App() {
         courtName={rules.courtName || 'Pista Central'}
         team1Name={teams.team1.name}
         team2Name={teams.team2.name}
+      />
+
+      {/* Finish Match Early / Incomplete Match Modal */}
+      <FinishMatchEarlyModal
+        isOpen={isFinishEarlyModalOpen}
+        onClose={() => setIsFinishEarlyModalOpen(false)}
+        state={state}
+        teams={teams}
+        onConfirmFinish={handleConfirmEarlyFinish}
       />
 
       {/* Match Victory, Confetti & ELO Ratings Modal */}

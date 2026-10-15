@@ -146,19 +146,41 @@ class SmartwatchService {
     courtName: string;
     isGoldenPoint?: boolean;
     isTieBreak?: boolean;
+    isResting?: boolean;
+    restSecondsRemaining?: number;
+    isPaused?: boolean;
+    servingTeamName?: string;
   }) {
     if (typeof navigator === 'undefined' || !('mediaSession' in navigator)) return;
 
     try {
-      const stateSuffix = params.isGoldenPoint 
-        ? ' [PUNTO DE ORO]' 
-        : params.isTieBreak 
-          ? ' [TIE-BREAK]' 
-          : '';
+      let title = '';
+      let artist = '';
+      let album = '';
 
-      const title = `🎾 ${params.team1Score} - ${params.team2Score}${stateSuffix}`;
-      const artist = `${params.team1Name} (${params.team1Games}) vs ${params.team2Name} (${params.team2Games}) • Set ${params.currentSetNum}`;
-      const album = `${params.courtName} | PadelMatch`;
+      if (params.isPaused) {
+        title = '⏸ PARTIDO EN PAUSA';
+        artist = `${params.team1Name} vs ${params.team2Name} • Toca para reanudar`;
+        album = `${params.courtName} | PadelMatch`;
+      } else if (params.isResting && (params.restSecondsRemaining ?? 0) > 0) {
+        const remaining = params.restSecondsRemaining || 0;
+        const mins = Math.floor(remaining / 60);
+        const secs = remaining % 60;
+        const timeFormatted = `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+        title = `⏱ DESCANSO: ${timeFormatted}`;
+        artist = `Al saque: ${params.servingTeamName || params.team1Name} • Toca para jugar ya`;
+        album = `Cambio de Lado | ${params.courtName}`;
+      } else {
+        const stateSuffix = params.isGoldenPoint 
+          ? ' [PUNTO DE ORO]' 
+          : params.isTieBreak 
+            ? ' [TIE-BREAK]' 
+            : '';
+
+        title = `🎾 ${params.team1Score} - ${params.team2Score}${stateSuffix}`;
+        artist = `${params.team1Name} (${params.team1Games}) vs ${params.team2Name} (${params.team2Games}) • Set ${params.currentSetNum}`;
+        album = `${params.courtName} | PadelMatch`;
+      }
 
       navigator.mediaSession.metadata = new MediaMetadata({
         title,

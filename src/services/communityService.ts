@@ -13,15 +13,20 @@ class CommunityService {
 
   private loadFromStorage() {
     try {
-      // Clear legacy v1 mock data if present
-      localStorage.removeItem('padelmatch_community_players_v1');
-      localStorage.removeItem('padelmatch_community_matches_v1');
+      if (typeof window !== 'undefined' && window.localStorage) {
+        // Clear legacy v1 mock data if present
+        localStorage.removeItem('padelmatch_community_players_v1');
+        localStorage.removeItem('padelmatch_community_matches_v1');
 
-      const rawPlayers = localStorage.getItem(PLAYERS_STORAGE_KEY);
-      this.players = rawPlayers ? JSON.parse(rawPlayers) : [];
+        const rawPlayers = localStorage.getItem(PLAYERS_STORAGE_KEY);
+        this.players = rawPlayers ? JSON.parse(rawPlayers) : [];
 
-      const rawMatches = localStorage.getItem(MATCHES_STORAGE_KEY);
-      this.matches = rawMatches ? JSON.parse(rawMatches) : [];
+        const rawMatches = localStorage.getItem(MATCHES_STORAGE_KEY);
+        this.matches = rawMatches ? JSON.parse(rawMatches) : [];
+      } else {
+        this.players = [];
+        this.matches = [];
+      }
     } catch {
       this.players = [];
       this.matches = [];
@@ -110,8 +115,9 @@ class CommunityService {
     team2Name: string,
     team2PlayerNames: [string, string],
     sets: SetScore[],
-    winner: 'team1' | 'team2',
-    eloDelta: number
+    winner: 'team1' | 'team2' | 'none',
+    eloDelta: number,
+    status: 'completed' | 'unfinished' | 'retired' = 'completed'
   ): MatchRecord {
     const team1SetsWon = sets.filter(s => s.team1 > s.team2).length;
     const team2SetsWon = sets.filter(s => s.team2 > s.team1).length;
@@ -124,41 +130,54 @@ class CommunityService {
       team2: { name: team2Name, playerNames: team2PlayerNames, scoreSets: team2SetsWon },
       sets,
       winner,
-      eloDelta
+      eloDelta: winner === 'none' ? 0 : eloDelta,
+      status
     };
 
     this.matches.unshift(record);
     this.saveMatches();
-
-    // Auto-create players if not already in roster, and update their real statistics
-    const winningNames = winner === 'team1' ? team1PlayerNames : team2PlayerNames;
-    const losingNames = winner === 'team1' ? team2PlayerNames : team1PlayerNames;
 
     // Ensure all 4 players exist in the roster
     [...team1PlayerNames, ...team2PlayerNames].forEach(pName => {
       this.findOrCreatePlayer(pName);
     });
 
-    this.players = this.players.map(p => {
-      if (winningNames.includes(p.name)) {
-        return {
-          ...p,
-          matchesPlayed: p.matchesPlayed + 1,
-          matchesWon: p.matchesWon + 1,
-          winStreak: p.winStreak + 1,
-          elo: p.elo + Math.abs(eloDelta)
-        };
-      }
-      if (losingNames.includes(p.name)) {
-        return {
-          ...p,
-          matchesPlayed: p.matchesPlayed + 1,
-          winStreak: 0,
-          elo: Math.max(600, p.elo - Math.abs(eloDelta))
-        };
-      }
-      return p;
-    });
+    if (winner !== 'none') {
+      const winningNames = winner === 'team1' ? team1PlayerNames : team2PlayerNames;
+      const losingNames = winner === 'team1' ? team2PlayerNames : team1PlayerNames;
+
+      this.players = this.players.map(p => {
+        if (winningNames.includes(p.name)) {
+          return {
+            ...p,
+            matchesPlayed: p.matchesPlayed + 1,
+            matchesWon: p.matchesWon + 1,
+            winStreak: p.winStreak + 1,
+            elo: p.elo + Math.abs(eloDelta)
+          };
+        }
+        if (losingNames.includes(p.name)) {
+          return {
+            ...p,
+            matchesPlayed: p.matchesPlayed + 1,
+            winStreak: 0,
+            elo: Math.max(600, p.elo - Math.abs(eloDelta))
+          };
+        }
+        return p;
+      });
+    } else {
+      // Unfinished match without declared winner: register match played, preserve streaks and ELO
+      this.players = this.players.map(p => {
+        if ([...team1PlayerNames, ...team2PlayerNames].includes(p.name)) {
+          return {
+            ...p,
+            matchesPlayed: p.matchesPlayed + 1
+          };
+        }
+        return p;
+      });
+    }
 
     this.savePlayers();
     return record;
@@ -204,6 +223,7 @@ class CommunityService {
   }
 
   private savePlayers() {
+    if (typeof window === 'undefined' || !window.localStorage) return;
     try {
       localStorage.setItem(PLAYERS_STORAGE_KEY, JSON.stringify(this.players));
     } catch (e) {
@@ -212,6 +232,7 @@ class CommunityService {
   }
 
   private saveMatches() {
+    if (typeof window === 'undefined' || !window.localStorage) return;
     try {
       localStorage.setItem(MATCHES_STORAGE_KEY, JSON.stringify(this.matches));
     } catch (e) {

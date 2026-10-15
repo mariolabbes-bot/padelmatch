@@ -379,10 +379,14 @@ const containerStyle: React.CSSProperties = {
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  padding: 'clamp(14px, 3.5vw, 28px)',
+  paddingTop: 'var(--safe-top)',
+  paddingBottom: 'var(--safe-bottom)',
+  paddingLeft: 'var(--safe-left)',
+  paddingRight: 'var(--safe-right)',
   background: 'var(--bg-deep)',
   position: 'relative',
-  overflow: 'hidden'
+  overflow: 'hidden',
+  boxSizing: 'border-box'
 };
 
 const ambientGlowTop: React.CSSProperties = {

@@ -199,12 +199,15 @@ export const CourtTvDisplay: React.FC<Props> = ({
 
 // Styles
 const tvContainerStyle: React.CSSProperties = {
-  minHeight: '100vh',
+  minHeight: '100dvh',
   background: '#04070e',
   display: 'flex',
   flexDirection: 'column',
   justifyContent: 'space-between',
-  padding: '24px',
+  paddingTop: 'var(--safe-top)',
+  paddingBottom: 'var(--safe-bottom)',
+  paddingLeft: 'var(--safe-left)',
+  paddingRight: 'var(--safe-right)',
   boxSizing: 'border-box'
 };
 

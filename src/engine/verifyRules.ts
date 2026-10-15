@@ -179,4 +179,41 @@ console.log('--- TEST SUITE: PADEL ENGINE RULES & SIMULATION ---\n');
   assert(eloResult.team2Delta < 0, `Team 2 lost ELO (${eloResult.team2Delta})`);
 }
 
+// 6. TEST: Side Change and Rest Countdown on Odd Games
+{
+  const rules: MatchRules = {
+    format: 'best_of_3',
+    gameRule: 'golden_point',
+    tieBreakRule: 'standard',
+    thirdSetRule: 'super_tiebreak',
+    superTieBreakTarget: 10,
+    sideChangeEnabled: true,
+    sideChangeRestSeconds: 90
+  };
+
+  let state = createInitialMatchState(rules);
+  assert(state.isResting === false, 'Initially not resting');
+  assert(state.isPaused === false, 'Initially not paused');
+
+  // Win Game 1 for Team 1 (total games = 1, odd game!)
+  for (let i = 0; i < 4; i++) {
+    state = scorePoint(state, 'team1', rules, dummyTeams).nextState;
+  }
+
+  assert(state.sets[0].team1 === 1, 'Team 1 won game 1 (score 1-0)');
+  assert(state.sideChangeNeeded === true, 'Side change needed on odd game 1');
+  assert(state.isResting === true, 'Rest timer activated on odd game');
+  assert(state.restSecondsRemaining === 90, 'Rest timer initialized to 90 seconds');
+
+  // Win Game 2 for Team 2 (total games = 2, even game!)
+  state.isResting = false; // Player skipped rest or timer elapsed
+  for (let i = 0; i < 4; i++) {
+    state = scorePoint(state, 'team2', rules, dummyTeams).nextState;
+  }
+
+  assert(state.sets[0].team2 === 1, 'Team 2 won game 2 (score 1-1)');
+  assert(state.sideChangeNeeded === false, 'No side change on even game 2');
+  assert(state.isResting === false, 'No rest timer on even game');
+}
+
 console.log('\n🎉 ALL PADEL ENGINE UNIT TESTS PASSED WITH 100% SUCCESS!');

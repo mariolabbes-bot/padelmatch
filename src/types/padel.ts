@@ -57,6 +57,8 @@ export interface MatchRules {
   thirdSetRule: ThirdSetRule;
   superTieBreakTarget: SuperTieBreakTarget;
   courtName?: string;
+  sideChangeEnabled?: boolean; // Cambio de lado en juegos impares
+  sideChangeRestSeconds?: number; // Tiempo de descanso en segundos (ej. 90)
 }
 
 export interface MatchScoreState {
@@ -74,6 +76,9 @@ export interface MatchScoreState {
   isMatchOver: boolean;
   winner?: 'team1' | 'team2';
   lastEventAnnouncement?: string;
+  isResting?: boolean; // Temporizador de cambio de lado activo
+  restSecondsRemaining?: number;
+  isPaused?: boolean; // Partido en pausa manual
 }
 
 export interface MatchSnapshot {
@@ -105,8 +110,9 @@ export interface MatchRecord {
   team1: { name: string; playerNames: [string, string]; scoreSets: number };
   team2: { name: string; playerNames: [string, string]; scoreSets: number };
   sets: SetScore[];
-  winner: 'team1' | 'team2';
+  winner: 'team1' | 'team2' | 'none';
   eloDelta: number;
+  status?: 'completed' | 'unfinished' | 'retired';
 }
 
 export interface HeadToHeadStats {

@@ -17,7 +17,10 @@ export function createInitialMatchState(rules: MatchRules): MatchScoreState {
     sideChangeNeeded: false,
     isMatchOver: false,
     winner: undefined,
-    lastEventAnnouncement: 'Comienza el partido. Servicio Pareja 1.'
+    lastEventAnnouncement: 'Comienza el partido. Servicio Pareja 1.',
+    isResting: false,
+    restSecondsRemaining: 0,
+    isPaused: false
   };
 }
 
@@ -191,7 +194,20 @@ function winGame(
   state.servingPlayer = state.servingPlayer === 1 ? 2 : 1;
 
   const totalGamesInSet = currentSet.team1 + currentSet.team2;
-  state.sideChangeNeeded = totalGamesInSet % 2 === 1;
+  if (rules.sideChangeEnabled === false) {
+    state.sideChangeNeeded = false;
+    state.isResting = false;
+    state.restSecondsRemaining = 0;
+  } else {
+    state.sideChangeNeeded = totalGamesInSet % 2 === 1;
+    if (state.sideChangeNeeded) {
+      const restSecs = rules.sideChangeRestSeconds !== undefined ? rules.sideChangeRestSeconds : 90;
+      if (restSecs > 0) {
+        state.isResting = true;
+        state.restSecondsRemaining = restSecs;
+      }
+    }
+  }
 
   const winnerGames = currentSet[winningTeam];
   const loserGames = currentSet[losingTeam];
@@ -221,11 +237,21 @@ function winGame(
     if (setsWonByWinner >= setsNeededToWin) {
       state.isMatchOver = true;
       state.winner = winningTeam;
+      state.isResting = false;
       return `¡Punto, set y partido para ${teams[winningTeam].name}! Resultado: ${currentSet.team1} a ${currentSet.team2}. ¡Felicitaciones!`;
     }
 
     state.currentSetIndex += 1;
     state.sets.push({ team1: 0, team2: 0 });
+
+    if (rules.sideChangeEnabled !== false) {
+      state.sideChangeNeeded = true;
+      const restSecs = rules.sideChangeRestSeconds !== undefined ? rules.sideChangeRestSeconds : 90;
+      if (restSecs > 0) {
+        state.isResting = true;
+        state.restSecondsRemaining = restSecs;
+      }
+    }
 
     const isDecidingSet = (rules.format === 'best_of_3' && state.currentSetIndex === 2) ||
                          (rules.format === 'best_of_5' && state.currentSetIndex === 4);
@@ -243,7 +269,9 @@ function winGame(
     ? `${winnerGames} a ${loserGames}, lidera ${teams[winningTeam].name}.`
     : (winnerGames === loserGames ? `${winnerGames} iguales.` : `${loserGames} a ${winnerGames}, lidera ${teams[losingTeam].name}.`);
 
-  const sideChangeMsg = state.sideChangeNeeded ? " Cambio de lado." : "";
+  const sideChangeMsg = state.sideChangeNeeded 
+    ? (state.isResting ? ` Cambio de lado. Descanso de ${state.restSecondsRemaining} segundos.` : " Cambio de lado.") 
+    : "";
   return `${gameAnnouncement} ${leaderMsg}${sideChangeMsg}`;
 }
 

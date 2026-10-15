@@ -12,7 +12,10 @@ import {
   Volume1,
   Menu,
   Watch,
-  Plus
+  Plus,
+  Pause,
+  Play,
+  Timer
 } from 'lucide-react';
 
 interface Props {
@@ -36,6 +39,9 @@ interface Props {
   onLogout: () => void;
   isSmartwatchActive: boolean;
   onToggleSmartwatch: () => void;
+  onSkipRest: () => void;
+  onTogglePause: () => void;
+  onOpenFinishEarlyModal: () => void;
 }
 
 export const Scoreboard: React.FC<Props> = ({
@@ -58,7 +64,10 @@ export const Scoreboard: React.FC<Props> = ({
   onNewMatch,
   onLogout,
   isSmartwatchActive,
-  onToggleSmartwatch
+  onToggleSmartwatch,
+  onSkipRest,
+  onTogglePause,
+  onOpenFinishEarlyModal
 }) => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
@@ -130,6 +139,20 @@ export const Scoreboard: React.FC<Props> = ({
             <Volume2 size={18} color={isAudioSpeaking ? 'var(--gold-primary)' : 'var(--text-muted)'} />
           </button>
 
+          {/* Pause / Resume Button */}
+          <button
+            onClick={onTogglePause}
+            style={{
+              ...iconBtnStyle,
+              background: state.isPaused ? 'rgba(255, 214, 0, 0.18)' : 'rgba(255, 255, 255, 0.04)',
+              borderColor: state.isPaused ? 'var(--gold-primary)' : 'var(--border-subtle)'
+            }}
+            title={state.isPaused ? 'Reanudar partido' : 'Pausar partido'}
+            aria-label={state.isPaused ? 'Reanudar partido' : 'Pausar partido'}
+          >
+            {state.isPaused ? <Play size={17} color="var(--gold-primary)" /> : <Pause size={17} color="var(--text-muted)" />}
+          </button>
+
           {/* Drawer Menu Button */}
           <button
             onClick={() => setIsDrawerOpen(true)}
@@ -141,8 +164,61 @@ export const Scoreboard: React.FC<Props> = ({
         </div>
       </header>
 
-      {/* 2. CRITICAL ALERTS (Side change, match point, etc.) */}
-      {state.sideChangeNeeded && (
+      {/* 2. PAUSE OVERLAY / BANNER */}
+      {state.isPaused && (
+        <div style={pauseBannerStyle} className="glass-panel">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={pauseIconBadgeStyle}>
+              <Pause size={18} color="var(--gold-primary)" />
+            </div>
+            <div>
+              <div style={{ fontWeight: 900, fontSize: '0.9rem', color: 'var(--gold-primary)' }}>
+                PARTIDO EN PAUSA
+              </div>
+              <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                Puntos pausados • Pulsa reanudar en pantalla o Apple Watch
+              </div>
+            </div>
+          </div>
+          <button onClick={onTogglePause} style={resumeBtnStyle}>
+            <Play size={14} />
+            <span>Reanudar</span>
+          </button>
+        </div>
+      )}
+
+      {/* 2.1. REST COUNTDOWN BANNER (Cambio de Lado y Descanso) */}
+      {!state.isPaused && state.isResting && (
+        <div style={restBannerStyle} className="glass-panel">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={restTimerBadgeStyle}>
+              <Timer size={18} color="var(--team1-primary)" />
+              <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 900, fontSize: '1.25rem', color: '#fff' }}>
+                {Math.floor((state.restSecondsRemaining || 0) / 60)}:
+                {((state.restSecondsRemaining || 0) % 60) < 10 ? '0' : ''}
+                {(state.restSecondsRemaining || 0) % 60}
+              </span>
+            </div>
+            <div>
+              <div style={{ fontWeight: 800, fontSize: '0.85rem', color: '#fff', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <ArrowRightLeft size={14} color="var(--gold-primary)" />
+                <span>Cambio de Lado y Descanso</span>
+              </div>
+              <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                Al saque: <strong style={{ color: 'var(--team1-primary)' }}>{teams[state.servingTeam].name}</strong>
+              </div>
+            </div>
+          </div>
+
+          <button onClick={onSkipRest} style={skipRestBtnStyle} title="Comenzar el siguiente game inmediatamente">
+            <Play size={14} />
+            <span>Comenzar Ya</span>
+          </button>
+        </div>
+      )}
+
+      {/* 2.2. SIMPLE SIDE CHANGE BANNER (Cuando no hay descanso activo) */}
+      {!state.isPaused && !state.isResting && state.sideChangeNeeded && (
         <div style={sideChangeBannerStyle}>
           <ArrowRightLeft size={16} />
           <span>CAMBIO DE LADO DE PISTA</span>
@@ -354,6 +430,9 @@ export const Scoreboard: React.FC<Props> = ({
         onToggleFullscreen={onToggleFullscreen}
         onOpenSetupModal={onOpenSetupModal}
         onOpenQrModal={onOpenQrModal}
+        isPaused={state.isPaused}
+        onTogglePause={onTogglePause}
+        onOpenFinishEarlyModal={onOpenFinishEarlyModal}
       />
     </div>
   );
@@ -365,11 +444,83 @@ const containerStyle: React.CSSProperties = {
   flexDirection: 'column',
   height: '100dvh',
   maxHeight: '100dvh',
-  padding: 'clamp(8px, 2vw, 12px)',
+  paddingTop: 'var(--safe-top)',
+  paddingBottom: 'var(--safe-bottom)',
+  paddingLeft: 'var(--safe-left)',
+  paddingRight: 'var(--safe-right)',
   gap: '8px',
   boxSizing: 'border-box',
   overflow: 'hidden',
   background: 'var(--bg-deep)'
+};
+
+const pauseBannerStyle: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  padding: '8px 12px',
+  background: 'rgba(255, 214, 0, 0.12)',
+  border: '1px solid var(--gold-primary)',
+  borderRadius: 'var(--radius-md)',
+  animation: 'fadeIn 0.2s ease-out'
+};
+
+const pauseIconBadgeStyle: React.CSSProperties = {
+  padding: '6px',
+  borderRadius: '8px',
+  background: 'rgba(255, 214, 0, 0.2)',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center'
+};
+
+const resumeBtnStyle: React.CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '6px',
+  padding: '6px 14px',
+  background: 'var(--gold-primary)',
+  color: '#070a10',
+  borderRadius: 'var(--radius-sm)',
+  fontWeight: 900,
+  fontSize: '0.8rem',
+  cursor: 'pointer',
+  boxShadow: '0 2px 10px rgba(255, 214, 0, 0.3)'
+};
+
+const restBannerStyle: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  padding: '8px 12px',
+  background: 'linear-gradient(90deg, rgba(0, 230, 118, 0.12) 0%, rgba(14, 21, 36, 0.95) 100%)',
+  border: '1px solid rgba(0, 230, 118, 0.4)',
+  borderRadius: 'var(--radius-md)',
+  animation: 'fadeIn 0.2s ease-out'
+};
+
+const restTimerBadgeStyle: React.CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '6px',
+  padding: '4px 10px',
+  background: 'rgba(0, 0, 0, 0.4)',
+  border: '1px solid var(--team1-primary)',
+  borderRadius: '8px'
+};
+
+const skipRestBtnStyle: React.CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '6px',
+  padding: '8px 14px',
+  background: 'var(--team1-gradient)',
+  color: '#070a10',
+  borderRadius: 'var(--radius-sm)',
+  fontWeight: 900,
+  fontSize: '0.8rem',
+  cursor: 'pointer',
+  boxShadow: '0 2px 12px var(--team1-glow)'
 };
 
 const topBarStyle: React.CSSProperties = {

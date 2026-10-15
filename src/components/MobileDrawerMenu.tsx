@@ -13,7 +13,10 @@ import {
   Minimize2,
   Sparkles,
   Sliders,
-  QrCode
+  QrCode,
+  Pause,
+  Play,
+  Clock
 } from 'lucide-react';
 import type { UserSession } from '../services/authService';
 
@@ -35,6 +38,9 @@ interface Props {
   onToggleFullscreen: () => void;
   onOpenSetupModal?: () => void;
   onOpenQrModal?: () => void;
+  isPaused?: boolean;
+  onTogglePause?: () => void;
+  onOpenFinishEarlyModal?: () => void;
 }
 
 export const MobileDrawerMenu: React.FC<Props> = ({
@@ -54,7 +60,10 @@ export const MobileDrawerMenu: React.FC<Props> = ({
   isFullscreen,
   onToggleFullscreen,
   onOpenSetupModal,
-  onOpenQrModal
+  onOpenQrModal,
+  isPaused,
+  onTogglePause,
+  onOpenFinishEarlyModal
 }) => {
   if (!isOpen) return null;
 
@@ -209,8 +218,32 @@ export const MobileDrawerMenu: React.FC<Props> = ({
           <div style={dividerStyle} />
 
           {/* Match Actions */}
+          {onTogglePause && (
+            <button onClick={() => { onTogglePause(); onClose(); }} style={menuItemStyle}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: isPaused ? 'var(--gold-primary)' : '#fff' }}>
+                {isPaused ? <Play size={18} color="var(--gold-primary)" /> : <Pause size={18} color="var(--gold-primary)" />}
+                <span>{isPaused ? 'Reanudar Partido' : 'Pausar Partido'}</span>
+              </div>
+              <span style={{ ...pillTagStyle, color: isPaused ? 'var(--gold-primary)' : 'var(--text-dim)', borderColor: isPaused ? 'var(--gold-primary)' : 'var(--border-subtle)' }}>
+                {isPaused ? 'EN PAUSA' : 'CONTROL'}
+              </span>
+            </button>
+          )}
+
+          {onOpenFinishEarlyModal && (
+            <button onClick={() => { onOpenFinishEarlyModal(); onClose(); }} style={{ ...menuItemStyle, color: 'var(--gold-primary)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <Clock size={18} color="var(--gold-primary)" />
+                <span>Finalizar Partido Inconcluso</span>
+              </div>
+              <span style={{ ...pillTagStyle, color: 'var(--gold-primary)', borderColor: 'rgba(255, 214, 0, 0.4)' }}>
+                Tiempo Cancha
+              </span>
+            </button>
+          )}
+
           <button onClick={() => { onResetMatch(); onClose(); }} style={menuItemStyle}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--gold-primary)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--text-muted)' }}>
               <RotateCcw size={18} />
               <span>Reiniciar Marcador a 0-0</span>
             </div>
@@ -258,11 +291,15 @@ const drawerStyle: React.CSSProperties = {
   height: '100dvh',
   background: 'var(--bg-card)',
   borderLeft: '1px solid var(--border-medium)',
-  padding: 'clamp(16px, 4vw, 24px)',
+  paddingTop: 'var(--safe-top)',
+  paddingBottom: 'var(--safe-bottom)',
+  paddingLeft: 'var(--safe-left)',
+  paddingRight: 'var(--safe-right)',
   display: 'flex',
   flexDirection: 'column',
   overflowY: 'auto',
-  boxShadow: '-10px 0 30px rgba(0,0,0,0.8)'
+  boxShadow: '-10px 0 30px rgba(0,0,0,0.8)',
+  boxSizing: 'border-box'
 };
 
 const headerStyle: React.CSSProperties = {

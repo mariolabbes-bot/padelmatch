@@ -455,8 +455,11 @@ const containerStyle: React.CSSProperties = {
   display: 'flex',
   flexDirection: 'column',
   gap: '16px',
-  padding: '16px',
-  minHeight: '100vh',
+  paddingTop: 'var(--safe-top)',
+  paddingBottom: 'var(--safe-bottom)',
+  paddingLeft: 'var(--safe-left)',
+  paddingRight: 'var(--safe-right)',
+  minHeight: '100dvh',
   boxSizing: 'border-box'
 };
 

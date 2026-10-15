@@ -363,7 +363,10 @@ export const MatchLobbyQrView: React.FC<Props> = ({
 // Styles
 const containerStyle: React.CSSProperties = {
   minHeight: '100dvh',
-  padding: 'clamp(12px, 3vw, 24px)',
+  paddingTop: 'var(--safe-top)',
+  paddingBottom: 'var(--safe-bottom)',
+  paddingLeft: 'var(--safe-left)',
+  paddingRight: 'var(--safe-right)',
   background: 'var(--bg-deep)',
   color: 'var(--text-main)',
   boxSizing: 'border-box'

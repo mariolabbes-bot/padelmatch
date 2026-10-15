@@ -196,6 +196,86 @@ export const MatchSetupModal: React.FC<Props> = ({
             </div>
           )}
 
+          {/* Section: Side Change & Rest */}
+          <div style={{ marginBottom: '18px', padding: '12px', background: 'var(--bg-elevated)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <label style={{ ...sectionTitleStyle, marginBottom: '2px' }}>Cambio de Lado (Juegos Impares)</label>
+                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                  Cambio de cancha en games 1, 3, 5 y descanso reglamentario FIP
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: '6px' }}>
+                <button
+                  type="button"
+                  onClick={() => setLocalRules(prev => ({ ...prev, sideChangeEnabled: true }))}
+                  style={{
+                    padding: '4px 12px',
+                    borderRadius: '6px',
+                    fontSize: '0.78rem',
+                    fontWeight: 800,
+                    background: localRules.sideChangeEnabled !== false ? 'var(--team1-primary)' : 'rgba(255,255,255,0.05)',
+                    color: localRules.sideChangeEnabled !== false ? '#000' : 'var(--text-muted)',
+                    border: '1px solid ' + (localRules.sideChangeEnabled !== false ? 'var(--team1-primary)' : 'var(--border-subtle)')
+                  }}
+                >
+                  Sí
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setLocalRules(prev => ({ ...prev, sideChangeEnabled: false }))}
+                  style={{
+                    padding: '4px 12px',
+                    borderRadius: '6px',
+                    fontSize: '0.78rem',
+                    fontWeight: 800,
+                    background: localRules.sideChangeEnabled === false ? 'var(--danger-primary)' : 'rgba(255,255,255,0.05)',
+                    color: localRules.sideChangeEnabled === false ? '#fff' : 'var(--text-muted)',
+                    border: '1px solid ' + (localRules.sideChangeEnabled === false ? 'var(--danger-primary)' : 'var(--border-subtle)')
+                  }}
+                >
+                  No
+                </button>
+              </div>
+            </div>
+
+            {localRules.sideChangeEnabled !== false && (
+              <div style={{ marginTop: '10px', paddingTop: '8px', borderTop: '1px solid var(--border-subtle)' }}>
+                <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)', marginBottom: '6px', fontWeight: 700 }}>
+                  DURACIÓN DEL DESCANSO
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
+                  {[
+                    { secs: 60, label: '60s' },
+                    { secs: 90, label: '90s (FIP)' },
+                    { secs: 120, label: '120s' },
+                    { secs: 0, label: 'Sin descanso' }
+                  ].map(item => (
+                    <button
+                      key={item.secs}
+                      type="button"
+                      onClick={() => setLocalRules(prev => ({ ...prev, sideChangeRestSeconds: item.secs }))}
+                      style={{
+                        padding: '6px 2px',
+                        borderRadius: '6px',
+                        fontSize: '0.75rem',
+                        fontWeight: 800,
+                        textAlign: 'center',
+                        background: (localRules.sideChangeRestSeconds ?? 90) === item.secs ? 'rgba(0, 230, 118, 0.15)' : 'var(--bg-card)',
+                        borderColor: (localRules.sideChangeRestSeconds ?? 90) === item.secs ? 'var(--team1-primary)' : 'var(--border-subtle)',
+                        borderWidth: '1px',
+                        borderStyle: 'solid',
+                        color: (localRules.sideChangeRestSeconds ?? 90) === item.secs ? 'var(--team1-primary)' : 'var(--text-muted)'
+                      }}
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* Section: Teams & Roster */}
           <div style={{ marginBottom: '20px' }}>
             <label style={sectionTitleStyle}>Parejas y Jugadores</label>

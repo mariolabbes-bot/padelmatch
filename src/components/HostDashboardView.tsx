@@ -33,6 +33,8 @@ export const HostDashboardView: React.FC<Props> = ({
   const [format, setFormat] = useState(rules.format);
   const [gameRule, setGameRule] = useState(rules.gameRule);
   const [thirdSetRule, setThirdSetRule] = useState(rules.thirdSetRule);
+  const [sideChangeEnabled, setSideChangeEnabled] = useState(rules.sideChangeEnabled !== false);
+  const [sideChangeRestSeconds, setSideChangeRestSeconds] = useState(rules.sideChangeRestSeconds !== undefined ? rules.sideChangeRestSeconds : 90);
 
   // Retrieve player stats
   const player = communityService.searchPlayer(user.name).find(p => p.id === user.id);
@@ -45,7 +47,9 @@ export const HostDashboardView: React.FC<Props> = ({
       format,
       gameRule,
       thirdSetRule,
-      superTieBreakTarget: 10
+      superTieBreakTarget: 10,
+      sideChangeEnabled,
+      sideChangeRestSeconds: sideChangeEnabled ? sideChangeRestSeconds : 0
     });
     onProceedToLobby();
   };
@@ -248,6 +252,88 @@ export const HostDashboardView: React.FC<Props> = ({
               </div>
             )}
 
+            {/* Side Change & Rest Settings */}
+            <div style={{ padding: '14px', background: 'var(--bg-elevated)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                <div>
+                  <div style={{ fontWeight: 800, fontSize: '0.9rem', color: '#fff' }}>
+                    Cambio de Lado en Juegos Impares
+                  </div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                    Regla FIP: cambio de campo al terminar games 1, 3, 5, etc.
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: '6px' }}>
+                  <button
+                    type="button"
+                    onClick={() => setSideChangeEnabled(true)}
+                    style={{
+                      padding: '6px 14px',
+                      borderRadius: '8px',
+                      fontSize: '0.8rem',
+                      fontWeight: 800,
+                      background: sideChangeEnabled ? 'var(--team1-primary)' : 'rgba(255,255,255,0.05)',
+                      color: sideChangeEnabled ? '#000' : 'var(--text-muted)',
+                      border: '1px solid ' + (sideChangeEnabled ? 'var(--team1-primary)' : 'var(--border-subtle)')
+                    }}
+                  >
+                    Sí
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSideChangeEnabled(false)}
+                    style={{
+                      padding: '6px 14px',
+                      borderRadius: '8px',
+                      fontSize: '0.8rem',
+                      fontWeight: 800,
+                      background: !sideChangeEnabled ? 'var(--danger-primary)' : 'rgba(255,255,255,0.05)',
+                      color: !sideChangeEnabled ? '#fff' : 'var(--text-muted)',
+                      border: '1px solid ' + (!sideChangeEnabled ? 'var(--danger-primary)' : 'var(--border-subtle)')
+                    }}
+                  >
+                    No
+                  </button>
+                </div>
+              </div>
+
+              {sideChangeEnabled && (
+                <div style={{ marginTop: '12px', paddingTop: '10px', borderTop: '1px solid var(--border-subtle)' }}>
+                  <label style={{ ...labelStyle, marginBottom: '6px' }}>
+                    Tiempo de Descanso en Cambio de Lado (segundos)
+                  </label>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
+                    {[
+                      { secs: 60, label: '60s' },
+                      { secs: 90, label: '90s (FIP)' },
+                      { secs: 120, label: '120s' },
+                      { secs: 0, label: 'Sin descanso' }
+                    ].map(item => (
+                      <button
+                        key={item.secs}
+                        type="button"
+                        onClick={() => setSideChangeRestSeconds(item.secs)}
+                        style={{
+                          padding: '8px 4px',
+                          borderRadius: '8px',
+                          fontSize: '0.78rem',
+                          fontWeight: 800,
+                          textAlign: 'center',
+                          background: sideChangeRestSeconds === item.secs ? 'rgba(0, 230, 118, 0.15)' : 'var(--bg-deep)',
+                          borderColor: sideChangeRestSeconds === item.secs ? 'var(--team1-primary)' : 'var(--border-subtle)',
+                          borderWidth: '1px',
+                          borderStyle: 'solid',
+                          color: sideChangeRestSeconds === item.secs ? 'var(--team1-primary)' : 'var(--text-muted)'
+                        }}
+                      >
+                        {item.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
             {/* CTA Button */}
             <button type="submit" style={primaryActionBtnStyle}>
               <span>Generar Código QR y Sala de Espera</span>
@@ -263,7 +349,10 @@ export const HostDashboardView: React.FC<Props> = ({
 // Styles
 const containerStyle: React.CSSProperties = {
   minHeight: '100dvh',
-  padding: 'clamp(14px, 3vw, 28px)',
+  paddingTop: 'var(--safe-top)',
+  paddingBottom: 'var(--safe-bottom)',
+  paddingLeft: 'var(--safe-left)',
+  paddingRight: 'var(--safe-right)',
   background: 'var(--bg-deep)',
   color: 'var(--text-main)',
   boxSizing: 'border-box'

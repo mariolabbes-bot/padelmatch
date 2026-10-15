@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import confetti from 'canvas-confetti';
 import type { MatchScoreState, Team } from '../types/padel';
 import { calculatePadelElo } from '../engine/eloEngine';
-import { Trophy, RefreshCw, Flame } from 'lucide-react';
+import { Trophy, RefreshCw, Flame, Clock } from 'lucide-react';
 
 interface Props {
   isOpen: boolean;
@@ -20,7 +20,7 @@ export const MatchVictoryModal: React.FC<Props> = ({
   onNewMatch
 }) => {
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && state.winner) {
       const end = Date.now() + 2.5 * 1000;
       const colors = ['#00e676', '#00b0ff', '#ffd600', '#ffffff'];
 
@@ -45,9 +45,68 @@ export const MatchVictoryModal: React.FC<Props> = ({
         }
       })();
     }
-  }, [isOpen]);
+  }, [isOpen, state.winner]);
 
-  if (!isOpen || !state.winner) return null;
+  if (!isOpen) return null;
+
+  // Render Incomplete / Unfinished Match Summary
+  if (!state.winner) {
+    return (
+      <div style={overlayStyle}>
+        <div style={modalStyle} className="glass-panel">
+          <div style={{ textAlign: 'center', marginBottom: '16px' }}>
+            <div style={{ ...trophyCircleStyle, background: 'rgba(255, 214, 0, 0.1)', borderColor: 'rgba(255, 214, 0, 0.3)' }}>
+              <Clock size={44} color="var(--gold-primary)" />
+            </div>
+            <span className="badge badge-gold" style={{ marginTop: '12px' }}>
+              Partido Inconcluso Registrado
+            </span>
+            <h1 style={{ fontSize: '1.5rem', fontWeight: 900, marginTop: '8px', color: '#fff' }}>
+              Tiempo de Cancha Cumplido
+            </h1>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+              {teams.team1.name} vs {teams.team2.name}
+            </p>
+          </div>
+
+          {/* Final Sets Scoreboard Card */}
+          <div style={setsCardStyle}>
+            <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', marginBottom: '8px' }}>
+              Marcador Alcanzado en Cancha
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '16px' }}>
+              {state.sets.map((set, idx) => (
+                <div key={idx} style={setScoreBadge}>
+                  <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>SET {idx + 1}</div>
+                  <div style={{ fontSize: '1.5rem', fontWeight: 900, fontFamily: 'var(--font-mono)', color: '#fff' }}>
+                    <span style={{ color: set.team1 > set.team2 ? 'var(--team1-primary)' : '#94a3b8' }}>{set.team1}</span>
+                    <span style={{ opacity: 0.4 }}> - </span>
+                    <span style={{ color: set.team2 > set.team1 ? 'var(--team2-primary)' : '#94a3b8' }}>{set.team2}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div style={{ padding: '12px', background: 'rgba(255, 255, 255, 0.04)', borderRadius: 'var(--radius-md)', margin: '16px 0', border: '1px solid var(--border-subtle)', textAlign: 'center' }}>
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0 }}>
+              ℹ️ Este partido ha sido computado en el total de partidos jugados de los 4 participantes, preservando el puntaje ELO y las rachas invictas.
+            </p>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+            <button onClick={onRematch} style={rematchBtnStyle}>
+              <RefreshCw size={18} />
+              <span>Continuar Partido</span>
+            </button>
+            <button onClick={onNewMatch} style={newMatchBtnStyle}>
+              <span>Nuevo Partido</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const winnerTeam = teams[state.winner];
 
