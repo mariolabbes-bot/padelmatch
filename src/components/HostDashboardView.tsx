@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { MatchRules, CommunityPlayer } from '../types/padel';
 import type { UserSession } from '../services/authService';
 import { communityService } from '../services/communityService';
+import { notificationService } from '../services/notificationService';
 import { 
   Trophy, 
   Watch, 
@@ -10,7 +11,9 @@ import {
   Flame,
   Sun,
   Moon,
-  Zap
+  Zap,
+  Bell,
+  BellRing
 } from 'lucide-react';
 
 interface Props {
@@ -20,6 +23,7 @@ interface Props {
   onProceedToLobby: () => void;
   onOpenCommunity: () => void;
   onOpenBluetoothModal: () => void;
+  onOpenNotifications?: () => void;
   onLogout: () => void;
 }
 
@@ -30,6 +34,7 @@ export const HostDashboardView: React.FC<Props> = ({
   onProceedToLobby,
   onOpenCommunity,
   onOpenBluetoothModal,
+  onOpenNotifications,
   onLogout
 }) => {
   const [courtName, setCourtName] = useState(rules.courtName || 'Pista Central - Club Padel');
@@ -38,6 +43,14 @@ export const HostDashboardView: React.FC<Props> = ({
   const [thirdSetRule, setThirdSetRule] = useState(rules.thirdSetRule);
   const [sideChangeEnabled, setSideChangeEnabled] = useState(rules.sideChangeEnabled !== false);
   const [sideChangeRestSeconds, setSideChangeRestSeconds] = useState(rules.sideChangeRestSeconds !== undefined ? rules.sideChangeRestSeconds : 90);
+  const [unreadNotifs, setUnreadNotifs] = useState(() => notificationService.getUnreadCount());
+
+  useEffect(() => {
+    const unsub = notificationService.subscribe(() => {
+      setUnreadNotifs(notificationService.getUnreadCount());
+    });
+    return () => unsub();
+  }, []);
 
   // Retrieve player stats
   const player = communityService.searchPlayer(user.name).find(p => p.id === user.id) || communityService.getPlayers().find((p: CommunityPlayer) => p.name.toLowerCase() === user.name.toLowerCase());
@@ -84,10 +97,26 @@ export const HostDashboardView: React.FC<Props> = ({
           </span>
         </div>
 
-        <button onClick={onLogout} style={logoutBtnStyle} title="Cerrar sesión">
-          <LogOut size={16} />
-          <span>Salir</span>
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {onOpenNotifications && (
+            <button 
+              onClick={onOpenNotifications} 
+              style={notifBellBtnStyle} 
+              title="Centro de Notificaciones & Partidos Abiertos"
+              type="button"
+            >
+              <Bell size={18} color="var(--gold-primary)" />
+              {unreadNotifs > 0 && (
+                <span style={unreadBadgeCountStyle}>{unreadNotifs}</span>
+              )}
+            </button>
+          )}
+
+          <button onClick={onLogout} style={logoutBtnStyle} title="Cerrar sesión">
+            <LogOut size={16} />
+            <span>Salir</span>
+          </button>
+        </div>
       </header>
 
       <div style={mainGridStyle}>
@@ -221,6 +250,19 @@ export const HostDashboardView: React.FC<Props> = ({
 
           {/* Quick Links */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '14px' }}>
+            {onOpenNotifications && (
+              <button onClick={onOpenNotifications} style={secondaryLinkBtnStyle} type="button">
+                <BellRing size={16} color="var(--gold-primary)" />
+                <span>Partidos Abiertos ("Falta 1") & Alertas</span>
+                {unreadNotifs > 0 && (
+                  <span className="badge badge-gold" style={{ marginLeft: 'auto', fontSize: '0.65rem' }}>
+                    {unreadNotifs} nuevas
+                  </span>
+                )}
+                <ChevronRight size={16} style={{ marginLeft: unreadNotifs > 0 ? '6px' : 'auto' }} />
+              </button>
+            )}
+
             <button onClick={onOpenCommunity} style={secondaryLinkBtnStyle}>
               <Trophy size={16} color="var(--gold-primary)" />
               <span>Ver Ranking ELO de la Comunidad</span>
@@ -610,4 +652,34 @@ const primaryActionBtnStyle: React.CSSProperties = {
   gap: '8px',
   marginTop: '10px',
   boxShadow: '0 4px 20px var(--team1-glow)'
+};
+
+const notifBellBtnStyle: React.CSSProperties = {
+  position: 'relative',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  width: '38px',
+  height: '38px',
+  borderRadius: '10px',
+  background: 'rgba(255, 214, 0, 0.1)',
+  border: '1px solid rgba(255, 214, 0, 0.3)',
+  cursor: 'pointer'
+};
+
+const unreadBadgeCountStyle: React.CSSProperties = {
+  position: 'absolute',
+  top: '-4px',
+  right: '-4px',
+  background: 'var(--danger-primary)',
+  color: '#ffffff',
+  fontSize: '0.65rem',
+  fontWeight: 900,
+  width: '17px',
+  height: '17px',
+  borderRadius: '50%',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  boxShadow: '0 0 8px rgba(255, 61, 113, 0.6)'
 };

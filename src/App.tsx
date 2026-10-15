@@ -37,6 +37,8 @@ import { MatchSetupModal } from './components/MatchSetupModal';
 import { QrShareModal } from './components/QrShareModal';
 import { MatchVictoryModal } from './components/MatchVictoryModal';
 import { FinishMatchEarlyModal } from './components/FinishMatchEarlyModal';
+import { InstallPwaPrompt } from './components/InstallPwaPrompt';
+import { NotificationsModal } from './components/NotificationsModal';
 
 function parseMatchIdFromHash(): string | null {
   if (typeof window === 'undefined') return null;
@@ -151,6 +153,7 @@ export function App() {
   const [isQrModalOpen, setIsQrModalOpen] = useState(false);
   const [isVictoryModalOpen, setIsVictoryModalOpen] = useState(false);
   const [isFinishEarlyModalOpen, setIsFinishEarlyModalOpen] = useState(false);
+  const [isNotificationsModalOpen, setIsNotificationsModalOpen] = useState(false);
 
   // 8. Hardware & Audio State
   const [keyMapping, setKeyMapping] = useState<HardwareKeyMapping>(loadSavedKeyMapping);
@@ -636,6 +639,7 @@ export function App() {
           onProceedToLobby={handleProceedToLobby}
           onOpenCommunity={() => setCurrentView('community')}
           onOpenBluetoothModal={() => setIsBluetoothModalOpen(true)}
+          onOpenNotifications={() => setIsNotificationsModalOpen(true)}
           onLogout={handleLogout}
         />
       )}
@@ -853,6 +857,15 @@ export function App() {
           setCurrentView('host_dashboard');
         }}
       />
+
+      {/* Notifications & Open Matches ("Falta 1") Center */}
+      <NotificationsModal
+        isOpen={isNotificationsModalOpen}
+        onClose={() => setIsNotificationsModalOpen(false)}
+      />
+
+      {/* Automatic Guided PWA Installation Prompt (Android 1-Click & iOS Visual Guide) */}
+      <InstallPwaPrompt />
     </div>
   );
 }

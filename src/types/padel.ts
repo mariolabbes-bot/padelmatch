@@ -161,5 +161,20 @@ export type AppViewMode =
   | 'court_enrollment' 
   | 'scoreboard' 
   | 'community' 
-  | 'court_tv'
+  | 'court_tv' 
   | 'participant_join';
+
+export interface AppNotification {
+  id: string;
+  type: 'open_match' | 'friend_invite' | 'club_offer' | 'match_result';
+  title: string;
+  body: string;
+  timestamp: number;
+  clubName?: string;
+  category?: PlayerCategory;
+  courtName?: string;
+  matchId?: string;
+  discountPercentage?: number;
+  read: boolean;
+  actionUrl?: string;
+}
