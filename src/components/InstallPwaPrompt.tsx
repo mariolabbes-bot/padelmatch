@@ -4,7 +4,6 @@ import {
   Share, 
   PlusSquare, 
   X, 
-  Smartphone,
   ShieldCheck
 } from 'lucide-react';
 
@@ -76,10 +75,12 @@ export const InstallPwaPrompt: React.FC = () => {
       <div style={promptCardStyle} className="glass-panel">
         {/* Header Badge */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <div style={appIconBadge}>
-              <Smartphone size={20} color="var(--team1-primary)" />
-            </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <img 
+              src="/pwa-192x192.png" 
+              alt="PadelMatch Icon" 
+              style={{ width: '42px', height: '42px', borderRadius: '12px', objectFit: 'cover', boxShadow: '0 0 16px rgba(255, 214, 0, 0.35)', border: '1.5px solid rgba(255, 255, 255, 0.2)' }} 
+            />
             <div>
               <span style={{ fontSize: '0.68rem', fontWeight: 900, color: 'var(--gold-primary)', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
                 ACCESO DIRECTO OFICIAL
@@ -169,17 +170,6 @@ const promptCardStyle: React.CSSProperties = {
   borderRadius: '20px',
   padding: '18px 20px',
   boxShadow: '0 16px 40px rgba(0, 0, 0, 0.85), 0 0 25px rgba(0, 230, 118, 0.15)'
-};
-
-const appIconBadge: React.CSSProperties = {
-  width: '40px',
-  height: '40px',
-  borderRadius: '12px',
-  background: 'rgba(0, 230, 118, 0.12)',
-  border: '1px solid rgba(0, 230, 118, 0.3)',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center'
 };
 
 const closeIconBtnStyle: React.CSSProperties = {

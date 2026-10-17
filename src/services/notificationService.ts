@@ -31,8 +31,8 @@ class NotificationService {
         // Send a celebratory welcome notification
         this.sendNativeNotification('🎾 ¡Notificaciones PadelMatch Activadas!', {
           body: 'Recibirás alertas de partidos abiertos (falta 1), invitaciones y ofertas de clubes.',
-          icon: '/favicon.svg',
-          badge: '/favicon.svg',
+          icon: '/pwa-192x192.png',
+          badge: '/pwa-192x192.png',
           tag: 'welcome_padelmatch'
         });
       }
@@ -54,8 +54,8 @@ class NotificationService {
         const registration = await navigator.serviceWorker.ready;
         if (registration && typeof registration.showNotification === 'function') {
           await (registration as any).showNotification(title, {
-            icon: '/favicon.svg',
-            badge: '/favicon.svg',
+            icon: '/pwa-192x192.png',
+            badge: '/pwa-192x192.png',
             vibrate: [200, 100, 200],
             ...options
           });
@@ -65,7 +65,7 @@ class NotificationService {
 
       // Fallback to desktop Notification constructor
       new Notification(title, {
-        icon: '/favicon.svg',
+        icon: '/pwa-192x192.png',
         ...options
       });
       return true;

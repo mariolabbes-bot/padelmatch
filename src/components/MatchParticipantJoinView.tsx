@@ -112,7 +112,11 @@ export const MatchParticipantJoinView: React.FC<Props> = ({
       {/* Top Header */}
       <header style={headerStyle}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <div className="pulsing-dot" style={{ color: 'var(--team1-primary)' }} />
+          <img 
+            src="/logo.png" 
+            alt="PadelMatch Logo" 
+            style={{ width: '28px', height: '28px', borderRadius: '50%', objectFit: 'cover' }} 
+          />
           <span style={{ fontWeight: 900, letterSpacing: '-0.02em', fontSize: '1.1rem', color: '#fff' }}>
             PADEL<span style={{ color: 'var(--team1-primary)' }}>MATCH</span>
           </span>

@@ -88,7 +88,11 @@ export const Scoreboard: React.FC<Props> = ({
       {/* 1. ULTRA-CLEAN MOBILE-FIRST TOP BAR */}
       <header style={topBarStyle} className="glass-panel">
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <div className="pulsing-dot" style={{ color: 'var(--team1-primary)' }} />
+          <img 
+            src="/logo.png" 
+            alt="PadelMatch Logo" 
+            style={{ width: '26px', height: '26px', borderRadius: '50%', objectFit: 'cover', border: '1px solid rgba(255, 255, 255, 0.2)' }} 
+          />
           <span style={{ fontWeight: 900, letterSpacing: '-0.02em', fontSize: '1rem', color: '#fff' }}>
             PADEL<span style={{ color: 'var(--team1-primary)' }}>MATCH</span>
           </span>

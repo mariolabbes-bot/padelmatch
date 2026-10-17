@@ -125,6 +125,20 @@ export const AuthScreen: React.FC<Props> = ({ onAuthenticated }) => {
       <div style={cardStyle} className="glass-panel">
         {/* Header / Brand */}
         <div style={{ textAlign: 'center', marginBottom: '22px' }}>
+          <img 
+            src="/logo.png" 
+            alt="PadelMatch Logo" 
+            style={{ 
+              width: '72px', 
+              height: '72px', 
+              borderRadius: '50%', 
+              objectFit: 'cover', 
+              margin: '0 auto 12px',
+              display: 'block',
+              boxShadow: '0 0 30px rgba(255, 214, 0, 0.4), 0 0 10px rgba(0, 230, 118, 0.3)',
+              border: '2px solid rgba(255, 255, 255, 0.2)'
+            }} 
+          />
           <div style={logoBadgeStyle}>
             <div className="pulsing-dot" style={{ color: 'var(--team1-primary)' }} />
             <span style={{ fontWeight: 900, letterSpacing: '-0.02em', fontSize: '1.25rem', color: '#fff' }}>

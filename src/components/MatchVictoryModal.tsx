@@ -95,6 +95,13 @@ export const MatchVictoryModal: React.FC<Props> = ({
     return (
       <div style={overlayStyle}>
         <div style={modalStyle} className="glass-panel">
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '12px' }}>
+            <img src="/logo.png" alt="PadelMatch" style={{ width: '22px', height: '22px', borderRadius: '50%', objectFit: 'cover' }} />
+            <span style={{ fontSize: '0.78rem', fontWeight: 900, letterSpacing: '0.04em', color: 'var(--text-muted)' }}>
+              PADEL<span style={{ color: 'var(--team1-primary)' }}>MATCH</span> • FICHA OFICIAL
+            </span>
+          </div>
+
           <div style={{ textAlign: 'center', marginBottom: '16px' }}>
             <div style={{ ...trophyCircleStyle, background: 'rgba(255, 214, 0, 0.1)', borderColor: 'rgba(255, 214, 0, 0.3)' }}>
               <Clock size={44} color="var(--gold-primary)" />
@@ -172,6 +179,14 @@ export const MatchVictoryModal: React.FC<Props> = ({
   return (
     <div style={overlayStyle}>
       <div style={modalStyle} className="glass-panel">
+        {/* Top App Brand Pill */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '12px' }}>
+          <img src="/logo.png" alt="PadelMatch" style={{ width: '22px', height: '22px', borderRadius: '50%', objectFit: 'cover' }} />
+          <span style={{ fontSize: '0.78rem', fontWeight: 900, letterSpacing: '0.04em', color: 'var(--text-muted)' }}>
+            PADEL<span style={{ color: 'var(--team1-primary)' }}>MATCH</span> • FICHA OFICIAL
+          </span>
+        </div>
+
         {/* Trophy icon */}
         <div style={{ textAlign: 'center', marginBottom: '14px' }}>
           <div style={trophyCircleStyle}>

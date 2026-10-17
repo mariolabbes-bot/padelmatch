@@ -47,8 +47,12 @@ export const CourtTvDisplay: React.FC<Props> = ({
       <header style={tvHeaderStyle}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
           <div style={clubLogoPill}>
-            <div className="pulsing-dot" style={{ color: '#00e676' }} />
-            <span style={{ fontWeight: 900, fontSize: '1.2rem', color: '#fff' }}>
+            <img 
+              src="/logo.png" 
+              alt="PadelMatch Logo" 
+              style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover' }} 
+            />
+            <span style={{ fontWeight: 900, fontSize: '1.25rem', color: '#fff' }}>
               PADEL<span style={{ color: 'var(--team1-primary)' }}>MATCH</span>
             </span>
           </div>
@@ -190,6 +194,11 @@ export const CourtTvDisplay: React.FC<Props> = ({
 
         <div style={sponsorTagStyle}>
           <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)', fontWeight: 700 }}>SPONSOR OFICIAL:</span>
+          <img 
+            src="/logo.png" 
+            alt="PadelMatch Logo" 
+            style={{ width: '22px', height: '22px', borderRadius: '50%', objectFit: 'cover' }} 
+          />
           <span style={{ fontWeight: 900, letterSpacing: '0.06em', color: '#fff' }}>PADELMATCH PRO SAAS</span>
         </div>
       </footer>

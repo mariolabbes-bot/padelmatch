@@ -91,17 +91,24 @@ export const CommunityDashboard: React.FC<Props> = ({ onBackToScoreboard }) => {
     <div style={containerStyle} key={refreshKey}>
       {/* Header bar */}
       <div style={headerStyle} className="glass-panel">
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span className="badge badge-gold">Módulo D • Ranking & Comunidad</span>
-            <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Circuito Real de Pádel</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+          <img 
+            src="/logo.png" 
+            alt="PadelMatch Logo" 
+            style={{ width: '44px', height: '44px', borderRadius: '50%', objectFit: 'cover', border: '1.5px solid rgba(255, 255, 255, 0.2)', flexShrink: 0 }} 
+          />
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span className="badge badge-gold">Módulo D • Ranking & Comunidad</span>
+              <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Circuito Real de Pádel</span>
+            </div>
+            <h1 style={{ fontSize: '1.4rem', fontWeight: 900, marginTop: '4px', color: '#fff' }}>
+              Ranking ELO Oficial & Comunidad de Jugadores
+            </h1>
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+              Base de datos limpia y oficial. Registra jugadores reales de tu club y visualiza el ranking actualizado tras cada partido.
+            </p>
           </div>
-          <h1 style={{ fontSize: '1.4rem', fontWeight: 900, marginTop: '4px', color: '#fff' }}>
-            Ranking ELO Oficial & Comunidad de Jugadores
-          </h1>
-          <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-            Base de datos limpia y oficial. Registra jugadores reales de tu club y visualiza el ranking actualizado tras cada partido.
-          </p>
         </div>
 
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>

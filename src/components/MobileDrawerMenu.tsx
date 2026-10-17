@@ -76,12 +76,19 @@ export const MobileDrawerMenu: React.FC<Props> = ({
       >
         {/* Header */}
         <div style={headerStyle}>
-          <div>
-            <div style={{ fontWeight: 900, fontSize: '1.1rem', letterSpacing: '-0.02em', color: '#fff' }}>
-              PADEL<span style={{ color: 'var(--team1-primary)' }}>MATCH</span>
-            </div>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-              Menú de Control en Cancha
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <img 
+              src="/logo.png" 
+              alt="PadelMatch Logo" 
+              style={{ width: '34px', height: '34px', borderRadius: '50%', objectFit: 'cover', border: '1.5px solid rgba(255, 255, 255, 0.2)' }} 
+            />
+            <div>
+              <div style={{ fontWeight: 900, fontSize: '1.1rem', letterSpacing: '-0.02em', color: '#fff' }}>
+                PADEL<span style={{ color: 'var(--team1-primary)' }}>MATCH</span>
+              </div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                Menú de Control en Cancha
+              </div>
             </div>
           </div>
 

@@ -90,9 +90,13 @@ export const HostDashboardView: React.FC<Props> = ({
     <div style={containerStyle}>
       {/* Top Bar */}
       <header style={topBarStyle}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <div className="pulsing-dot" style={{ color: 'var(--team1-primary)' }} />
-          <span style={{ fontWeight: 900, letterSpacing: '-0.02em', fontSize: '1.1rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <img 
+            src="/logo.png" 
+            alt="PadelMatch Logo" 
+            style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover', border: '1.5px solid rgba(255, 255, 255, 0.2)' }} 
+          />
+          <span style={{ fontWeight: 900, letterSpacing: '-0.02em', fontSize: '1.15rem' }}>
             PADEL<span style={{ color: 'var(--team1-primary)' }}>MATCH</span>
           </span>
         </div>
