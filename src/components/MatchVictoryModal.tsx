@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import confetti from 'canvas-confetti';
-import type { MatchScoreState, Team } from '../types/padel';
+import type { MatchScoreState, Team, MatchRules } from '../types/padel';
 import { calculatePadelElo } from '../engine/eloEngine';
+import { MatchShareCardModal } from './MatchShareCardModal';
 import { 
   Trophy, 
   RefreshCw, 
@@ -21,6 +22,8 @@ interface Props {
   teams: { team1: Team; team2: Team };
   onRematch: () => void;
   onNewMatch: () => void;
+  rules?: MatchRules;
+  matchElapsedSeconds?: number;
 }
 
 export const MatchVictoryModal: React.FC<Props> = ({
@@ -28,10 +31,13 @@ export const MatchVictoryModal: React.FC<Props> = ({
   state,
   teams,
   onRematch,
-  onNewMatch
+  onNewMatch,
+  rules,
+  matchElapsedSeconds
 }) => {
   const [showProModal, setShowProModal] = useState(false);
   const [proSuccess, setProSuccess] = useState(false);
+  const [isShareCardOpen, setIsShareCardOpen] = useState(false);
 
   useEffect(() => {
     if (isOpen && state.winner) {
@@ -136,6 +142,16 @@ export const MatchVictoryModal: React.FC<Props> = ({
             </div>
           </div>
 
+          {/* Visual Share Card Button */}
+          <button 
+            type="button" 
+            onClick={() => setIsShareCardOpen(true)} 
+            style={visualShareCardBtnStyle}
+          >
+            <Sparkles size={16} color="var(--gold-primary)" />
+            <span>Generar Tarjeta Gráfica HD (Historias / WhatsApp)</span>
+          </button>
+
           {/* WhatsApp Share Button */}
           <button 
             type="button" 
@@ -161,6 +177,16 @@ export const MatchVictoryModal: React.FC<Props> = ({
               <span>Nuevo Partido</span>
             </button>
           </div>
+
+          {/* Match Share Card HD Modal */}
+          <MatchShareCardModal
+            isOpen={isShareCardOpen}
+            onClose={() => setIsShareCardOpen(false)}
+            teams={teams}
+            state={state}
+            rules={rules}
+            matchDurationSeconds={matchElapsedSeconds}
+          />
         </div>
       </div>
     );
@@ -277,6 +303,16 @@ export const MatchVictoryModal: React.FC<Props> = ({
           </div>
         </div>
 
+        {/* Visual Share Card Button */}
+        <button 
+          type="button" 
+          onClick={() => setIsShareCardOpen(true)} 
+          style={visualShareCardBtnStyle}
+        >
+          <Sparkles size={16} color="var(--gold-primary)" />
+          <span>Generar Tarjeta Gráfica HD (Historias / WhatsApp)</span>
+        </button>
+
         {/* WhatsApp Share Button */}
         <button 
           type="button" 
@@ -387,6 +423,16 @@ export const MatchVictoryModal: React.FC<Props> = ({
             </div>
           </div>
         )}
+
+        {/* Match Share Card HD Modal */}
+        <MatchShareCardModal
+          isOpen={isShareCardOpen}
+          onClose={() => setIsShareCardOpen(false)}
+          teams={teams}
+          state={state}
+          rules={rules}
+          matchDurationSeconds={matchElapsedSeconds}
+        />
       </div>
     </div>
   );
@@ -570,4 +616,23 @@ const proCheckoutBtnStyle: React.CSSProperties = {
   border: 'none',
   cursor: 'pointer',
   boxShadow: '0 4px 16px var(--team1-glow)'
+};
+
+const visualShareCardBtnStyle: React.CSSProperties = {
+  width: '100%',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: '8px',
+  padding: '13px 16px',
+  borderRadius: '14px',
+  background: 'linear-gradient(135deg, rgba(255, 214, 0, 0.22) 0%, rgba(0, 230, 118, 0.25) 100%)',
+  border: '1.5px solid var(--gold-primary)',
+  color: '#ffffff',
+  fontWeight: 900,
+  fontSize: '0.92rem',
+  cursor: 'pointer',
+  marginBottom: '10px',
+  boxShadow: '0 4px 18px rgba(255, 214, 0, 0.25)',
+  transition: 'transform 0.15s ease'
 };

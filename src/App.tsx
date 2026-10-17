@@ -168,6 +168,19 @@ export function App() {
   const [isAudioSpeaking, setIsAudioSpeaking] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isSmartwatchActive, setIsSmartwatchActive] = useState(false);
+  const [matchElapsedSeconds, setMatchElapsedSeconds] = useState(0);
+
+  useEffect(() => {
+    let timer: any = null;
+    if (currentView === 'scoreboard' && !state.isPaused && !state.isMatchOver) {
+      timer = setInterval(() => {
+        setMatchElapsedSeconds(s => s + 1);
+      }, 1000);
+    }
+    return () => {
+      if (timer) clearInterval(timer);
+    };
+  }, [currentView, state.isPaused, state.isMatchOver]);
 
   // Real-time synchronization of match room
   useEffect(() => {
@@ -851,6 +864,8 @@ export function App() {
         isOpen={isVictoryModalOpen}
         state={state}
         teams={teams}
+        rules={rules}
+        matchElapsedSeconds={matchElapsedSeconds}
         onRematch={handleRematch}
         onNewMatch={() => {
           setIsVictoryModalOpen(false);
