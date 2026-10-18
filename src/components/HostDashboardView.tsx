@@ -3,6 +3,7 @@ import type { MatchRules, CommunityPlayer } from '../types/padel';
 import type { UserSession } from '../services/authService';
 import { communityService } from '../services/communityService';
 import { notificationService } from '../services/notificationService';
+import { themeService, type AppTheme } from '../services/themeService';
 import { 
   Trophy, 
   Watch, 
@@ -44,6 +45,11 @@ export const HostDashboardView: React.FC<Props> = ({
   const [sideChangeEnabled, setSideChangeEnabled] = useState(rules.sideChangeEnabled !== false);
   const [sideChangeRestSeconds, setSideChangeRestSeconds] = useState(rules.sideChangeRestSeconds !== undefined ? rules.sideChangeRestSeconds : 90);
   const [unreadNotifs, setUnreadNotifs] = useState(() => notificationService.getUnreadCount());
+  const [theme, setTheme] = useState<AppTheme>(themeService.getTheme());
+
+  useEffect(() => {
+    return themeService.subscribe(setTheme);
+  }, []);
 
   useEffect(() => {
     const unsub = notificationService.subscribe(() => {
@@ -102,6 +108,27 @@ export const HostDashboardView: React.FC<Props> = ({
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {/* Day / Night Theme Switcher */}
+          <button
+            type="button"
+            onClick={() => themeService.toggleTheme()}
+            style={themeToggleTopBtnStyle}
+            title={theme === 'day' ? 'Cambiar a Modo Noche (Estadio Neón)' : 'Cambiar a Modo Día (Luz Natural / Alto Contraste)'}
+            aria-label="Cambiar tema día/noche"
+          >
+            {theme === 'day' ? (
+              <>
+                <Sun size={15} color="var(--gold-primary)" />
+                <span style={{ fontSize: '0.75rem', fontWeight: 700 }}>Día</span>
+              </>
+            ) : (
+              <>
+                <Moon size={15} color="var(--team2-primary)" />
+                <span style={{ fontSize: '0.75rem', fontWeight: 700 }}>Noche</span>
+              </>
+            )}
+          </button>
+
           {onOpenNotifications && (
             <button 
               onClick={onOpenNotifications} 
@@ -198,7 +225,7 @@ export const HostDashboardView: React.FC<Props> = ({
                 <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.72rem', color: '#facc15', fontWeight: 700 }}>
                   <Sun size={12} /> Luz Natural (Día)
                 </div>
-                <div style={{ fontSize: '1.1rem', fontWeight: 900, color: '#fff', marginTop: '2px' }}>
+                <div style={{ fontSize: '1.1rem', fontWeight: 900, color: 'var(--text-main)', marginTop: '2px' }}>
                   {dayRate !== null ? `${dayRate}%` : '---'}
                 </div>
                 <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>
@@ -210,7 +237,7 @@ export const HostDashboardView: React.FC<Props> = ({
                 <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.72rem', color: '#38bdf8', fontWeight: 700 }}>
                   <Moon size={12} /> Foco Noche (Artificial)
                 </div>
-                <div style={{ fontSize: '1.1rem', fontWeight: 900, color: '#fff', marginTop: '2px' }}>
+                <div style={{ fontSize: '1.1rem', fontWeight: 900, color: 'var(--text-main)', marginTop: '2px' }}>
                   {nightRate !== null ? `${nightRate}%` : '---'}
                 </div>
                 <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>
@@ -229,10 +256,10 @@ export const HostDashboardView: React.FC<Props> = ({
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '8px' }}>
               <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-                ⚡ Puntos de Oro: <strong style={{ color: '#fff' }}>{gpWon}/{gpPlayed}</strong> ({gpPlayed > 0 ? Math.round((gpWon / gpPlayed) * 100) : 0}%)
+                ⚡ Puntos de Oro: <strong style={{ color: 'var(--text-main)' }}>{gpWon}/{gpPlayed}</strong> ({gpPlayed > 0 ? Math.round((gpWon / gpPlayed) * 100) : 0}%)
               </div>
               <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-                🎯 Tie-Breaks: <strong style={{ color: '#fff' }}>{tbWon}/{tbPlayed}</strong> ({tbPlayed > 0 ? Math.round((tbWon / tbPlayed) * 100) : 0}%)
+                🎯 Tie-Breaks: <strong style={{ color: 'var(--text-main)' }}>{tbWon}/{tbPlayed}</strong> ({tbPlayed > 0 ? Math.round((tbWon / tbPlayed) * 100) : 0}%)
               </div>
             </div>
 
@@ -595,7 +622,7 @@ const secondaryLinkBtnStyle: React.CSSProperties = {
   background: 'var(--bg-elevated)',
   borderRadius: 'var(--radius-md)',
   border: '1px solid var(--border-subtle)',
-  color: '#fff',
+  color: 'var(--text-main)',
   fontSize: '0.85rem',
   fontWeight: 600,
   textAlign: 'left'
@@ -620,7 +647,7 @@ const inputStyle: React.CSSProperties = {
   background: 'var(--bg-elevated)',
   border: '1px solid var(--border-medium)',
   borderRadius: 'var(--radius-md)',
-  color: '#fff',
+  color: 'var(--text-main)',
   fontSize: '0.95rem',
   outline: 'none'
 };
@@ -686,4 +713,17 @@ const unreadBadgeCountStyle: React.CSSProperties = {
   alignItems: 'center',
   justifyContent: 'center',
   boxShadow: '0 0 8px rgba(255, 61, 113, 0.6)'
+};
+
+const themeToggleTopBtnStyle: React.CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '6px',
+  padding: '6px 12px',
+  background: 'var(--bg-elevated)',
+  border: '1px solid var(--border-medium)',
+  borderRadius: 'var(--radius-full)',
+  color: 'var(--text-main)',
+  cursor: 'pointer',
+  transition: 'all var(--transition-fast)'
 };

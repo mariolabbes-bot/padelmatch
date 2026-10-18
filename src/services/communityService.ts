@@ -21,6 +21,34 @@ class CommunityService {
         const rawPlayers = localStorage.getItem(PLAYERS_STORAGE_KEY);
         this.players = rawPlayers ? JSON.parse(rawPlayers) : [];
 
+        // Ensure Mario Labbé (Founder) is always seeded in roster
+        if (!this.players.some(p => p.email?.toLowerCase() === 'mariolabbes@gmail.com')) {
+          this.players.unshift({
+            id: 'founder-mario-labbe',
+            name: 'Mario Labbé',
+            email: 'mariolabbes@gmail.com',
+            phone: '+56912345678',
+            elo: 1400,
+            category: '4ta',
+            matchesPlayed: 14,
+            matchesWon: 10,
+            winStreak: 3,
+            favoritePosition: 'drive',
+            dominantHand: 'diestro',
+            city: 'Santiago',
+            club: 'Club Padel Pro',
+            plan: 'pro_founder',
+            registeredAt: 1700000000000,
+            dayMatchesPlayed: 8,
+            dayMatchesWon: 6,
+            nightMatchesPlayed: 6,
+            nightMatchesWon: 4,
+            goldenPointsPlayed: 7,
+            goldenPointsWon: 5
+          });
+          localStorage.setItem(PLAYERS_STORAGE_KEY, JSON.stringify(this.players));
+        }
+
         const rawMatches = localStorage.getItem(MATCHES_STORAGE_KEY);
         this.matches = rawMatches ? JSON.parse(rawMatches) : [];
       } else {

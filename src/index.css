@@ -61,6 +61,75 @@
   --safe-right: max(12px, env(safe-area-inset-right, 12px));
 }
 
+/* Day Mode (Modo Día / Luz Natural / Alto Contraste Anti-Reflejo Solar) */
+[data-theme='day'] {
+  --bg-deep: #edf2f7;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f8fafc;
+  --bg-elevated: #e2e8f0;
+  --bg-glass: rgba(255, 255, 255, 0.94);
+
+  --border-subtle: rgba(15, 23, 42, 0.12);
+  --border-medium: rgba(15, 23, 42, 0.22);
+  --border-focus: #059669;
+
+  /* Team 1 Accent (Emerald Verde Deportivo visible bajo sol directo) */
+  --team1-primary: #059669;
+  --team1-gradient: linear-gradient(135deg, #059669 0%, #0284c7 100%);
+  --team1-glow: rgba(5, 150, 105, 0.25);
+  --team1-dark: #ecfdf5;
+
+  /* Team 2 Accent (Azul Zafiro Deportivo Profundo) */
+  --team2-primary: #0284c7;
+  --team2-gradient: linear-gradient(135deg, #0284c7 0%, #4f46e5 100%);
+  --team2-glow: rgba(2, 132, 199, 0.25);
+  --team2-dark: #f0f9ff;
+
+  /* Special Game State Colors */
+  --gold-primary: #b45309;
+  --gold-glow: rgba(180, 83, 9, 0.25);
+  --danger-primary: #e11d48;
+  --danger-glow: rgba(225, 29, 72, 0.25);
+
+  /* Text & Surfaces: Máxima legibilidad a distancia en cancha al aire libre */
+  --text-main: #0f172a;
+  --text-muted: #475569;
+  --text-dim: #64748b;
+
+  /* Shadows para modo claro */
+  --shadow-sm: 0 2px 8px rgba(15, 23, 42, 0.08);
+  --shadow-lg: 0 10px 30px -5px rgba(15, 23, 42, 0.14);
+  --shadow-glow-t1: 0 0 20px rgba(5, 150, 105, 0.2);
+  --shadow-glow-t2: 0 0 20px rgba(2, 132, 199, 0.2);
+  --shadow-glow-gold: 0 0 20px rgba(180, 83, 9, 0.2);
+}
+
+[data-theme='day'] .glass-panel {
+  background: var(--bg-glass);
+  box-shadow: 0 4px 25px rgba(15, 23, 42, 0.08);
+  border: 1px solid var(--border-subtle);
+}
+
+[data-theme='day'] .badge-gold {
+  background: rgba(180, 83, 9, 0.12);
+  color: var(--gold-primary);
+  border: 1px solid rgba(180, 83, 9, 0.35);
+  box-shadow: none;
+}
+
+[data-theme='day'] .badge-team1 {
+  background: rgba(5, 150, 105, 0.12);
+  color: var(--team1-primary);
+  border: 1px solid rgba(5, 150, 105, 0.35);
+}
+
+[data-theme='day'] .badge-team2 {
+  background: rgba(2, 132, 199, 0.12);
+  color: var(--team2-primary);
+  border: 1px solid rgba(2, 132, 199, 0.35);
+}
+
+
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;

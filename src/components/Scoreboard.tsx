@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { MatchScoreState, Team, MatchRules, AppViewMode } from '../types/padel';
 import type { UserSession } from '../services/authService';
+import { themeService, type AppTheme } from '../services/themeService';
 import { MobileDrawerMenu } from './MobileDrawerMenu';
 import { 
   RotateCcw, 
@@ -15,7 +16,9 @@ import {
   Plus,
   Pause,
   Play,
-  Timer
+  Timer,
+  Sun,
+  Moon
 } from 'lucide-react';
 
 interface Props {
@@ -74,6 +77,11 @@ export const Scoreboard: React.FC<Props> = ({
   hostName
 }) => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [theme, setTheme] = useState<AppTheme>(themeService.getTheme());
+
+  useEffect(() => {
+    return themeService.subscribe(setTheme);
+  }, []);
 
   const currentSet = state.sets[state.currentSetIndex] || { team1: 0, team2: 0 };
   const isGoldenPointNow = 
@@ -93,7 +101,7 @@ export const Scoreboard: React.FC<Props> = ({
             alt="PadelMatch Logo" 
             style={{ width: '26px', height: '26px', borderRadius: '50%', objectFit: 'cover', border: '1px solid rgba(255, 255, 255, 0.2)' }} 
           />
-          <span style={{ fontWeight: 900, letterSpacing: '-0.02em', fontSize: '1rem', color: '#fff' }}>
+          <span style={{ fontWeight: 900, letterSpacing: '-0.02em', fontSize: '1rem', color: 'var(--text-main)' }}>
             PADEL<span style={{ color: 'var(--team1-primary)' }}>MATCH</span>
           </span>
         </div>
@@ -166,13 +174,27 @@ export const Scoreboard: React.FC<Props> = ({
             {state.isPaused ? <Play size={17} color="var(--gold-primary)" /> : <Pause size={17} color="var(--text-muted)" />}
           </button>
 
+          {/* Day / Night Theme Button */}
+          <button
+            onClick={() => themeService.toggleTheme()}
+            style={{
+              ...iconBtnStyle,
+              background: theme === 'day' ? 'rgba(255, 214, 0, 0.15)' : 'rgba(0, 176, 255, 0.15)',
+              borderColor: theme === 'day' ? 'var(--gold-primary)' : 'var(--team2-primary)'
+            }}
+            title={theme === 'day' ? 'Cambiar a Modo Noche (Estadio Neón)' : 'Cambiar a Modo Día (Luz Natural / Alto Contraste)'}
+            aria-label="Alternar modo día y noche"
+          >
+            {theme === 'day' ? <Sun size={17} color="var(--gold-primary)" /> : <Moon size={17} color="var(--team2-primary)" />}
+          </button>
+
           {/* Drawer Menu Button */}
           <button
             onClick={() => setIsDrawerOpen(true)}
             style={menuTriggerBtnStyle}
             aria-label="Abrir menú de configuración"
           >
-            <Menu size={20} color="#fff" />
+            <Menu size={20} color="var(--text-main)" />
           </button>
         </div>
       </header>
@@ -206,14 +228,14 @@ export const Scoreboard: React.FC<Props> = ({
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <div style={restTimerBadgeStyle}>
               <Timer size={18} color="var(--team1-primary)" />
-              <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 900, fontSize: '1.25rem', color: '#fff' }}>
+              <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 900, fontSize: '1.25rem', color: 'var(--text-main)' }}>
                 {Math.floor((state.restSecondsRemaining || 0) / 60)}:
                 {((state.restSecondsRemaining || 0) % 60) < 10 ? '0' : ''}
                 {(state.restSecondsRemaining || 0) % 60}
               </span>
             </div>
             <div>
-              <div style={{ fontWeight: 800, fontSize: '0.85rem', color: '#fff', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <div style={{ fontWeight: 800, fontSize: '0.85rem', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <ArrowRightLeft size={14} color="var(--gold-primary)" />
                 <span>Cambio de Lado y Descanso</span>
               </div>
@@ -259,9 +281,9 @@ export const Scoreboard: React.FC<Props> = ({
                   S{idx + 1}
                 </span>
                 <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, fontSize: '0.85rem' }}>
-                  <span style={{ color: set.team1 > set.team2 ? 'var(--team1-primary)' : '#fff' }}>{set.team1}</span>
+                  <span style={{ color: set.team1 > set.team2 ? 'var(--team1-primary)' : 'var(--text-main)' }}>{set.team1}</span>
                   <span style={{ opacity: 0.35, margin: '0 2px' }}>-</span>
-                  <span style={{ color: set.team2 > set.team1 ? 'var(--team2-primary)' : '#fff' }}>{set.team2}</span>
+                  <span style={{ color: set.team2 > set.team1 ? 'var(--team2-primary)' : 'var(--text-main)' }}>{set.team2}</span>
                 </span>
                 {set.tiebreakPoints && (
                   <span style={{ fontSize: '0.6rem', color: 'var(--gold-primary)' }}>
@@ -290,7 +312,7 @@ export const Scoreboard: React.FC<Props> = ({
               <div style={{ width: '4px', height: '32px', borderRadius: '2px', background: 'var(--team1-primary)' }} />
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <h2 style={{ fontSize: '1.15rem', fontWeight: 900, color: '#fff' }}>
+                  <h2 style={{ fontSize: '1.15rem', fontWeight: 900, color: 'var(--text-main)' }}>
                     {teams.team1.name}
                   </h2>
                   {state.servingTeam === 'team1' && (
@@ -309,7 +331,7 @@ export const Scoreboard: React.FC<Props> = ({
             {/* Games Counter */}
             <div style={gamesBadgeStyle}>
               <span style={{ fontSize: '0.65rem', color: 'var(--text-dim)', fontWeight: 800 }}>GAMES</span>
-              <span style={{ fontSize: '1.6rem', fontWeight: 900, fontFamily: 'var(--font-mono)', color: '#fff' }}>
+              <span style={{ fontSize: '1.6rem', fontWeight: 900, fontFamily: 'var(--font-mono)', color: 'var(--text-main)' }}>
                 {currentSet.team1}
               </span>
             </div>
@@ -354,7 +376,7 @@ export const Scoreboard: React.FC<Props> = ({
               <div style={{ width: '4px', height: '32px', borderRadius: '2px', background: 'var(--team2-primary)' }} />
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <h2 style={{ fontSize: '1.15rem', fontWeight: 900, color: '#fff' }}>
+                  <h2 style={{ fontSize: '1.15rem', fontWeight: 900, color: 'var(--text-main)' }}>
                     {teams.team2.name}
                   </h2>
                   {state.servingTeam === 'team2' && (
@@ -373,7 +395,7 @@ export const Scoreboard: React.FC<Props> = ({
             {/* Games Counter */}
             <div style={gamesBadgeStyle}>
               <span style={{ fontSize: '0.65rem', color: 'var(--text-dim)', fontWeight: 800 }}>GAMES</span>
-              <span style={{ fontSize: '1.6rem', fontWeight: 900, fontFamily: 'var(--font-mono)', color: '#fff' }}>
+              <span style={{ fontSize: '1.6rem', fontWeight: 900, fontFamily: 'var(--font-mono)', color: 'var(--text-main)' }}>
                 {currentSet.team2}
               </span>
             </div>
@@ -764,10 +786,10 @@ const undoBtnStyle: React.CSSProperties = {
   alignItems: 'center',
   gap: '6px',
   padding: '8px 14px',
-  background: 'rgba(255, 255, 255, 0.08)',
+  background: 'var(--bg-elevated)',
   border: '1px solid var(--border-medium)',
   borderRadius: 'var(--radius-sm)',
-  color: '#fff',
+  color: 'var(--text-main)',
   fontSize: '0.8rem',
   fontWeight: 800,
   flexShrink: 0

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   X, 
   Watch, 
@@ -16,9 +16,12 @@ import {
   QrCode,
   Pause,
   Play,
-  Clock
+  Clock,
+  Sun,
+  Moon
 } from 'lucide-react';
 import type { UserSession } from '../services/authService';
+import { themeService, type AppTheme } from '../services/themeService';
 
 interface Props {
   isOpen: boolean;
@@ -65,6 +68,12 @@ export const MobileDrawerMenu: React.FC<Props> = ({
   onTogglePause,
   onOpenFinishEarlyModal
 }) => {
+  const [theme, setTheme] = useState<AppTheme>(themeService.getTheme());
+
+  useEffect(() => {
+    return themeService.subscribe(setTheme);
+  }, []);
+
   if (!isOpen) return null;
 
   return (
@@ -83,7 +92,7 @@ export const MobileDrawerMenu: React.FC<Props> = ({
               style={{ width: '34px', height: '34px', borderRadius: '50%', objectFit: 'cover', border: '1.5px solid rgba(255, 255, 255, 0.2)' }} 
             />
             <div>
-              <div style={{ fontWeight: 900, fontSize: '1.1rem', letterSpacing: '-0.02em', color: '#fff' }}>
+              <div style={{ fontWeight: 900, fontSize: '1.1rem', letterSpacing: '-0.02em', color: 'var(--text-main)' }}>
                 PADEL<span style={{ color: 'var(--team1-primary)' }}>MATCH</span>
               </div>
               <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
@@ -104,7 +113,7 @@ export const MobileDrawerMenu: React.FC<Props> = ({
               {currentUser.name.charAt(0).toUpperCase()}
             </div>
             <div style={{ flex: 1 }}>
-              <div style={{ fontWeight: 800, fontSize: '0.95rem', color: '#fff' }}>
+              <div style={{ fontWeight: 800, fontSize: '0.95rem', color: 'var(--text-main)' }}>
                 {currentUser.name}
               </div>
               <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', gap: '8px' }}>
@@ -117,7 +126,46 @@ export const MobileDrawerMenu: React.FC<Props> = ({
         )}
 
         {/* Menu Items List */}
+        {/* Menu Items List */}
         <div style={menuListStyle}>
+          {/* Day / Night High Contrast Display Toggle */}
+          <div style={{
+            ...smartwatchBannerStyle,
+            background: theme === 'day' ? 'rgba(255, 214, 0, 0.08)' : 'rgba(0, 176, 255, 0.08)',
+            borderColor: theme === 'day' ? 'rgba(255, 214, 0, 0.3)' : 'rgba(0, 176, 255, 0.3)'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{
+                padding: '8px',
+                borderRadius: '8px',
+                background: theme === 'day' ? 'rgba(255, 214, 0, 0.2)' : 'rgba(0, 176, 255, 0.2)',
+                color: theme === 'day' ? 'var(--gold-primary)' : 'var(--team2-primary)'
+              }}>
+                {theme === 'day' ? <Sun size={20} /> : <Moon size={20} />}
+              </div>
+              <div>
+                <div style={{ fontWeight: 800, fontSize: '0.9rem', color: 'var(--text-main)' }}>
+                  {theme === 'day' ? 'Modo Día (Luz Solar)' : 'Modo Noche (Estadio)'}
+                </div>
+                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                  {theme === 'day' ? 'Fondo claro anti-reflejo' : 'Contraste oscuro neón'}
+                </div>
+              </div>
+            </div>
+
+            <button 
+              onClick={() => themeService.toggleTheme()}
+              style={{
+                ...switchToggleBtnStyle,
+                background: theme === 'day' ? 'var(--gold-primary)' : 'var(--team2-primary)',
+                color: '#070a10',
+                cursor: 'pointer'
+              }}
+            >
+              {theme === 'day' ? 'CAMBIAR A NOCHE' : 'CAMBIAR A DÍA'}
+            </button>
+          </div>
+
           {/* Smartwatch / Apple Watch Feature Toggle */}
           <div style={smartwatchBannerStyle}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -130,7 +178,7 @@ export const MobileDrawerMenu: React.FC<Props> = ({
                 <Watch size={20} />
               </div>
               <div>
-                <div style={{ fontWeight: 800, fontSize: '0.9rem', color: '#fff' }}>
+                <div style={{ fontWeight: 800, fontSize: '0.9rem', color: 'var(--text-main)' }}>
                   Modo Apple Watch / Reloj
                 </div>
                 <div style={{ fontSize: '0.7rem', color: isSmartwatchActive ? 'var(--team1-primary)' : 'var(--text-muted)' }}>

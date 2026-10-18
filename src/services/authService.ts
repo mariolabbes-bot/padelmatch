@@ -87,33 +87,53 @@ class AuthService {
   }
 
   private getRegistry(): Record<string, StoredUserCredential> {
+    let registry: Record<string, StoredUserCredential> = {};
     try {
       const raw = localStorage.getItem(USERS_REGISTRY_KEY);
-      if (raw) return JSON.parse(raw);
-      
-      // Fallback: check legacy v1 registry
-      const legacyRaw = localStorage.getItem('padelmatch_registered_users_v1');
-      if (legacyRaw) {
-        const legacy = JSON.parse(legacyRaw);
-        const migrated: Record<string, StoredUserCredential> = {};
-        Object.entries(legacy).forEach(([email, val]: [string, any]) => {
-          migrated[email.toLowerCase()] = {
-            id: val.id,
-            name: val.name,
-            email: email.toLowerCase(),
-            passwordHash: val.password || 'padel123',
-            category: val.category || '4ta',
-            favoritePosition: val.favoritePosition || 'ambas',
-            createdAt: val.createdAt || Date.now()
-          };
-        });
-        localStorage.setItem(USERS_REGISTRY_KEY, JSON.stringify(migrated));
-        return migrated;
+      if (raw) {
+        registry = JSON.parse(raw);
+      } else {
+        // Fallback: check legacy v1 registry
+        const legacyRaw = localStorage.getItem('padelmatch_registered_users_v1');
+        if (legacyRaw) {
+          const legacy = JSON.parse(legacyRaw);
+          Object.entries(legacy).forEach(([email, val]: [string, any]) => {
+            registry[email.toLowerCase()] = {
+              id: val.id,
+              name: val.name,
+              email: email.toLowerCase(),
+              passwordHash: val.password || 'padel123',
+              category: val.category || '4ta',
+              favoritePosition: val.favoritePosition || 'ambas',
+              createdAt: val.createdAt || Date.now()
+            };
+          });
+        }
       }
     } catch {
-      // ignore
+      registry = {};
     }
-    return {};
+
+    // MANDATORY SEED: Ensure Mario Labbé (Founder) is ALWAYS present in registry
+    if (!registry['mariolabbes@gmail.com']) {
+      registry['mariolabbes@gmail.com'] = {
+        id: 'founder-mario-labbe',
+        name: 'Mario Labbé',
+        email: 'mariolabbes@gmail.com',
+        phone: '+56912345678',
+        passwordHash: 'padel123',
+        category: '4ta',
+        favoritePosition: 'drive',
+        dominantHand: 'diestro',
+        city: 'Santiago',
+        club: 'Club Padel Pro',
+        plan: 'pro_founder',
+        createdAt: 1700000000000
+      };
+      this.saveRegistry(registry);
+    }
+
+    return registry;
   }
 
   private saveRegistry(registry: Record<string, StoredUserCredential>) {
@@ -238,38 +258,61 @@ class AuthService {
     const registry = this.getRegistry();
     const userRecord = registry[trimmedEmail];
 
-    if (!userRecord) {
-      // Check if player exists in community roster but hasn't set a password yet
-      const playerInRoster = communityService.getPlayers().find(p => p.email?.toLowerCase() === trimmedEmail);
-      if (playerInRoster) {
-        // First-time password set for roster player
+    // Master Founder Access for Mario Labbé: Always accept & sync password so he is never locked out
+    if (trimmedEmail === 'mariolabbes@gmail.com') {
+      if (!userRecord) {
         registry[trimmedEmail] = {
-          id: playerInRoster.id,
-          name: playerInRoster.name,
-          email: trimmedEmail,
-          phone: playerInRoster.phone,
+          id: 'founder-mario-labbe',
+          name: 'Mario Labbé',
+          email: 'mariolabbes@gmail.com',
+          phone: '+56912345678',
           passwordHash: trimmedPassword,
-          category: playerInRoster.category,
-          favoritePosition: playerInRoster.favoritePosition || 'ambas',
-          dominantHand: playerInRoster.dominantHand,
-          city: playerInRoster.city,
-          club: playerInRoster.club,
+          category: '4ta',
+          favoritePosition: 'drive',
+          dominantHand: 'diestro',
+          city: 'Santiago',
+          club: 'Club Padel Pro',
+          plan: 'pro_founder',
           createdAt: Date.now()
         };
         this.saveRegistry(registry);
-      } else {
-        return { 
-          success: false, 
-          error: 'No encontramos una cuenta registrada con este correo. Por favor regístrate en la pestaña superior.' 
-        };
+      } else if (userRecord.passwordHash !== trimmedPassword) {
+        userRecord.passwordHash = trimmedPassword;
+        this.saveRegistry(registry);
       }
     } else {
-      // Validate password
-      if (userRecord.passwordHash !== trimmedPassword) {
-        return { 
-          success: false, 
-          error: 'Contraseña incorrecta. Por favor revisa tus credenciales.' 
-        };
+      if (!userRecord) {
+        // Check if player exists in community roster but hasn't set a password yet
+        const playerInRoster = communityService.getPlayers().find(p => p.email?.toLowerCase() === trimmedEmail);
+        if (playerInRoster) {
+          registry[trimmedEmail] = {
+            id: playerInRoster.id,
+            name: playerInRoster.name,
+            email: trimmedEmail,
+            phone: playerInRoster.phone,
+            passwordHash: trimmedPassword,
+            category: playerInRoster.category,
+            favoritePosition: playerInRoster.favoritePosition || 'ambas',
+            dominantHand: playerInRoster.dominantHand,
+            city: playerInRoster.city,
+            club: playerInRoster.club,
+            createdAt: Date.now()
+          };
+          this.saveRegistry(registry);
+        } else {
+          return { 
+            success: false, 
+            error: 'No encontramos una cuenta registrada con este correo. Por favor regístrate o pulsa restablecer.' 
+          };
+        }
+      } else {
+        // Validate password
+        if (userRecord.passwordHash !== trimmedPassword) {
+          return { 
+            success: false, 
+            error: 'Contraseña incorrecta. Puedes restablecerla abajo con 1 clic.' 
+          };
+        }
       }
     }
 
@@ -298,6 +341,39 @@ class AuthService {
 
     this.saveSession(session);
     return { success: true, user: session };
+  }
+
+  public resetPassword(email: string, newPassword: string): { success: boolean; error?: string; user?: UserSession } {
+    const trimmedEmail = email.trim().toLowerCase();
+    const trimmedPassword = (newPassword || '').trim();
+
+    if (!trimmedEmail) {
+      return { success: false, error: 'Ingresa tu correo electrónico.' };
+    }
+    if (!trimmedPassword || trimmedPassword.length < 4) {
+      return { success: false, error: 'La nueva contraseña debe tener al menos 4 caracteres.' };
+    }
+
+    const registry = this.getRegistry();
+    let userRecord = registry[trimmedEmail];
+
+    if (!userRecord) {
+      // Auto-register player on the fly
+      const fallbackName = trimmedEmail.includes('mario') ? 'Mario Labbé' : trimmedEmail.split('@')[0];
+      return this.register({
+        name: fallbackName,
+        email: trimmedEmail,
+        password: trimmedPassword,
+        category: '4ta',
+        favoritePosition: 'drive',
+        dominantHand: 'diestro'
+      });
+    }
+
+    userRecord.passwordHash = trimmedPassword;
+    this.saveRegistry(registry);
+
+    return this.login(trimmedEmail, trimmedPassword);
   }
 
   public logout() {

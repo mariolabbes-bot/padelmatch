@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { PlayerCategory, DominantHand } from '../types/padel';
 import { communityService } from '../services/communityService';
+import { themeService, type AppTheme } from '../services/themeService';
 import { 
   Trophy, 
   Users, 
@@ -12,7 +13,9 @@ import {
   ArrowRight,
   UserPlus,
   Trash2,
-  X
+  X,
+  Sun,
+  Moon
 } from 'lucide-react';
 
 interface Props {
@@ -25,6 +28,11 @@ export const CommunityDashboard: React.FC<Props> = ({ onBackToScoreboard }) => {
   const [activeTab, setActiveTab] = useState<'ranking' | 'matches' | 'saas'>('ranking');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [theme, setTheme] = useState<AppTheme>(themeService.getTheme());
+
+  useEffect(() => {
+    return themeService.subscribe(setTheme);
+  }, []);
 
   // New Player Form State
   const [name, setName] = useState('');
@@ -102,7 +110,7 @@ export const CommunityDashboard: React.FC<Props> = ({ onBackToScoreboard }) => {
               <span className="badge badge-gold">Módulo D • Ranking & Comunidad</span>
               <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Circuito Real de Pádel</span>
             </div>
-            <h1 style={{ fontSize: '1.4rem', fontWeight: 900, marginTop: '4px', color: '#fff' }}>
+            <h1 style={{ fontSize: '1.4rem', fontWeight: 900, marginTop: '4px', color: 'var(--text-main)' }}>
               Ranking ELO Oficial & Comunidad de Jugadores
             </h1>
             <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
@@ -112,6 +120,29 @@ export const CommunityDashboard: React.FC<Props> = ({ onBackToScoreboard }) => {
         </div>
 
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          {/* Day / Night Theme Button */}
+          <button
+            type="button"
+            onClick={() => themeService.toggleTheme()}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '8px 12px',
+              background: 'var(--bg-elevated)',
+              border: '1px solid var(--border-medium)',
+              borderRadius: 'var(--radius-md)',
+              color: 'var(--text-main)',
+              cursor: 'pointer',
+              fontWeight: 700,
+              fontSize: '0.8rem'
+            }}
+            title={theme === 'day' ? 'Cambiar a Modo Noche' : 'Cambiar a Modo Día'}
+          >
+            {theme === 'day' ? <Sun size={15} color="var(--gold-primary)" /> : <Moon size={15} color="var(--team2-primary)" />}
+            <span>{theme === 'day' ? 'Día' : 'Noche'}</span>
+          </button>
+
           <button onClick={() => setIsAddModalOpen(true)} style={addPlayerBtnStyle}>
             <UserPlus size={16} />
             <span>+ Registrar Jugador Real</span>
@@ -226,7 +257,7 @@ export const CommunityDashboard: React.FC<Props> = ({ onBackToScoreboard }) => {
           ) : (
             <div style={emptyDatabaseCard} className="glass-panel">
               <Users size={40} color="var(--team1-primary)" style={{ marginBottom: '12px' }} />
-              <h2 style={{ fontSize: '1.25rem', fontWeight: 900, color: '#fff' }}>
+              <h2 style={{ fontSize: '1.25rem', fontWeight: 900, color: 'var(--text-main)' }}>
                 Base de Datos Lista para Jugadores Reales
               </h2>
               <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', maxWidth: '500px', margin: '8px auto 16px' }}>
@@ -298,7 +329,7 @@ export const CommunityDashboard: React.FC<Props> = ({ onBackToScoreboard }) => {
                           </div>
                           <div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                              <span style={{ fontWeight: 800, color: '#fff' }}>{player.name}</span>
+                              <span style={{ fontWeight: 800, color: 'var(--text-main)' }}>{player.name}</span>
                               {player.dominantHand === 'zurdo' && (
                                 <span style={{ fontSize: '0.62rem', background: 'rgba(255, 214, 0, 0.2)', color: 'var(--gold-primary)', padding: '1px 5px', borderRadius: '4px', fontWeight: 800 }}>
                                   ⭐ ZURDO
@@ -324,7 +355,7 @@ export const CommunityDashboard: React.FC<Props> = ({ onBackToScoreboard }) => {
                       <td style={{ ...tdStyle, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>
                         {player.matchesPlayed}
                       </td>
-                      <td style={{ ...tdStyle, fontFamily: 'var(--font-mono)', color: '#fff', fontWeight: 700 }}>
+                      <td style={{ ...tdStyle, fontFamily: 'var(--font-mono)', color: 'var(--text-main)', fontWeight: 700 }}>
                         {player.matchesWon}
                       </td>
                       <td style={tdStyle}>
@@ -399,7 +430,7 @@ export const CommunityDashboard: React.FC<Props> = ({ onBackToScoreboard }) => {
           ) : (
             <div style={emptyDatabaseCard} className="glass-panel">
               <Calendar size={40} color="var(--team2-primary)" style={{ marginBottom: '12px' }} />
-              <h2 style={{ fontSize: '1.25rem', fontWeight: 900, color: '#fff' }}>
+              <h2 style={{ fontSize: '1.25rem', fontWeight: 900, color: 'var(--text-main)' }}>
                 Historial de Partidos Limpio
               </h2>
               <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', maxWidth: '480px', margin: '8px auto' }}>
@@ -418,7 +449,7 @@ export const CommunityDashboard: React.FC<Props> = ({ onBackToScoreboard }) => {
             <span className="badge badge-team1" style={{ marginBottom: '12px' }}>
               MODELO B2C • JUGADORES
             </span>
-            <h2 style={{ fontSize: '1.4rem', fontWeight: 900, color: '#fff' }}>PadelMatch Player Pass</h2>
+            <h2 style={{ fontSize: '1.4rem', fontWeight: 900, color: 'var(--text-main)' }}>PadelMatch Player Pass</h2>
             <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '6px' }}>
               La experiencia premium individual para amantes del pádel competitivo.
             </p>

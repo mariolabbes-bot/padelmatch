@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { authService } from '../services/authService';
 import type { UserSession } from '../services/authService';
+import { themeService, type AppTheme } from '../services/themeService';
 import type { CommunityPlayer, DominantHand } from '../types/padel';
 import { 
   Trophy, 
@@ -17,7 +18,11 @@ import {
   AlertCircle,
   Phone,
   MapPin,
-  Hand
+  Hand,
+  Sun,
+  Moon,
+  KeyRound,
+  RotateCcw
 } from 'lucide-react';
 
 interface Props {
@@ -26,11 +31,27 @@ interface Props {
 
 export const AuthScreen: React.FC<Props> = ({ onAuthenticated }) => {
   const [mode, setMode] = useState<'login' | 'register'>('login');
+  const [theme, setTheme] = useState<AppTheme>(themeService.getTheme());
+
+  useEffect(() => {
+    return themeService.subscribe(setTheme);
+  }, []);
+
+  const handleToggleTheme = () => {
+    themeService.toggleTheme();
+  };
   
   // Login State
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [showLoginPassword, setShowLoginPassword] = useState(false);
+
+  // Reset Password State
+  const [isResetMode, setIsResetMode] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
+  const [showResetPassword, setShowResetPassword] = useState(false);
 
   // Register State
   const [registerName, setRegisterName] = useState('');
@@ -56,7 +77,33 @@ export const AuthScreen: React.FC<Props> = ({ onAuthenticated }) => {
     if (res.success && res.user) {
       onAuthenticated(res.user);
     } else {
-      setError(res.error || 'Credenciales inválidas.');
+      setError(res.error || 'Credenciales inválidas. Puedes restablecer tu contraseña con 1 clic abajo.');
+    }
+  };
+
+  const handleResetPassword = (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setSuccessMsg(null);
+
+    if (newPassword.length < 4) {
+      setError('La contraseña debe tener al menos 4 caracteres.');
+      return;
+    }
+
+    if (newPassword !== confirmNewPassword) {
+      setError('Las contraseñas no coinciden. Por favor verifícalas.');
+      return;
+    }
+
+    const res = authService.resetPassword(resetEmail, newPassword);
+    if (res.success && res.user) {
+      setSuccessMsg('¡Contraseña actualizada con éxito! Ingresando...');
+      setTimeout(() => {
+        onAuthenticated(res.user!);
+      }, 400);
+    } else {
+      setError(res.error || 'No se pudo restablecer la contraseña.');
     }
   };
 
@@ -97,12 +144,12 @@ export const AuthScreen: React.FC<Props> = ({ onAuthenticated }) => {
   };
 
   const handleQuickDemoUser = () => {
-    const demoEmail = 'mario@padelmatch.pro';
-    let user = authService.login(demoEmail, 'padel123').user;
+    const founderEmail = 'mariolabbes@gmail.com';
+    let user = authService.login(founderEmail, 'padel123').user;
     if (!user) {
       user = authService.register({
         name: 'Mario Labbé',
-        email: demoEmail,
+        email: founderEmail,
         password: 'padel123',
         phone: '+56912345678',
         dominantHand: 'diestro',
@@ -123,8 +170,31 @@ export const AuthScreen: React.FC<Props> = ({ onAuthenticated }) => {
       <div style={ambientGlowBottom} />
 
       <div style={cardStyle} className="glass-panel">
+        {/* Theme Mode Switcher in Card Header */}
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '8px' }}>
+          <button
+            type="button"
+            onClick={handleToggleTheme}
+            style={themeToggleBtnStyle}
+            title={theme === 'day' ? 'Cambiar a Modo Noche (Estadio Neón)' : 'Cambiar a Modo Día (Luz Natural / Alto Contraste)'}
+            aria-label="Cambiar tema de visualización día/noche"
+          >
+            {theme === 'day' ? (
+              <>
+                <Sun size={15} color="var(--gold-primary)" />
+                <span style={{ fontWeight: 700, fontSize: '0.78rem' }}>Modo Día (Sol)</span>
+              </>
+            ) : (
+              <>
+                <Moon size={15} color="var(--team2-primary)" />
+                <span style={{ fontWeight: 700, fontSize: '0.78rem' }}>Modo Noche (Neón)</span>
+              </>
+            )}
+          </button>
+        </div>
+
         {/* Header / Brand */}
-        <div style={{ textAlign: 'center', marginBottom: '22px' }}>
+        <div style={{ textAlign: 'center', marginBottom: '20px' }}>
           <img 
             src="/logo.png" 
             alt="PadelMatch Logo" 
@@ -141,11 +211,11 @@ export const AuthScreen: React.FC<Props> = ({ onAuthenticated }) => {
           />
           <div style={logoBadgeStyle}>
             <div className="pulsing-dot" style={{ color: 'var(--team1-primary)' }} />
-            <span style={{ fontWeight: 900, letterSpacing: '-0.02em', fontSize: '1.25rem', color: '#fff' }}>
+            <span style={{ fontWeight: 900, letterSpacing: '-0.02em', fontSize: '1.25rem', color: 'var(--text-main)' }}>
               PADEL<span style={{ color: 'var(--team1-primary)' }}>MATCH</span>
             </span>
           </div>
-          <h1 style={{ fontSize: '1.5rem', fontWeight: 900, marginTop: '12px', letterSpacing: '-0.02em', color: '#fff' }}>
+          <h1 style={{ fontSize: '1.45rem', fontWeight: 900, marginTop: '12px', letterSpacing: '-0.02em', color: 'var(--text-main)' }}>
             Marcador Inteligente en Cancha
           </h1>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginTop: '4px' }}>
@@ -153,33 +223,35 @@ export const AuthScreen: React.FC<Props> = ({ onAuthenticated }) => {
           </p>
         </div>
 
-        {/* Tab Switcher */}
-        <div style={tabContainerStyle}>
-          <button
-            type="button"
-            onClick={() => { setMode('login'); setError(null); setSuccessMsg(null); }}
-            style={{
-              ...tabBtnStyle,
-              background: mode === 'login' ? 'var(--bg-card)' : 'transparent',
-              color: mode === 'login' ? '#fff' : 'var(--text-muted)',
-              borderBottom: mode === 'login' ? '2px solid var(--team1-primary)' : '2px solid transparent'
-            }}
-          >
-            Iniciar Sesión
-          </button>
-          <button
-            type="button"
-            onClick={() => { setMode('register'); setError(null); setSuccessMsg(null); }}
-            style={{
-              ...tabBtnStyle,
-              background: mode === 'register' ? 'var(--bg-card)' : 'transparent',
-              color: mode === 'register' ? '#fff' : 'var(--text-muted)',
-              borderBottom: mode === 'register' ? '2px solid var(--team1-primary)' : '2px solid transparent'
-            }}
-          >
-            Crear Perfil con Contraseña
-          </button>
-        </div>
+        {/* Tab Switcher (Only when not in Reset Mode) */}
+        {!isResetMode && (
+          <div style={tabContainerStyle}>
+            <button
+              type="button"
+              onClick={() => { setMode('login'); setError(null); setSuccessMsg(null); }}
+              style={{
+                ...tabBtnStyle,
+                background: mode === 'login' ? 'var(--bg-card)' : 'transparent',
+                color: mode === 'login' ? 'var(--text-main)' : 'var(--text-muted)',
+                borderBottom: mode === 'login' ? '2px solid var(--team1-primary)' : '2px solid transparent'
+              }}
+            >
+              Iniciar Sesión
+            </button>
+            <button
+              type="button"
+              onClick={() => { setMode('register'); setError(null); setSuccessMsg(null); }}
+              style={{
+                ...tabBtnStyle,
+                background: mode === 'register' ? 'var(--bg-card)' : 'transparent',
+                color: mode === 'register' ? 'var(--text-main)' : 'var(--text-muted)',
+                borderBottom: mode === 'register' ? '2px solid var(--team1-primary)' : '2px solid transparent'
+              }}
+            >
+              Crear Perfil con Contraseña
+            </button>
+          </div>
+        )}
 
         {error && (
           <div style={errorBannerStyle}>
@@ -195,20 +267,125 @@ export const AuthScreen: React.FC<Props> = ({ onAuthenticated }) => {
           </div>
         )}
 
-        {/* Form: LOGIN */}
-        {mode === 'login' ? (
+        {/* MODE: RESET PASSWORD */}
+        {isResetMode ? (
+          <form onSubmit={handleResetPassword} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <div style={{ textAlign: 'center', marginBottom: '8px' }}>
+              <div style={{ display: 'inline-flex', padding: '10px', borderRadius: '50%', background: 'rgba(255, 214, 0, 0.15)', color: 'var(--gold-primary)', marginBottom: '6px' }}>
+                <KeyRound size={24} />
+              </div>
+              <h2 style={{ fontSize: '1.15rem', fontWeight: 900, color: 'var(--text-main)' }}>
+                Restablecer Contraseña
+              </h2>
+              <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                Ingresa tu correo y tu nueva contraseña para ingresar sin bloqueos
+              </p>
+            </div>
+
+            <div>
+              <label style={labelStyle}>
+                <Mail size={14} color="var(--team1-primary)" />
+                Correo Electrónico
+              </label>
+              <input
+                type="email"
+                required
+                value={resetEmail}
+                onChange={e => setResetEmail(e.target.value)}
+                placeholder="mariolabbes@gmail.com"
+                style={inputStyle}
+                autoComplete="email"
+              />
+            </div>
+
+            <div>
+              <label style={labelStyle}>
+                <Lock size={14} color="var(--team1-primary)" />
+                Nueva Contraseña
+              </label>
+              <div style={{ position: 'relative' }}>
+                <input
+                  type={showResetPassword ? 'text' : 'password'}
+                  required
+                  value={newPassword}
+                  onChange={e => setNewPassword(e.target.value)}
+                  placeholder="Mínimo 4 caracteres"
+                  style={{ ...inputStyle, paddingRight: '36px' }}
+                  autoComplete="new-password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowResetPassword(!showResetPassword)}
+                  style={eyeIconBtnStyle}
+                  title="Mostrar contraseña"
+                  aria-label="Mostrar contraseña"
+                >
+                  {showResetPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <label style={labelStyle}>
+                <Lock size={14} color="var(--team1-primary)" />
+                Confirmar Nueva Contraseña
+              </label>
+              <input
+                type={showResetPassword ? 'text' : 'password'}
+                required
+                value={confirmNewPassword}
+                onChange={e => setConfirmNewPassword(e.target.value)}
+                placeholder="Repite la nueva contraseña"
+                style={inputStyle}
+                autoComplete="new-password"
+              />
+            </div>
+
+            <button type="submit" style={primaryActionBtnStyle}>
+              <span>Guardar Contraseña e Ingresar</span>
+              <ArrowRight size={18} />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setIsResetMode(false);
+                setError(null);
+                setSuccessMsg(null);
+              }}
+              style={{
+                background: 'transparent',
+                border: '1px solid var(--border-subtle)',
+                color: 'var(--text-muted)',
+                padding: '10px',
+                borderRadius: 'var(--radius-md)',
+                fontSize: '0.85rem',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px',
+                marginTop: '4px'
+              }}
+            >
+              <RotateCcw size={14} />
+              <span>Volver a Iniciar Sesión</span>
+            </button>
+          </form>
+        ) : mode === 'login' ? (
+          /* Form: LOGIN */
           <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <div>
               <label style={labelStyle}>
                 <Mail size={14} color="var(--team1-primary)" />
-                Correo Electrónico (Tu Identificador)
+                Correo Electrónico (Tu Usuario)
               </label>
               <input
                 type="email"
                 required
                 value={loginEmail}
                 onChange={e => setLoginEmail(e.target.value)}
-                placeholder="ejemplo@padel.cl"
+                placeholder="mariolabbes@gmail.com"
                 style={inputStyle}
                 autoComplete="email"
               />
@@ -225,7 +402,7 @@ export const AuthScreen: React.FC<Props> = ({ onAuthenticated }) => {
                   required
                   value={loginPassword}
                   onChange={e => setLoginPassword(e.target.value)}
-                  placeholder="Tu contraseña registrada"
+                  placeholder="Tu contraseña registrada (ej: padel123)"
                   style={inputStyle}
                   autoComplete="current-password"
                 />
@@ -237,6 +414,29 @@ export const AuthScreen: React.FC<Props> = ({ onAuthenticated }) => {
                   aria-label="Ver u ocultar contraseña"
                 >
                   {showLoginPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '6px' }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsResetMode(true);
+                    setResetEmail(loginEmail || 'mariolabbes@gmail.com');
+                    setError(null);
+                    setSuccessMsg(null);
+                  }}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: 'var(--team1-primary)',
+                    fontSize: '0.78rem',
+                    cursor: 'pointer',
+                    padding: 0,
+                    textDecoration: 'underline',
+                    fontWeight: 600
+                  }}
+                >
+                  ¿Olvidaste o quieres cambiar tu contraseña?
                 </button>
               </div>
             </div>
@@ -431,10 +631,10 @@ export const AuthScreen: React.FC<Props> = ({ onAuthenticated }) => {
           </form>
         )}
 
-        {/* Demo Shortcut */}
+        {/* Quick Access Shortcut for Mario Labbé */}
         <div style={{ marginTop: '20px', paddingTop: '16px', borderTop: '1px solid var(--border-subtle)', textAlign: 'center' }}>
           <p style={{ fontSize: '0.8rem', color: 'var(--text-dim)', marginBottom: '8px' }}>
-            ¿Acceso rápido para prueba en cancha?
+            ¿Acceso instantáneo de anfitrión fundador?
           </p>
           <button
             type="button"
@@ -442,7 +642,7 @@ export const AuthScreen: React.FC<Props> = ({ onAuthenticated }) => {
             style={demoBtnStyle}
           >
             <Play size={14} color="var(--team1-primary)" />
-            <span>Entrar como Mario Labbé (Anfitrión Rápido)</span>
+            <span>Ingreso Rápido Mario Labbé (mariolabbes@gmail.com)</span>
           </button>
         </div>
       </div>
@@ -495,12 +695,25 @@ const cardStyle: React.CSSProperties = {
   borderRadius: 'var(--radius-lg)'
 };
 
+const themeToggleBtnStyle: React.CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '6px',
+  padding: '6px 12px',
+  background: 'var(--bg-elevated)',
+  border: '1px solid var(--border-medium)',
+  borderRadius: 'var(--radius-full)',
+  color: 'var(--text-main)',
+  cursor: 'pointer',
+  transition: 'all var(--transition-fast)'
+};
+
 const logoBadgeStyle: React.CSSProperties = {
   display: 'inline-flex',
   alignItems: 'center',
   gap: '8px',
   padding: '6px 14px',
-  background: 'rgba(0, 0, 0, 0.4)',
+  background: 'var(--bg-elevated)',
   borderRadius: 'var(--radius-full)',
   border: '1px solid var(--border-subtle)'
 };
@@ -508,7 +721,7 @@ const logoBadgeStyle: React.CSSProperties = {
 const tabContainerStyle: React.CSSProperties = {
   display: 'grid',
   gridTemplateColumns: '1fr 1fr',
-  background: 'rgba(0, 0, 0, 0.3)',
+  background: 'var(--bg-elevated)',
   borderRadius: 'var(--radius-md)',
   padding: '4px',
   marginBottom: '18px'
@@ -540,7 +753,7 @@ const inputStyle: React.CSSProperties = {
   background: 'var(--bg-elevated)',
   border: '1px solid var(--border-medium)',
   borderRadius: 'var(--radius-md)',
-  color: '#fff',
+  color: 'var(--text-main)',
   fontSize: '0.9rem',
   outline: 'none',
   boxSizing: 'border-box'
@@ -566,7 +779,7 @@ const selectStyle: React.CSSProperties = {
   background: 'var(--bg-elevated)',
   border: '1px solid var(--border-medium)',
   borderRadius: 'var(--radius-md)',
-  color: '#fff',
+  color: 'var(--text-main)',
   fontSize: '0.85rem',
   outline: 'none',
   boxSizing: 'border-box'
@@ -594,7 +807,7 @@ const demoBtnStyle: React.CSSProperties = {
   alignItems: 'center',
   gap: '8px',
   padding: '8px 16px',
-  background: 'rgba(255, 255, 255, 0.05)',
+  background: 'var(--bg-elevated)',
   border: '1px solid var(--border-subtle)',
   borderRadius: 'var(--radius-full)',
   color: 'var(--text-main)',
