@@ -29,6 +29,9 @@ import { Scoreboard } from './components/Scoreboard';
 import { MatchParticipantJoinView } from './components/MatchParticipantJoinView';
 import { CommunityDashboard } from './components/CommunityDashboard';
 import { CourtTvDisplay } from './components/CourtTvDisplay';
+import { GroupsView } from './components/GroupsView';
+import { BottomNavBar } from './components/BottomNavBar';
+import { MobileDrawerMenu } from './components/MobileDrawerMenu';
 
 // Modals
 import { BluetoothCalibrationModal } from './components/BluetoothCalibrationModal';
@@ -49,6 +52,7 @@ function parseMatchIdFromHash(): string | null {
 export function App() {
   // 1. User Authentication Session
   const [currentUser, setCurrentUser] = useState<UserSession | null>(() => authService.getCurrentUser());
+  const [isGlobalDrawerOpen, setIsGlobalDrawerOpen] = useState(false);
 
   useEffect(() => {
     const unsubscribe = authService.subscribe(setCurrentUser);
@@ -657,6 +661,38 @@ export function App() {
         />
       )}
 
+      {/* FLOW 2.1: Groups Module (Convocatorias & Múltiplos de 4) */}
+      {currentView === 'groups' && currentUser && (
+        <GroupsView
+          currentUser={currentUser}
+          onStartMatchWithPlayers={(confirmedPlayers) => {
+            if (confirmedPlayers.length >= 4) {
+              setTeams({
+                team1: {
+                  id: 'team1',
+                  name: `${confirmedPlayers[0].name.split(' ')[0]} & ${confirmedPlayers[1].name.split(' ')[0]}`,
+                  color: 'var(--team1-primary)',
+                  player1: { id: 'p1', name: confirmedPlayers[0].name, position: 'drive' },
+                  player2: { id: 'p2', name: confirmedPlayers[1].name, position: 'reves' }
+                },
+                team2: {
+                  id: 'team2',
+                  name: `${confirmedPlayers[2].name.split(' ')[0]} & ${confirmedPlayers[3].name.split(' ')[0]}`,
+                  color: 'var(--team2-primary)',
+                  player1: { id: 'p3', name: confirmedPlayers[2].name, position: 'drive' },
+                  player2: { id: 'p4', name: confirmedPlayers[3].name, position: 'reves' }
+                }
+              });
+            }
+            const newInit = createInitialMatchState(rules);
+            setState(newInit);
+            setHistory([]);
+            setCurrentView('scoreboard');
+          }}
+          onBackToDashboard={() => setCurrentView('host_dashboard')}
+        />
+      )}
+
       {/* FLOW 3: Real-Time Court QR Lobby (4 Player Slots) */}
       {currentView === 'lobby_qr' && (
         <MatchLobbyQrView
@@ -881,6 +917,44 @@ export function App() {
 
       {/* Automatic Guided PWA Installation Prompt (Android 1-Click & iOS Visual Guide) */}
       <InstallPwaPrompt />
+
+      {/* Mobile-First Bottom Navigation Bar with Central Hero Button for IN-COURT MATCH */}
+      <BottomNavBar
+        currentView={currentView}
+        onNavigate={setCurrentView}
+        onOpenMenu={() => setIsGlobalDrawerOpen(true)}
+        onQuickStartMatch={() => {
+          if (state.currentGame.team1 !== '0' || state.currentGame.team2 !== '0' || state.sets[0].team1 > 0 || state.sets[0].team2 > 0) {
+            setCurrentView('scoreboard');
+          } else {
+            setIsSetupModalOpen(true);
+          }
+        }}
+      />
+
+      {/* Global Mobile Drawer Menu */}
+      <MobileDrawerMenu
+        isOpen={isGlobalDrawerOpen}
+        onClose={() => setIsGlobalDrawerOpen(false)}
+        currentUser={currentUser}
+        isSmartwatchActive={isSmartwatchActive}
+        onToggleSmartwatch={handleToggleSmartwatch}
+        onOpenBluetoothModal={() => setIsBluetoothModalOpen(true)}
+        onOpenAudioModal={() => setIsAudioModalOpen(true)}
+        onOpenCourtAlignment={() => setCurrentView('court_enrollment')}
+        onOpenTvMode={() => setCurrentView('court_tv')}
+        onOpenCommunity={() => setCurrentView('community')}
+        onResetMatch={handleResetMatch}
+        onNewMatch={() => setCurrentView('host_dashboard')}
+        onLogout={handleLogout}
+        isFullscreen={isFullscreen}
+        onToggleFullscreen={toggleFullscreen}
+        onOpenSetupModal={() => setIsSetupModalOpen(true)}
+        onOpenQrModal={() => setIsQrModalOpen(true)}
+        isPaused={state.isPaused}
+        onTogglePause={handleTogglePause}
+        onOpenFinishEarlyModal={() => setIsFinishEarlyModalOpen(true)}
+      />
     </div>
   );
 }

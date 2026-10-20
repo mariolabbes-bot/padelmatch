@@ -53,6 +53,11 @@ export interface CommunityPlayer {
   tieBreaksPlayed?: number;
   tieBreaksWon?: number;
   
+  // Disponibilidad y Preferencias de Juego
+  availableDays?: string[]; // Ej: ['Lunes', 'Miércoles', 'Sábado']
+  availableTimeSlots?: string[]; // Ej: ['Mañana (08:00 - 12:00)', 'Tarde (18:00 - 21:00)']
+  preferredClubs?: string[]; // Ej: ['Club Padel Oriente', 'Padel Center']
+
   // Algoritmo de Sinergia y Rivalidad
   bestPartner?: { name: string; winRate: number; matchesTogether: number };
   nemesis?: { name: string; lossRate: number; matchesAgainst: number };
@@ -157,6 +162,7 @@ export interface HeadToHeadStats {
 export type AppViewMode = 
   | 'auth' 
   | 'host_dashboard' 
+  | 'groups'
   | 'lobby_qr' 
   | 'court_enrollment' 
   | 'scoreboard' 
@@ -177,4 +183,52 @@ export interface AppNotification {
   discountPercentage?: number;
   read: boolean;
   actionUrl?: string;
+}
+
+// ==========================================
+// MÓDULO GRUPOS Y CONVOCATORIAS (MÚLTIPLOS DE 4)
+// ==========================================
+
+export interface GroupMember {
+  playerId: string;
+  name: string;
+  category: PlayerCategory;
+  elo: number;
+  role: 'admin' | 'member';
+  joinedAt: number;
+  avatar?: string;
+  matchesPlayedInGroup: number;
+}
+
+export interface GroupCallout {
+  id: string;
+  groupId: string;
+  creatorId: string;
+  creatorName: string;
+  clubName: string;
+  courtName?: string;
+  matchDate: string; // YYYY-MM-DD
+  matchTime: string; // HH:mm
+  deadlineTime: string; // Límite de confirmación
+  categoryTarget: PlayerCategory | 'abierta';
+  acceptedPlayerIds: string[];
+  rejectedPlayerIds: string[];
+  status: 'open' | 'confirmed' | 'cancelled';
+  notes?: string;
+  createdAt: number;
+}
+
+export interface PadelGroup {
+  id: string;
+  name: string;
+  description: string;
+  city: string;
+  clubPreferred: string;
+  categoryLevel: PlayerCategory | 'abierta';
+  members: GroupMember[];
+  callouts: GroupCallout[];
+  createdAt: number;
+  avatar?: string;
+  bannerColor?: string;
+  isPrivate?: boolean;
 }
