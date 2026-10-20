@@ -17,7 +17,9 @@ import {
   LogOut,
   ArrowLeft,
   Phone,
-  Hand
+  Hand,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 
 interface Props {
@@ -49,6 +51,7 @@ export const MatchParticipantJoinView: React.FC<Props> = ({
   const [dominantHand, setDominantHand] = useState<DominantHand>(currentUser?.dominantHand || 'diestro');
   const [category, setCategory] = useState<PlayerCategory>(currentUser?.category || '4ta');
   const [position, setPosition] = useState<'drive' | 'reves' | 'ambas'>(currentUser?.favoritePosition || 'ambas');
+  const [showAdvancedOptions, setShowAdvancedOptions] = useState(false);
   const [selectedSlotKey, setSelectedSlotKey] = useState<'slot2' | 'slot3' | 'slot4'>(() => {
     if (!room.slots.slot2) return 'slot2';
     if (!room.slots.slot3) return 'slot3';
@@ -317,13 +320,30 @@ export const MatchParticipantJoinView: React.FC<Props> = ({
           ) : (
             /* Registration / Join Form for new participant */
             <form onSubmit={handleJoin}>
-              <div style={{ marginBottom: '14px' }}>
-                <span className="badge badge-team1" style={{ marginBottom: '6px' }}>
-                  <Sparkles size={12} />
-                  UNIRSE AL PARTIDO
+              {/* Free Access Guarantee Banner */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                background: 'rgba(0, 230, 118, 0.08)',
+                border: '1px solid rgba(0, 230, 118, 0.25)',
+                borderRadius: '8px',
+                padding: '8px 12px',
+                marginBottom: '14px'
+              }}>
+                <CheckCircle2 size={16} color="var(--team1-primary)" />
+                <span style={{ fontSize: '0.78rem', color: '#e2e8f0', fontWeight: 600 }}>
+                  <strong>Acceso Libre:</strong> No requieres cuenta ni pago para jugar como invitado.
                 </span>
-                <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#fff' }}>
-                  Ingresa tus datos de jugador
+              </div>
+
+              <div style={{ marginBottom: '14px' }}>
+                <span className="badge badge-team1" style={{ marginBottom: '4px' }}>
+                  <Sparkles size={12} />
+                  INGRESO EN 1 TOQUE
+                </span>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: 900, color: '#fff', margin: 0 }}>
+                  ¿Quién juega este partido?
                 </h3>
               </div>
 
@@ -333,24 +353,36 @@ export const MatchParticipantJoinView: React.FC<Props> = ({
                 </div>
               )}
 
-              {/* Player Name */}
+              {/* Player Name - Primary & Mandatory Field */}
               <div style={{ marginBottom: '14px' }}>
-                <label style={labelStyle}>Tu Nombre y Apellido</label>
+                <label style={{ ...labelStyle, fontSize: '0.85rem', color: '#fff', fontWeight: 800 }}>
+                  Tu Nombre o Apodo <span style={{ color: 'var(--team1-primary)' }}>*</span>
+                </label>
                 <input
                   type="text"
                   required
+                  autoFocus
                   value={name}
                   onChange={e => setName(e.target.value)}
                   placeholder="Ej: Fernando Belasteguín"
-                  style={inputStyle}
+                  style={{
+                    ...inputStyle,
+                    fontSize: '1.05rem',
+                    padding: '12px 14px',
+                    borderColor: name.trim() ? 'var(--team1-primary)' : 'var(--border-subtle)',
+                    background: 'var(--bg-elevated)'
+                  }}
                 />
+                <span style={{ fontSize: '0.7rem', color: 'var(--text-dim)', marginTop: '4px', display: 'block' }}>
+                  Aparecerá en el marcador en vivo y en la ficha final del partido
+                </span>
               </div>
 
-              {/* WhatsApp Phone for match stats & card recap */}
+              {/* WhatsApp Phone - Optional */}
               <div style={{ marginBottom: '14px' }}>
                 <label style={labelStyle}>
                   <Phone size={13} color="var(--team1-primary)" style={{ display: 'inline', marginRight: '5px' }} />
-                  Tu WhatsApp (Para recibir tu tarjeta de estadísticas al terminar)
+                  Tu WhatsApp <span style={{ color: 'var(--text-dim)', fontWeight: 400 }}>(Opcional)</span>
                 </label>
                 <input
                   type="tel"
@@ -360,97 +392,125 @@ export const MatchParticipantJoinView: React.FC<Props> = ({
                   style={inputStyle}
                   autoComplete="tel"
                 />
-                <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)', marginTop: '4px', display: 'block' }}>
-                  📲 Te enviaremos tu ficha con el resultado, Puntos de Oro y estadísticas del partido
+                <span style={{ fontSize: '0.7rem', color: 'var(--text-dim)', marginTop: '4px', display: 'block' }}>
+                  📲 Te enviaremos tu tarjeta con el resultado y estadísticas al terminar
                 </span>
               </div>
 
-              {/* Dominant Hand */}
-              <div style={{ marginBottom: '14px' }}>
-                <label style={labelStyle}>
-                  <Hand size={13} color="var(--gold-primary)" style={{ display: 'inline', marginRight: '5px' }} />
-                  Mano Hábil
-                </label>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                  {[
-                    { id: 'diestro', label: '🎾 Diestro' },
-                    { id: 'zurdo', label: '⭐ Zurdo (Pareja Oro)' }
-                  ].map(h => (
-                    <button
-                      key={h.id}
-                      type="button"
-                      onClick={() => setDominantHand(h.id as DominantHand)}
-                      style={{
-                        padding: '8px 4px',
-                        borderRadius: '8px',
-                        fontSize: '0.78rem',
-                        fontWeight: 800,
-                        textAlign: 'center',
-                        background: dominantHand === h.id ? 'rgba(0, 230, 118, 0.15)' : 'var(--bg-elevated)',
-                        color: dominantHand === h.id ? 'var(--team1-primary)' : 'var(--text-muted)',
-                        border: '1px solid ' + (dominantHand === h.id ? 'var(--team1-primary)' : 'var(--border-subtle)')
-                      }}
-                    >
-                      {h.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Category */}
-              <div style={{ marginBottom: '14px' }}>
-                <label style={labelStyle}>Categoría</label>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
-                  {(['1ra', '2da', '3ra', '4ta', '5ta', '6ta', '7ma', 'Iniciación'] as const).map(cat => (
-                    <button
-                      key={cat}
-                      type="button"
-                      onClick={() => setCategory(cat)}
-                      style={{
-                        padding: '6px 2px',
-                        borderRadius: '6px',
-                        fontSize: '0.75rem',
-                        fontWeight: 800,
-                        textAlign: 'center',
-                        background: category === cat ? 'var(--team1-primary)' : 'var(--bg-elevated)',
-                        color: category === cat ? '#070a10' : 'var(--text-muted)',
-                        border: '1px solid ' + (category === cat ? 'var(--team1-primary)' : 'var(--border-subtle)')
-                      }}
-                    >
-                      {cat}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Preferred Position */}
+              {/* Collapsible Advanced Options Toggle */}
               <div style={{ marginBottom: '16px' }}>
-                <label style={labelStyle}>Lado de Cancha Preferido</label>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
-                  {[
-                    { id: 'drive', label: 'Derecha (Drive)' },
-                    { id: 'reves', label: 'Izquierda (Revés)' },
-                    { id: 'ambas', label: 'Indiferente' }
-                  ].map(pos => (
-                    <button
-                      key={pos.id}
-                      type="button"
-                      onClick={() => setPosition(pos.id as any)}
-                      style={{
-                        padding: '8px 4px',
-                        borderRadius: '8px',
-                        fontSize: '0.78rem',
-                        fontWeight: 800,
-                        textAlign: 'center',
-                        background: position === pos.id ? 'rgba(0, 230, 118, 0.15)' : 'var(--bg-elevated)',
-                        color: position === pos.id ? 'var(--team1-primary)' : 'var(--text-muted)',
-                        border: '1px solid ' + (position === pos.id ? 'var(--team1-primary)' : 'var(--border-subtle)')
-                      }}
-                    >
-                      {pos.label}
-                    </button>
-                  ))}
-                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowAdvancedOptions(!showAdvancedOptions)}
+                  style={{
+                    background: 'transparent',
+                    border: '1px dashed var(--border-subtle)',
+                    borderRadius: '8px',
+                    padding: '8px 12px',
+                    width: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    color: 'var(--text-muted)',
+                    fontSize: '0.76rem',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <span>⚙️ Ajustar categoría, mano hábil o posición (Opcional)</span>
+                  {showAdvancedOptions ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                </button>
+
+                {showAdvancedOptions && (
+                  <div style={{ background: 'var(--bg-elevated)', borderRadius: '8px', padding: '12px', marginTop: '8px', border: '1px solid var(--border-subtle)' }}>
+                    {/* Dominant Hand */}
+                    <div style={{ marginBottom: '12px' }}>
+                      <label style={labelStyle}>
+                        <Hand size={12} color="var(--gold-primary)" style={{ display: 'inline', marginRight: '4px' }} />
+                        Mano Hábil
+                      </label>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+                        {[
+                          { id: 'diestro', label: '🎾 Diestro' },
+                          { id: 'zurdo', label: '⭐ Zurdo' }
+                        ].map(h => (
+                          <button
+                            key={h.id}
+                            type="button"
+                            onClick={() => setDominantHand(h.id as DominantHand)}
+                            style={{
+                              padding: '6px 4px',
+                              borderRadius: '6px',
+                              fontSize: '0.75rem',
+                              fontWeight: 800,
+                              textAlign: 'center',
+                              background: dominantHand === h.id ? 'rgba(0, 230, 118, 0.15)' : 'var(--bg-surface)',
+                              color: dominantHand === h.id ? 'var(--team1-primary)' : 'var(--text-muted)',
+                              border: '1px solid ' + (dominantHand === h.id ? 'var(--team1-primary)' : 'var(--border-subtle)')
+                            }}
+                          >
+                            {h.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Category */}
+                    <div style={{ marginBottom: '12px' }}>
+                      <label style={labelStyle}>Categoría</label>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '4px' }}>
+                        {(['1ra', '2da', '3ra', '4ta', '5ta', '6ta', '7ma', 'Iniciación'] as const).map(cat => (
+                          <button
+                            key={cat}
+                            type="button"
+                            onClick={() => setCategory(cat)}
+                            style={{
+                              padding: '5px 2px',
+                              borderRadius: '4px',
+                              fontSize: '0.72rem',
+                              fontWeight: 800,
+                              textAlign: 'center',
+                              background: category === cat ? 'var(--team1-primary)' : 'var(--bg-surface)',
+                              color: category === cat ? '#070a10' : 'var(--text-muted)',
+                              border: '1px solid ' + (category === cat ? 'var(--team1-primary)' : 'var(--border-subtle)')
+                            }}
+                          >
+                            {cat}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Preferred Position */}
+                    <div>
+                      <label style={labelStyle}>Lado de Cancha Preferido</label>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px' }}>
+                        {[
+                          { id: 'drive', label: 'Drive' },
+                          { id: 'reves', label: 'Revés' },
+                          { id: 'ambas', label: 'Ambos' }
+                        ].map(pos => (
+                          <button
+                            key={pos.id}
+                            type="button"
+                            onClick={() => setPosition(pos.id as any)}
+                            style={{
+                              padding: '6px 4px',
+                              borderRadius: '6px',
+                              fontSize: '0.75rem',
+                              fontWeight: 800,
+                              textAlign: 'center',
+                              background: position === pos.id ? 'rgba(0, 230, 118, 0.15)' : 'var(--bg-surface)',
+                              color: position === pos.id ? 'var(--team1-primary)' : 'var(--text-muted)',
+                              border: '1px solid ' + (position === pos.id ? 'var(--team1-primary)' : 'var(--border-subtle)')
+                            }}
+                          >
+                            {pos.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Slot Selector */}

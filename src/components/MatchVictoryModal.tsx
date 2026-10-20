@@ -3,6 +3,8 @@ import confetti from 'canvas-confetti';
 import type { MatchScoreState, Team, MatchRules } from '../types/padel';
 import { calculatePadelElo } from '../engine/eloEngine';
 import { MatchShareCardModal } from './MatchShareCardModal';
+import { SubscriptionPlansModal } from './SubscriptionPlansModal';
+import { authService } from '../services/authService';
 import { 
   Trophy, 
   RefreshCw, 
@@ -10,10 +12,9 @@ import {
   Clock, 
   Share2, 
   Sparkles, 
-  Award, 
-  Zap, 
-  CheckCircle2,
-  X
+  X,
+  Crown,
+  UserCheck
 } from 'lucide-react';
 
 interface Props {
@@ -35,9 +36,12 @@ export const MatchVictoryModal: React.FC<Props> = ({
   rules,
   matchElapsedSeconds
 }) => {
-  const [showProModal, setShowProModal] = useState(false);
-  const [proSuccess, setProSuccess] = useState(false);
+  const [isSubscriptionModalOpen, setIsSubscriptionModalOpen] = useState(false);
   const [isShareCardOpen, setIsShareCardOpen] = useState(false);
+  const [isClaimModalOpen, setIsClaimModalOpen] = useState(false);
+  const [claimIdentifier, setClaimIdentifier] = useState('');
+  const [claimResult, setClaimResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [isClaiming, setIsClaiming] = useState(false);
 
   useEffect(() => {
     if (isOpen && state.winner) {
@@ -323,27 +327,69 @@ export const MatchVictoryModal: React.FC<Props> = ({
           <span>Enviar Ficha por WhatsApp a Jugadores ($0)</span>
         </button>
 
-        {/* Player Pass Pro Founder Offer Card ($9.990 CLP Lifetime) */}
+        {/* Claim Guest History Banner */}
+        <div style={{
+          background: 'rgba(56, 189, 248, 0.08)',
+          border: '1px solid rgba(56, 189, 248, 0.25)',
+          borderRadius: '10px',
+          padding: '10px 14px',
+          marginBottom: '12px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '10px'
+        }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <UserCheck size={16} color="#38bdf8" />
+              <span style={{ fontSize: '0.82rem', fontWeight: 800, color: '#fff' }}>
+                ¿Jugaste como invitado escaneando el QR?
+              </span>
+            </div>
+            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+              Vincula las victorias y puntos ELO de este partido a tu cuenta oficial
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setIsClaimModalOpen(true)}
+            style={{
+              background: '#38bdf8',
+              color: '#070a10',
+              fontWeight: 800,
+              fontSize: '0.75rem',
+              padding: '7px 12px',
+              borderRadius: '8px',
+              border: 'none',
+              cursor: 'pointer',
+              whiteSpace: 'nowrap'
+            }}
+          >
+            Reclamar Historial
+          </button>
+        </div>
+
+        {/* Player Pass Pro & Subscription Banner */}
         <div style={proFounderCardStyle}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '0.72rem', fontWeight: 900, color: 'var(--gold-primary)', letterSpacing: '0.04em' }}>
-              <Sparkles size={13} color="var(--gold-primary)" />
-              PLAYER PASS PRO • FUNDADORES
+              <Crown size={14} color="var(--gold-primary)" />
+              PADELMATCH PRO • SUSCRIPCIÓN SIMPLE
             </span>
             <span style={{ fontSize: '0.72rem', fontWeight: 900, color: 'var(--team1-primary)', background: 'rgba(0, 230, 118, 0.1)', padding: '2px 8px', borderRadius: '6px' }}>
-              CLP $9.990 VITALICIO
+              DESDE $1.665/MES
             </span>
           </div>
           <p style={{ fontSize: '0.76rem', color: 'var(--text-muted)', margin: '4px 0 8px', lineHeight: 1.35 }}>
-            Paga una sola vez y desbloquea tu <strong>Ficha Completa de Rendimiento</strong>: estadísticas Luz Día vs Foco Noche, Algoritmo de Pareja Ideal, control Smartwatch y voz sin límites.
+            Crea partidos ilimitados, convoca grupos con lógica de Múltiplos de 4, conecta tu Smartwatch y desbloquea el análisis Día vs Noche.
           </p>
           <button 
             type="button"
-            onClick={() => setShowProModal(true)}
+            onClick={() => setIsSubscriptionModalOpen(true)}
             style={proCtaBtnStyle}
           >
-            <Zap size={14} />
-            <span>Activar Player Pass Pro ($9.990)</span>
+            <Sparkles size={14} />
+            <span>Ver Planes de Suscripción ($9.990 / 6 meses)</span>
           </button>
         </div>
 
@@ -357,72 +403,104 @@ export const MatchVictoryModal: React.FC<Props> = ({
           </button>
         </div>
 
-        {/* Pro Pass Modal */}
-        {showProModal && (
+        {/* Guest History Claiming Modal */}
+        {isClaimModalOpen && (
           <div style={proModalOverlayStyle}>
             <div style={proModalCardStyle} className="glass-panel">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <Award size={22} color="var(--gold-primary)" />
-                  <span style={{ fontWeight: 900, fontSize: '1.1rem', color: '#fff' }}>Player Pass Pro Vitalicio</span>
+                  <UserCheck size={20} color="#38bdf8" />
+                  <span style={{ fontWeight: 900, fontSize: '1.1rem', color: '#fff' }}>Reclamar Historial de Juego</span>
                 </div>
                 <button 
-                  onClick={() => setShowProModal(false)}
+                  onClick={() => {
+                    setIsClaimModalOpen(false);
+                    setClaimResult(null);
+                  }}
                   style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
                 >
                   <X size={20} />
                 </button>
               </div>
 
-              <div style={{ textAlign: 'center', margin: '14px 0' }}>
-                <div style={{ fontSize: '2rem', fontWeight: 900, color: 'var(--team1-primary)' }}>
-                  $9.990 <span style={{ fontSize: '0.9rem', color: 'var(--text-dim)' }}>CLP</span>
-                </div>
-                <div style={{ fontSize: '0.8rem', color: 'var(--gold-primary)', fontWeight: 700 }}>
-                  Pago Único Para Siempre • Sin suscripciones mensuales
-                </div>
-              </div>
+              <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: '0 0 14px' }}>
+                Si jugaste este partido como invitado sin haber iniciado sesión previamente, ingresa aquí el <strong>Nombre o WhatsApp</strong> con el que te uniste para transferir tus estadísticas a tu perfil oficial.
+              </p>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', margin: '14px 0', fontSize: '0.82rem', color: '#e2e8f0' }}>
-                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                  <CheckCircle2 size={16} color="var(--team1-primary)" />
-                  <span>Historial ilimitado de partidos y fichas de juego</span>
+              {claimResult && (
+                <div style={{
+                  padding: '10px 12px',
+                  borderRadius: '8px',
+                  marginBottom: '12px',
+                  fontSize: '0.8rem',
+                  fontWeight: 700,
+                  background: claimResult.success ? 'rgba(0, 230, 118, 0.15)' : 'rgba(255, 61, 113, 0.15)',
+                  color: claimResult.success ? 'var(--team1-primary)' : 'var(--danger-primary)',
+                  border: '1px solid ' + (claimResult.success ? 'rgba(0, 230, 118, 0.3)' : 'rgba(255, 61, 113, 0.3)')
+                }}>
+                  {claimResult.message}
                 </div>
-                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                  <CheckCircle2 size={16} color="var(--team1-primary)" />
-                  <span>Analítica Día vs Noche (Luz Natural vs Artificial)</span>
-                </div>
-                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                  <CheckCircle2 size={16} color="var(--team1-primary)" />
-                  <span>Algoritmo de Sinergia (Tu Pareja Ideal y Tu Némesis)</span>
-                </div>
-                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                  <CheckCircle2 size={16} color="var(--team1-primary)" />
-                  <span>Control desde Apple Watch & Samsung Galaxy Watch</span>
-                </div>
-                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                  <CheckCircle2 size={16} color="var(--team1-primary)" />
-                  <span>Árbitro por voz inteligente ilimitado</span>
-                </div>
-              </div>
-
-              {proSuccess ? (
-                <div style={{ padding: '12px', background: 'rgba(0, 230, 118, 0.15)', borderRadius: '10px', color: 'var(--team1-primary)', textAlign: 'center', fontWeight: 800, fontSize: '0.85rem' }}>
-                  ¡Suscripción Pro Fundador Registrada! Gracias por apoyar a PadelMatch.
-                </div>
-              ) : (
-                <button 
-                  type="button"
-                  onClick={() => setProSuccess(true)}
-                  style={proCheckoutBtnStyle}
-                >
-                  <Sparkles size={16} />
-                  <span>Confirmar Player Pass Pro ($9.990 CLP)</span>
-                </button>
               )}
+
+              <form onSubmit={(e) => {
+                e.preventDefault();
+                if (!claimIdentifier.trim()) return;
+                setIsClaiming(true);
+                const res = authService.claimGuestHistory(claimIdentifier.trim());
+                setIsClaiming(false);
+                setClaimResult(res);
+              }}>
+                <div style={{ marginBottom: '14px' }}>
+                  <label style={{ fontSize: '0.78rem', color: '#e2e8f0', fontWeight: 700, display: 'block', marginBottom: '6px' }}>
+                    Nombre o WhatsApp usado en cancha
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={claimIdentifier}
+                    onChange={e => setClaimIdentifier(e.target.value)}
+                    placeholder="Ej: Fernando o +56 9 1234 5678"
+                    style={{
+                      width: '100%',
+                      padding: '10px 12px',
+                      background: 'var(--bg-elevated)',
+                      border: '1px solid var(--border-subtle)',
+                      borderRadius: '8px',
+                      color: '#fff',
+                      fontSize: '0.9rem',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isClaiming}
+                  style={{
+                    width: '100%',
+                    padding: '11px',
+                    borderRadius: '8px',
+                    background: '#38bdf8',
+                    color: '#070a10',
+                    fontWeight: 900,
+                    fontSize: '0.88rem',
+                    border: 'none',
+                    cursor: 'pointer'
+                  }}
+                >
+                  {isClaiming ? 'Buscando partidos...' : 'Vincular y Reclamar Victorias'}
+                </button>
+              </form>
             </div>
           </div>
         )}
+
+        {/* Subscription Plans Modal */}
+        <SubscriptionPlansModal
+          isOpen={isSubscriptionModalOpen}
+          onClose={() => setIsSubscriptionModalOpen(false)}
+          currentUser={authService.getCurrentUser()}
+        />
 
         {/* Match Share Card HD Modal */}
         <MatchShareCardModal
@@ -601,22 +679,7 @@ const proModalCardStyle: React.CSSProperties = {
   boxShadow: '0 20px 50px rgba(0, 0, 0, 0.9), 0 0 30px rgba(255, 214, 0, 0.15)'
 };
 
-const proCheckoutBtnStyle: React.CSSProperties = {
-  width: '100%',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  gap: '8px',
-  padding: '13px',
-  borderRadius: '12px',
-  background: 'var(--team1-gradient)',
-  color: '#050c18',
-  fontWeight: 900,
-  fontSize: '0.92rem',
-  border: 'none',
-  cursor: 'pointer',
-  boxShadow: '0 4px 16px var(--team1-glow)'
-};
+
 
 const visualShareCardBtnStyle: React.CSSProperties = {
   width: '100%',

@@ -7,7 +7,20 @@ export type SuperTieBreakTarget = 10 | 12 | 13;
 export type PlayerCategory = '1ra' | '2da' | '3ra' | '4ta' | '5ta' | '6ta' | '7ma' | 'Iniciación';
 
 export type DominantHand = 'diestro' | 'zurdo';
-export type UserPlan = 'free' | 'pro_founder' | 'captain' | 'club';
+export type UserPlan = 'free' | 'pro_founder' | 'captain' | 'club' | 'subscribed';
+export type SubscriptionTier = 'season_6m' | 'annual_12m' | 'monthly' | 'pro_founder';
+
+export interface SubscriptionPlanDetail {
+  id: SubscriptionTier;
+  title: string;
+  tagline: string;
+  priceClp: number;
+  periodLabel: string;
+  monthlyEquivalentClp: number;
+  isPopular?: boolean;
+  badge?: string;
+  features: string[];
+}
 export type TimeOfDay = 'day' | 'night'; // ☀️ Luz Natural vs 🌙 Luz Artificial
 
 export interface Player {
@@ -40,6 +53,8 @@ export interface CommunityPlayer {
   city?: string;
   club?: string;
   plan?: UserPlan;
+  subscriptionExpiresAt?: number;
+  hostedMatchesCount?: number;
   leadSource?: 'direct_registration' | 'qr_guest';
   registeredAt?: number;
   

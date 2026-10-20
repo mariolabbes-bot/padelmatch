@@ -1,4 +1,4 @@
-import type { CommunityPlayer, DominantHand, UserPlan } from '../types/padel';
+import type { CommunityPlayer, DominantHand, UserPlan, SubscriptionTier } from '../types/padel';
 import { communityService } from './communityService';
 
 export interface UserSession {
@@ -12,6 +12,8 @@ export interface UserSession {
   city?: string;
   club?: string;
   plan?: UserPlan;
+  subscriptionExpiresAt?: number;
+  hostedMatchesCount?: number;
   avatar?: string;
   elo: number;
   loggedInAt: number;
@@ -29,6 +31,8 @@ interface StoredUserCredential {
   city?: string;
   club?: string;
   plan?: UserPlan;
+  subscriptionExpiresAt?: number;
+  hostedMatchesCount?: number;
   avatar?: string;
   createdAt: number;
 }
@@ -394,6 +398,196 @@ class AuthService {
       console.warn('Error saving session', e);
     }
     this.notify();
+  }
+
+  public getHostedMatchesCount(user?: UserSession | null): number {
+    const target = user || this.currentUser;
+    if (!target) return 0;
+    if (typeof target.hostedMatchesCount === 'number') {
+      return target.hostedMatchesCount;
+    }
+    try {
+      const stored = localStorage.getItem(`padelmatch_host_matches_${target.id}`);
+      return stored ? parseInt(stored, 10) || 0 : 0;
+    } catch {
+      return 0;
+    }
+  }
+
+  public getHostedMatchesRemaining(user?: UserSession | null): number {
+    const target = user || this.currentUser;
+    if (!target) return 0;
+    // Founder or Subscribed user has unlimited matches
+    if (target.plan === 'pro_founder' || target.plan === 'subscribed' || target.plan === 'captain' || target.plan === 'club') {
+      return Infinity;
+    }
+    const count = this.getHostedMatchesCount(target);
+    return Math.max(0, 3 - count);
+  }
+
+  public canHostMatch(user?: UserSession | null): boolean {
+    return this.getHostedMatchesRemaining(user) > 0;
+  }
+
+  public incrementHostedMatches(user?: UserSession | null): number {
+    const target = user || this.currentUser;
+    if (!target) return 0;
+
+    const currentCount = this.getHostedMatchesCount(target);
+    const newCount = currentCount + 1;
+
+    target.hostedMatchesCount = newCount;
+    if (this.currentUser && this.currentUser.id === target.id) {
+      this.currentUser.hostedMatchesCount = newCount;
+    }
+
+    try {
+      localStorage.setItem(`padelmatch_host_matches_${target.id}`, newCount.toString());
+    } catch (e) {
+      console.warn('Could not save host matches count', e);
+    }
+
+    // Also update in registered users registry
+    const registry = this.getRegistry();
+    if (target.email && registry[target.email.toLowerCase()]) {
+      registry[target.email.toLowerCase()].hostedMatchesCount = newCount;
+      this.saveRegistry(registry);
+    }
+
+    if (this.currentUser) {
+      this.saveSession(this.currentUser);
+    }
+
+    return newCount;
+  }
+
+  public upgradeSubscription(tier: SubscriptionTier): { success: boolean; user: UserSession } {
+    if (!this.currentUser) {
+      throw new Error('Debes iniciar sesión para mejorar tu suscripción.');
+    }
+
+    const durationDaysMap: Record<SubscriptionTier, number> = {
+      season_6m: 180,
+      annual_12m: 365,
+      monthly: 30,
+      pro_founder: 36500 // ~100 años (vitalicio)
+    };
+
+    const days = durationDaysMap[tier] || 180;
+    const expiresAt = Date.now() + days * 24 * 60 * 60 * 1000;
+    const planType: UserPlan = tier === 'pro_founder' ? 'pro_founder' : 'subscribed';
+
+    this.currentUser.plan = planType;
+    this.currentUser.subscriptionExpiresAt = expiresAt;
+
+    // Update in registry
+    const registry = this.getRegistry();
+    if (this.currentUser.email && registry[this.currentUser.email.toLowerCase()]) {
+      registry[this.currentUser.email.toLowerCase()].plan = planType;
+      registry[this.currentUser.email.toLowerCase()].subscriptionExpiresAt = expiresAt;
+      this.saveRegistry(registry);
+    }
+
+    // Update in community players roster
+    const playerInRoster = communityService.getPlayers().find(p => p.id === this.currentUser?.id);
+    if (playerInRoster) {
+      playerInRoster.plan = planType;
+      playerInRoster.subscriptionExpiresAt = expiresAt;
+    }
+
+    this.saveSession(this.currentUser);
+    return { success: true, user: this.currentUser };
+  }
+
+  /**
+   * Reclamar Historial de Jugador Invitado:
+   * Vincula partidos jugados previamente como invitado (por nombre o WhatsApp)
+   * con el usuario formalmente registrado en la app.
+   */
+  public claimGuestHistory(identifier: string): { 
+    success: boolean; 
+    claimedMatches: number; 
+    updatedElo: number; 
+    message: string 
+  } {
+    if (!this.currentUser) {
+      return { success: false, claimedMatches: 0, updatedElo: 1200, message: 'Debes iniciar sesión primero.' };
+    }
+
+    const query = identifier.trim().toLowerCase();
+    if (!query) {
+      return { success: false, claimedMatches: 0, updatedElo: this.currentUser.elo, message: 'Ingresa tu nombre o teléfono usado en cancha.' };
+    }
+
+    const players = communityService.getPlayers();
+    // Find guest players matching the identifier (excluding current user's self record)
+    const matchingGuests = players.filter(p => 
+      p.id !== this.currentUser?.id &&
+      (p.name.toLowerCase() === query || 
+       (p.phone && p.phone.replace(/\s+/g, '') === query.replace(/\s+/g, '')) ||
+       (p.name.toLowerCase().includes(query) && p.id.startsWith('guest-')))
+    );
+
+    if (matchingGuests.length === 0) {
+      return {
+        success: false,
+        claimedMatches: 0,
+        updatedElo: this.currentUser.elo,
+        message: `No se encontraron partidos de invitado registrados bajo "${identifier}".`
+      };
+    }
+
+    let totalMatches = 0;
+    let totalWins = 0;
+    let maxElo = this.currentUser.elo;
+    let extraDayPJ = 0;
+    let extraDayW = 0;
+    let extraNightPJ = 0;
+    let extraNightW = 0;
+    let extraGpPJ = 0;
+    let extraGpW = 0;
+    let extraTbPJ = 0;
+    let extraTbW = 0;
+
+    matchingGuests.forEach(g => {
+      totalMatches += (g.matchesPlayed || 0);
+      totalWins += (g.matchesWon || 0);
+      if (g.elo > maxElo) maxElo = g.elo;
+      extraDayPJ += (g.dayMatchesPlayed || 0);
+      extraDayW += (g.dayMatchesWon || 0);
+      extraNightPJ += (g.nightMatchesPlayed || 0);
+      extraNightW += (g.nightMatchesWon || 0);
+      extraGpPJ += (g.goldenPointsPlayed || 0);
+      extraGpW += (g.goldenPointsWon || 0);
+      extraTbPJ += (g.tieBreaksPlayed || 0);
+      extraTbW += (g.tieBreaksWon || 0);
+    });
+
+    // Update community player
+    const myRosterPlayer = communityService.searchPlayer(this.currentUser.name).find(p => p.id === this.currentUser?.id);
+    if (myRosterPlayer) {
+      myRosterPlayer.matchesPlayed += totalMatches;
+      myRosterPlayer.matchesWon += totalWins;
+      myRosterPlayer.elo = Math.max(myRosterPlayer.elo, maxElo);
+      myRosterPlayer.dayMatchesPlayed = (myRosterPlayer.dayMatchesPlayed || 0) + extraDayPJ;
+      myRosterPlayer.dayMatchesWon = (myRosterPlayer.dayMatchesWon || 0) + extraDayW;
+      myRosterPlayer.nightMatchesPlayed = (myRosterPlayer.nightMatchesPlayed || 0) + extraNightPJ;
+      myRosterPlayer.nightMatchesWon = (myRosterPlayer.nightMatchesWon || 0) + extraNightW;
+      myRosterPlayer.goldenPointsPlayed = (myRosterPlayer.goldenPointsPlayed || 0) + extraGpPJ;
+      myRosterPlayer.goldenPointsWon = (myRosterPlayer.goldenPointsWon || 0) + extraGpW;
+      myRosterPlayer.tieBreaksPlayed = (myRosterPlayer.tieBreaksPlayed || 0) + extraTbPJ;
+      myRosterPlayer.tieBreaksWon = (myRosterPlayer.tieBreaksWon || 0) + extraTbW;
+    }
+
+    this.currentUser.elo = Math.max(this.currentUser.elo, maxElo);
+    this.saveSession(this.currentUser);
+
+    return {
+      success: true,
+      claimedMatches: totalMatches,
+      updatedElo: this.currentUser.elo,
+      message: `¡Historial recuperado con éxito! Se sumaron ${totalMatches} partidos y ${totalWins} victorias a tu ficha.`
+    };
   }
 
   private getDefaultEloForCategory(cat: CommunityPlayer['category']): number {

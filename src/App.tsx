@@ -42,6 +42,7 @@ import { MatchVictoryModal } from './components/MatchVictoryModal';
 import { FinishMatchEarlyModal } from './components/FinishMatchEarlyModal';
 import { InstallPwaPrompt } from './components/InstallPwaPrompt';
 import { NotificationsModal } from './components/NotificationsModal';
+import { SubscriptionPlansModal } from './components/SubscriptionPlansModal';
 
 function parseMatchIdFromHash(): string | null {
   if (typeof window === 'undefined') return null;
@@ -158,6 +159,7 @@ export function App() {
   const [isVictoryModalOpen, setIsVictoryModalOpen] = useState(false);
   const [isFinishEarlyModalOpen, setIsFinishEarlyModalOpen] = useState(false);
   const [isNotificationsModalOpen, setIsNotificationsModalOpen] = useState(false);
+  const [isSubscriptionModalOpen, setIsSubscriptionModalOpen] = useState(false);
 
   // 8. Hardware & Audio State
   const [keyMapping, setKeyMapping] = useState<HardwareKeyMapping>(loadSavedKeyMapping);
@@ -598,8 +600,14 @@ export function App() {
     const initialState = createInitialMatchState(rules);
     setState(initialState);
     setHistory([]);
+    setMatchElapsedSeconds(0);
     setIsVictoryModalOpen(false);
     setCurrentView('scoreboard');
+
+    // Count this match for the host courtesy/subscription tracking
+    if (currentUser) {
+      authService.incrementHostedMatches(currentUser);
+    }
 
     if (activeMatchId) {
       matchSyncService.updateMatchStatus(activeMatchId, 'scoreboard', teams);
@@ -657,6 +665,7 @@ export function App() {
           onOpenCommunity={() => setCurrentView('community')}
           onOpenBluetoothModal={() => setIsBluetoothModalOpen(true)}
           onOpenNotifications={() => setIsNotificationsModalOpen(true)}
+          onOpenSubscriptionModal={() => setIsSubscriptionModalOpen(true)}
           onLogout={handleLogout}
         />
       )}
@@ -954,6 +963,17 @@ export function App() {
         isPaused={state.isPaused}
         onTogglePause={handleTogglePause}
         onOpenFinishEarlyModal={() => setIsFinishEarlyModalOpen(true)}
+        onOpenSubscriptionModal={() => {
+          setIsGlobalDrawerOpen(false);
+          setIsSubscriptionModalOpen(true);
+        }}
+      />
+
+      {/* Subscription Plans Modal */}
+      <SubscriptionPlansModal
+        isOpen={isSubscriptionModalOpen}
+        onClose={() => setIsSubscriptionModalOpen(false)}
+        currentUser={currentUser}
       />
     </div>
   );

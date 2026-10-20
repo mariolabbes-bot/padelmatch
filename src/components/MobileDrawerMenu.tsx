@@ -18,7 +18,8 @@ import {
   Play,
   Clock,
   Sun,
-  Moon
+  Moon,
+  Crown
 } from 'lucide-react';
 import type { UserSession } from '../services/authService';
 import { themeService, type AppTheme } from '../services/themeService';
@@ -34,6 +35,7 @@ interface Props {
   onOpenCourtAlignment: () => void;
   onOpenTvMode: () => void;
   onOpenCommunity: () => void;
+  onOpenSubscriptionModal?: () => void;
   onResetMatch: () => void;
   onNewMatch: () => void;
   onLogout: () => void;
@@ -57,6 +59,7 @@ export const MobileDrawerMenu: React.FC<Props> = ({
   onOpenCourtAlignment,
   onOpenTvMode,
   onOpenCommunity,
+  onOpenSubscriptionModal,
   onResetMatch,
   onNewMatch,
   onLogout,
@@ -225,6 +228,28 @@ export const MobileDrawerMenu: React.FC<Props> = ({
             </div>
             <span style={{ ...pillTagStyle, color: 'var(--gold-primary)' }}>Tabla</span>
           </button>
+
+          {onOpenSubscriptionModal && (
+            <button 
+              onClick={() => { onOpenSubscriptionModal(); onClose(); }} 
+              style={{
+                ...menuItemStyle,
+                background: 'rgba(255, 214, 0, 0.08)',
+                border: '1px solid rgba(255, 214, 0, 0.25)',
+                borderRadius: '8px',
+                color: 'var(--gold-primary)',
+                margin: '4px 0'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <Crown size={18} color="var(--gold-primary)" />
+                <span style={{ fontWeight: 800 }}>Suscripción & Planes Pro</span>
+              </div>
+              <span style={{ ...pillTagStyle, color: 'var(--gold-primary)', borderColor: 'rgba(255, 214, 0, 0.5)' }}>
+                DESDE $1.665/M
+              </span>
+            </button>
+          )}
 
           <div style={dividerStyle} />
 

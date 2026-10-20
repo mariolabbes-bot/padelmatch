@@ -134,7 +134,12 @@ export const AuthScreen: React.FC<Props> = ({ onAuthenticated }) => {
     });
 
     if (res.success && res.user) {
-      setSuccessMsg('¡Perfil registrado exitosamente!');
+      // Auto-claim any guest history associated with this name or phone!
+      authService.claimGuestHistory(registerName);
+      if (registerPhone.trim()) {
+        authService.claimGuestHistory(registerPhone.trim());
+      }
+      setSuccessMsg('¡Perfil registrado exitosamente! Hemos sincronizado tu historial de juego.');
       setTimeout(() => {
         onAuthenticated(res.user!);
       }, 400);
@@ -449,6 +454,22 @@ export const AuthScreen: React.FC<Props> = ({ onAuthenticated }) => {
         ) : (
           /* Form: REGISTER */
           <form onSubmit={handleRegister} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            {/* Guest History Linking Notice */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              background: 'rgba(56, 189, 248, 0.08)',
+              border: '1px solid rgba(56, 189, 248, 0.25)',
+              borderRadius: '8px',
+              padding: '8px 12px'
+            }}>
+              <Trophy size={16} color="#38bdf8" />
+              <span style={{ fontSize: '0.74rem', color: '#cbd5e1' }}>
+                ¿Jugaste antes por QR? Usa tu mismo nombre o teléfono y tus victorias se sincronizarán solas.
+              </span>
+            </div>
+
             <div>
               <label style={labelStyle}>
                 <User size={14} color="var(--team1-primary)" />

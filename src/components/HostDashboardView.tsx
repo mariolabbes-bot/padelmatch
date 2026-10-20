@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import type { MatchRules, CommunityPlayer } from '../types/padel';
-import type { UserSession } from '../services/authService';
+import { authService, type UserSession } from '../services/authService';
 import { communityService } from '../services/communityService';
 import { notificationService } from '../services/notificationService';
 import { themeService, type AppTheme } from '../services/themeService';
@@ -14,7 +14,8 @@ import {
   Moon,
   Zap,
   Bell,
-  BellRing
+  BellRing,
+  Crown
 } from 'lucide-react';
 
 interface Props {
@@ -25,6 +26,7 @@ interface Props {
   onOpenCommunity: () => void;
   onOpenBluetoothModal: () => void;
   onOpenNotifications?: () => void;
+  onOpenSubscriptionModal?: () => void;
   onLogout: () => void;
 }
 
@@ -36,6 +38,7 @@ export const HostDashboardView: React.FC<Props> = ({
   onOpenCommunity,
   onOpenBluetoothModal,
   onOpenNotifications,
+  onOpenSubscriptionModal,
   onLogout
 }) => {
   const [courtName, setCourtName] = useState(rules.courtName || 'Pista Central - Club Padel');
@@ -76,9 +79,17 @@ export const HostDashboardView: React.FC<Props> = ({
   const dominant = player?.dominantHand || user.dominantHand || 'diestro';
   const pos = player?.favoritePosition || user.favoritePosition || 'drive';
   const city = player?.city || user.city;
+  const remainingFree = authService.getHostedMatchesRemaining(user);
+  const isSubscribed = user.plan === 'subscribed' || user.plan === 'pro_founder' || user.plan === 'captain' || user.plan === 'club';
 
   const handleStartMatchSetup = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isSubscribed && remainingFree <= 0) {
+      if (onOpenSubscriptionModal) {
+        onOpenSubscriptionModal();
+      }
+      return;
+    }
     onUpdateRules({
       ...rules,
       courtName,
@@ -128,6 +139,30 @@ export const HostDashboardView: React.FC<Props> = ({
               </>
             )}
           </button>
+
+          {onOpenSubscriptionModal && (
+            <button
+              type="button"
+              onClick={onOpenSubscriptionModal}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '5px',
+                background: isSubscribed ? 'rgba(0, 230, 118, 0.12)' : 'rgba(255, 214, 0, 0.12)',
+                border: '1px solid ' + (isSubscribed ? 'rgba(0, 230, 118, 0.3)' : 'rgba(255, 214, 0, 0.3)'),
+                borderRadius: '8px',
+                padding: '6px 10px',
+                color: isSubscribed ? 'var(--team1-primary)' : 'var(--gold-primary)',
+                cursor: 'pointer',
+                fontSize: '0.75rem',
+                fontWeight: 800
+              }}
+              title="Planes de Suscripción"
+            >
+              <Crown size={14} />
+              <span>{isSubscribed ? 'PRO' : 'Planes'}</span>
+            </button>
+          )}
 
           {onOpenNotifications && (
             <button 
@@ -187,6 +222,90 @@ export const HostDashboardView: React.FC<Props> = ({
               </div>
             </div>
           </div>
+
+          {/* Host Courtesy & Subscription Status Banner */}
+          {isSubscribed ? (
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              background: 'rgba(0, 230, 118, 0.08)',
+              border: '1px solid rgba(0, 230, 118, 0.25)',
+              borderRadius: '10px',
+              padding: '8px 12px',
+              marginBottom: '14px'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Crown size={16} color="var(--gold-primary)" />
+                <div>
+                  <div style={{ fontSize: '0.78rem', fontWeight: 900, color: '#fff' }}>Suscripción Host Activa</div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>Creación ilimitada de partidos y grupos</div>
+                </div>
+              </div>
+              <span className="badge badge-team1" style={{ fontSize: '0.65rem' }}>PRO HOST</span>
+            </div>
+          ) : (
+            <div style={{
+              background: remainingFree > 0 ? 'rgba(255, 214, 0, 0.08)' : 'rgba(255, 61, 113, 0.1)',
+              border: '1px solid ' + (remainingFree > 0 ? 'rgba(255, 214, 0, 0.3)' : 'rgba(255, 61, 113, 0.3)'),
+              borderRadius: '10px',
+              padding: '10px 12px',
+              marginBottom: '14px'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Flame size={15} color="var(--gold-primary)" />
+                  <span style={{ fontSize: '0.78rem', fontWeight: 800, color: '#fff' }}>
+                    Partidos de Prueba como Host
+                  </span>
+                </div>
+                <span style={{ fontSize: '0.78rem', fontWeight: 900, color: remainingFree > 0 ? 'var(--gold-primary)' : 'var(--danger-primary)' }}>
+                  {remainingFree} de 3 restantes
+                </span>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '4px', height: '6px', marginBottom: '8px' }}>
+                {[1, 2, 3].map(step => {
+                  const used = 3 - remainingFree;
+                  const isFilled = step <= used;
+                  return (
+                    <div 
+                      key={step} 
+                      style={{ 
+                        borderRadius: '3px', 
+                        background: isFilled ? 'var(--team1-primary)' : 'var(--bg-elevated)',
+                        border: '1px solid var(--border-subtle)'
+                      }} 
+                    />
+                  );
+                })}
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                  {remainingFree > 0 ? 'Invita a tus amigos y prueba la app gratis' : 'Límite de prueba gratuito alcanzado'}
+                </span>
+                {onOpenSubscriptionModal && (
+                  <button 
+                    type="button" 
+                    onClick={onOpenSubscriptionModal}
+                    style={{ 
+                      background: 'transparent', 
+                      border: 'none', 
+                      color: 'var(--gold-primary)', 
+                      fontWeight: 800, 
+                      fontSize: '0.72rem', 
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px'
+                    }}
+                  >
+                    <Crown size={12} />
+                    <span>{remainingFree > 0 ? 'Ver Planes' : 'Suscribirse ($9.990)'}</span>
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Quick Metrics */}
           <div style={metricsGridStyle}>

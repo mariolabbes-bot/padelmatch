@@ -81,6 +81,7 @@ class CommunityService {
   }
 
   public addPlayer(playerData: {
+    id?: string;
     name: string;
     email?: string;
     phone?: string;
@@ -93,18 +94,29 @@ class CommunityService {
     club?: string;
     plan?: UserPlan;
     leadSource?: 'direct_registration' | 'qr_guest';
+    matchesPlayed?: number;
+    matchesWon?: number;
+    winStreak?: number;
+    dayMatchesPlayed?: number;
+    dayMatchesWon?: number;
+    nightMatchesPlayed?: number;
+    nightMatchesWon?: number;
+    goldenPointsPlayed?: number;
+    goldenPointsWon?: number;
+    tieBreaksPlayed?: number;
+    tieBreaksWon?: number;
   }): CommunityPlayer {
     const newPlayer: CommunityPlayer = {
-      id: 'cp-' + Date.now().toString(36) + '-' + Math.random().toString(36).substring(2, 6),
+      id: playerData.id || ('cp-' + Date.now().toString(36) + '-' + Math.random().toString(36).substring(2, 6)),
       name: playerData.name.trim(),
       email: playerData.email?.trim() || undefined,
       phone: playerData.phone?.trim() || undefined,
       avatar: playerData.avatar?.trim() || undefined,
       elo: playerData.elo || 1200,
       category: playerData.category || '4ta',
-      matchesPlayed: 0,
-      matchesWon: 0,
-      winStreak: 0,
+      matchesPlayed: playerData.matchesPlayed || 0,
+      matchesWon: playerData.matchesWon || 0,
+      winStreak: playerData.winStreak || 0,
       favoritePosition: playerData.favoritePosition || 'ambas',
       dominantHand: playerData.dominantHand || 'diestro',
       city: playerData.city?.trim() || undefined,
@@ -112,14 +124,14 @@ class CommunityService {
       plan: playerData.plan || 'free',
       leadSource: playerData.leadSource || 'direct_registration',
       registeredAt: Date.now(),
-      dayMatchesPlayed: 0,
-      dayMatchesWon: 0,
-      nightMatchesPlayed: 0,
-      nightMatchesWon: 0,
-      goldenPointsPlayed: 0,
-      goldenPointsWon: 0,
-      tieBreaksPlayed: 0,
-      tieBreaksWon: 0
+      dayMatchesPlayed: playerData.dayMatchesPlayed || 0,
+      dayMatchesWon: playerData.dayMatchesWon || 0,
+      nightMatchesPlayed: playerData.nightMatchesPlayed || 0,
+      nightMatchesWon: playerData.nightMatchesWon || 0,
+      goldenPointsPlayed: playerData.goldenPointsPlayed || 0,
+      goldenPointsWon: playerData.goldenPointsWon || 0,
+      tieBreaksPlayed: playerData.tieBreaksPlayed || 0,
+      tieBreaksWon: playerData.tieBreaksWon || 0
     };
 
     this.players.push(newPlayer);
