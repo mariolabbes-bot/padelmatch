@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { authService } from '../services/authService';
 import type { UserSession } from '../services/authService';
+import { groupService } from '../services/groupService';
 import { themeService, type AppTheme } from '../services/themeService';
 import type { CommunityPlayer, DominantHand } from '../types/padel';
 import { 
@@ -22,7 +23,8 @@ import {
   Sun,
   Moon,
   KeyRound,
-  RotateCcw
+  RotateCcw,
+  MessageCircle
 } from 'lucide-react';
 
 interface Props {
@@ -49,12 +51,18 @@ export const AuthScreen: React.FC<Props> = ({ onAuthenticated }) => {
   // Claiming Guest State from QR Scan
   const [claimingGuestName, setClaimingGuestName] = useState<string | null>(null);
 
+  // Group Invitation State from WhatsApp
+  const [invitedGroupId, setInvitedGroupId] = useState<string | null>(null);
+  const [invitedGroupName, setInvitedGroupName] = useState<string | null>(null);
+  const [invitedGroupClub, setInvitedGroupClub] = useState<string | null>(null);
+
   useEffect(() => {
     const handleUrlClaim = () => {
       if (typeof window === 'undefined') return;
       const hash = window.location.hash || '';
       const search = window.location.search || '';
 
+      // 1. Check guest match claim
       let foundGuest: string | null = null;
       if (hash.includes('claimGuest=')) {
         const match = hash.match(/claimGuest=([^&]+)/);
@@ -68,6 +76,29 @@ export const AuthScreen: React.FC<Props> = ({ onAuthenticated }) => {
         setMode('register');
         setRegisterName(foundGuest);
         setClaimingGuestName(foundGuest);
+      }
+
+      // 2. Check group invitation from WhatsApp link
+      let foundGroup: string | null = null;
+      if (hash.includes('join-group=')) {
+        const match = hash.match(/join-group=([^&]+)/);
+        if (match && match[1]) foundGroup = decodeURIComponent(match[1]);
+      } else if (search.includes('joinGroup=')) {
+        const params = new URLSearchParams(search);
+        foundGroup = params.get('joinGroup');
+      }
+
+      if (foundGroup) {
+        setMode('register');
+        setInvitedGroupId(foundGroup);
+        if (typeof sessionStorage !== 'undefined') {
+          sessionStorage.setItem('padel_pending_join_group', foundGroup);
+        }
+        const grp = groupService.getGroupById(foundGroup);
+        if (grp) {
+          setInvitedGroupName(grp.name);
+          setInvitedGroupClub(grp.clubPreferred);
+        }
       }
     };
 
@@ -506,6 +537,45 @@ export const AuthScreen: React.FC<Props> = ({ onAuthenticated }) => {
         ) : (
           /* Form: REGISTER */
           <form onSubmit={handleRegister} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            {/* Group WhatsApp Invitation Banner */}
+            {invitedGroupId && (
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                background: 'rgba(37, 211, 102, 0.12)',
+                border: '1px solid #25D366',
+                borderRadius: '10px',
+                padding: '12px 14px',
+                boxShadow: '0 4px 15px rgba(37, 211, 102, 0.15)'
+              }}>
+                <div style={{
+                  width: '38px',
+                  height: '38px',
+                  borderRadius: '50%',
+                  background: '#25D366',
+                  color: '#070a10',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0
+                }}>
+                  <MessageCircle size={20} />
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontWeight: 900, fontSize: '0.88rem', color: '#fff' }}>
+                    ¡Te han invitado al Grupo de Pádel!
+                  </div>
+                  <div style={{ fontSize: '0.78rem', color: '#25D366', fontWeight: 800, marginTop: '1px' }}>
+                    {invitedGroupName || 'Grupo en PadelMatch'} {invitedGroupClub ? `• ${invitedGroupClub}` : ''}
+                  </div>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '2px', lineHeight: 1.35 }}>
+                    Crea tu perfil o inicia sesión para unirte automáticamente, sincronizar convocatorias y jugar en el ecosistema PadelMatch.
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Claim Guest Match Banner */}
             {claimingGuestName && (
               <div style={{

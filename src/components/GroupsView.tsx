@@ -2,7 +2,10 @@ import React, { useState, useEffect } from 'react';
 import type { PadelGroup, CommunityPlayer } from '../types/padel';
 import type { UserSession } from '../services/authService';
 import { groupService } from '../services/groupService';
+import { partnerService } from '../services/partnerService';
+import { communityService } from '../services/communityService';
 import { themeService, type AppTheme } from '../services/themeService';
+import { QRCodeSVG } from 'qrcode.react';
 import { 
   Users, 
   Plus, 
@@ -18,7 +21,11 @@ import {
   Sparkles,
   Sun,
   Moon,
-  Search
+  Search,
+  MessageCircle,
+  Copy,
+  Check,
+  Share2
 } from 'lucide-react';
 
 interface Props {
@@ -41,6 +48,12 @@ export const GroupsView: React.FC<Props> = ({
   // Modals State
   const [isCreateGroupModalOpen, setIsCreateGroupModalOpen] = useState(false);
   const [isCreateCalloutModalOpen, setIsCreateCalloutModalOpen] = useState(false);
+  const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
+  const [inviteTab, setInviteTab] = useState<'whatsapp' | 'in_app'>('whatsapp');
+  const [inviteSearchQuery, setInviteSearchQuery] = useState('');
+  const [inviteCopied, setInviteCopied] = useState(false);
+  const [inviteLinkCopied, setInviteLinkCopied] = useState(false);
+  const [inAppInvitedIds, setInAppInvitedIds] = useState<Set<string>>(new Set());
 
   // New Group Form
   const [newGroupName, setNewGroupName] = useState('');
@@ -48,6 +61,8 @@ export const GroupsView: React.FC<Props> = ({
   const [newGroupClub, setNewGroupClub] = useState('Club Padel Oriente');
   const [newGroupCity, setNewGroupCity] = useState('Santiago');
   const [newGroupCategory, setNewGroupCategory] = useState<'1ra' | '2da' | '3ra' | '4ta' | '5ta' | '6ta' | '7ma' | 'abierta'>('4ta');
+  const [selectedInitialMembers, setSelectedInitialMembers] = useState<CommunityPlayer[]>([]);
+  const [initialMemberSearch, setInitialMemberSearch] = useState('');
 
   // New Callout Form
   const [calloutClub, setCalloutClub] = useState('Club Padel Oriente');
@@ -70,6 +85,53 @@ export const GroupsView: React.FC<Props> = ({
 
   const selectedGroup = groups.find(g => g.id === selectedGroupId) || groups[0];
 
+  // Partners & Community Lists
+  const partners = partnerService.getPartners(currentUser);
+  const allCommunity = communityService.getPlayers().filter(
+    p => p.id !== currentUser.id && p.name.toLowerCase() !== currentUser.name.toLowerCase()
+  );
+
+  const availableInitialPlayers = [
+    ...partners,
+    ...allCommunity.filter(cp => !partners.some(p => p.id === cp.id))
+  ].filter(p => {
+    if (!initialMemberSearch.trim()) return true;
+    const q = initialMemberSearch.toLowerCase();
+    return p.name.toLowerCase().includes(q) ||
+      (p.club && p.club.toLowerCase().includes(q)) ||
+      p.category.toLowerCase().includes(q);
+  });
+
+  const filteredInAppPlayers = [
+    ...partners,
+    ...allCommunity.filter(cp => !partners.some(p => p.id === cp.id))
+  ].filter(p => {
+    if (!inviteSearchQuery.trim()) return true;
+    const q = inviteSearchQuery.toLowerCase();
+    return p.name.toLowerCase().includes(q) ||
+      (p.club && p.club.toLowerCase().includes(q)) ||
+      p.category.toLowerCase().includes(q);
+  });
+
+  const toggleInitialMember = (player: CommunityPlayer) => {
+    setSelectedInitialMembers(prev => {
+      const exists = prev.some(p => p.id === player.id);
+      if (exists) {
+        return prev.filter(p => p.id !== player.id);
+      } else {
+        return [...prev, player];
+      }
+    });
+  };
+
+  const inviteUrl = typeof window !== 'undefined'
+    ? `${window.location.origin}${window.location.pathname}#join-group=${selectedGroup?.id || ''}`
+    : `https://padelmatch.web.app/#join-group=${selectedGroup?.id || ''}`;
+
+  const whatsappText = selectedGroup 
+    ? groupService.getWhatsAppInviteText(selectedGroup, currentUser.name, inviteUrl)
+    : '';
+
   const handleCreateGroup = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newGroupName.trim()) return;
@@ -85,13 +147,20 @@ export const GroupsView: React.FC<Props> = ({
         name: currentUser.name,
         category: currentUser.category,
         elo: currentUser.elo
-      }
+      },
+      initialMembers: selectedInitialMembers
     });
 
     setIsCreateGroupModalOpen(false);
     setSelectedGroupId(created.id);
+    setSelectedInitialMembers([]);
+    setInitialMemberSearch('');
     setNewGroupName('');
     setNewGroupDesc('');
+
+    // Open invite modal to share via WhatsApp or invite more
+    setIsInviteModalOpen(true);
+    setInviteTab('whatsapp');
   };
 
   const handleCreateCallout = (e: React.FormEvent) => {
@@ -292,7 +361,19 @@ export const GroupsView: React.FC<Props> = ({
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', gap: '8px' }}>
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsInviteModalOpen(true);
+                      setInviteTab('whatsapp');
+                    }}
+                    style={inviteHeaderBtnStyle}
+                  >
+                    <UserPlus size={16} />
+                    <span>Invitar Jugadores</span>
+                  </button>
+
                   <button
                     type="button"
                     onClick={() => setIsCreateCalloutModalOpen(true)}
@@ -520,11 +601,22 @@ export const GroupsView: React.FC<Props> = ({
 
             {/* Group Members List */}
             <div style={{ marginTop: '24px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                <h3 style={{ fontSize: '1.05rem', fontWeight: 900, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
+                <h3 style={{ fontSize: '1.05rem', fontWeight: 900, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
                   <Users size={18} color="var(--gold-primary)" />
                   <span>Miembros del Grupo ({selectedGroup.members.length})</span>
                 </h3>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsInviteModalOpen(true);
+                    setInviteTab('in_app');
+                  }}
+                  style={inviteMembersSmallBtnStyle}
+                >
+                  <UserPlus size={14} />
+                  <span>+ Invitar Miembros</span>
+                </button>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '10px' }}>
@@ -634,6 +726,113 @@ export const GroupsView: React.FC<Props> = ({
                   <option value="7ma">7ª Categoría</option>
                   <option value="abierta">Abierta a cualquier nivel</option>
                 </select>
+              </div>
+
+              {/* Miembros Iniciales (Partners & Comunidad) */}
+              <div style={{ marginTop: '4px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                  <label style={{ ...formLabel, margin: 0 }}>
+                    Invitar Miembros Iniciales ({selectedInitialMembers.length} seleccionados)
+                  </label>
+                  <span style={{ fontSize: '0.7rem', color: 'var(--team1-primary)', fontWeight: 800 }}>
+                    {selectedInitialMembers.length > 0 ? `${selectedInitialMembers.length} añadido${selectedInitialMembers.length > 1 ? 's' : ''}` : 'Opcional'}
+                  </span>
+                </div>
+
+                <div style={searchWrapperStyle}>
+                  <Search size={14} color="var(--text-muted)" />
+                  <input
+                    type="text"
+                    placeholder="Buscar partners o jugadores por nombre, club..."
+                    value={initialMemberSearch}
+                    onChange={e => setInitialMemberSearch(e.target.value)}
+                    style={searchInputStyle}
+                  />
+                </div>
+
+                {/* Available players list */}
+                <div style={{ maxHeight: '130px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '8px', paddingRight: '4px' }}>
+                  {availableInitialPlayers.length === 0 ? (
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textAlign: 'center', padding: '12px' }}>
+                      No se encontraron jugadores disponibles.
+                    </div>
+                  ) : (
+                    availableInitialPlayers.map(player => {
+                      const isSelected = selectedInitialMembers.some(p => p.id === player.id);
+                      const isPartner = partners.some(p => p.id === player.id);
+                      return (
+                        <div
+                          key={player.id}
+                          onClick={() => toggleInitialMember(player)}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            padding: '6px 10px',
+                            borderRadius: 'var(--radius-sm)',
+                            background: isSelected ? 'rgba(0, 230, 118, 0.12)' : 'var(--bg-elevated)',
+                            border: isSelected ? '1px solid var(--team1-primary)' : '1px solid var(--border-subtle)',
+                            cursor: 'pointer',
+                            transition: 'all 0.15s ease'
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+                            <div style={{
+                              width: '24px',
+                              height: '24px',
+                              borderRadius: '50%',
+                              background: isSelected ? 'var(--team1-primary)' : 'var(--bg-card)',
+                              color: isSelected ? '#070a10' : 'var(--text-main)',
+                              fontWeight: 900,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontSize: '0.72rem',
+                              flexShrink: 0
+                            }}>
+                              {player.name.charAt(0).toUpperCase()}
+                            </div>
+                            <div style={{ minWidth: 0 }}>
+                              <div style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--text-main)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                {player.name}
+                              </div>
+                              <div style={{ fontSize: '0.66rem', color: 'var(--text-muted)', display: 'flex', gap: '4px', alignItems: 'center' }}>
+                                <span>Cat: {player.category}</span>
+                                <span>•</span>
+                                <span style={{ color: 'var(--gold-primary)' }}>ELO {player.elo}</span>
+                                {isPartner && (
+                                  <>
+                                    <span>•</span>
+                                    <span style={{ color: 'var(--team2-primary)', fontWeight: 700 }}>Partner</span>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div style={{
+                            fontSize: '0.68rem',
+                            fontWeight: 800,
+                            padding: '2px 8px',
+                            borderRadius: 'var(--radius-sm)',
+                            background: isSelected ? 'var(--team1-primary)' : 'transparent',
+                            color: isSelected ? '#070a10' : 'var(--text-muted)',
+                            border: isSelected ? 'none' : '1px solid var(--border-subtle)'
+                          }}>
+                            {isSelected ? '✓ Añadido' : '+ Sumar'}
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+
+                <div style={{ marginTop: '8px', padding: '8px 10px', background: 'rgba(37, 211, 102, 0.08)', borderRadius: 'var(--radius-sm)', border: '1px dashed rgba(37, 211, 102, 0.3)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <MessageCircle size={15} color="#25D366" style={{ flexShrink: 0 }} />
+                  <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                    <strong style={{ color: '#25D366' }}>Invitación WhatsApp externa:</strong> Al crear el grupo se abrirá de inmediato el mensaje listo con el pitch de PadelMatch para enviar por WhatsApp a jugadores externos.
+                  </span>
+                </div>
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '12px' }}>
@@ -756,11 +955,400 @@ export const GroupsView: React.FC<Props> = ({
           </div>
         </div>
       )}
+
+      {/* MODAL: INVITAR JUGADORES (WHATSAPP + IN-APP DIRECTO) */}
+      {isInviteModalOpen && selectedGroup && (
+        <div style={modalBackdrop}>
+          <div style={{ ...modalBox, maxWidth: '580px', maxHeight: '90vh', overflowY: 'auto' }} className="glass-panel">
+            {/* Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '14px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{ width: '42px', height: '42px', borderRadius: 'var(--radius-md)', background: 'var(--bg-elevated)', border: '1px solid var(--border-medium)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.4rem' }}>
+                  {selectedGroup.avatar || '🎾'}
+                </div>
+                <div>
+                  <h3 style={{ fontSize: '1.2rem', fontWeight: 900, color: 'var(--text-main)', margin: 0 }}>
+                    Invitar Jugadores al Grupo
+                  </h3>
+                  <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{ fontWeight: 800, color: 'var(--team1-primary)' }}>{selectedGroup.name}</span>
+                    <span>•</span>
+                    <span>{selectedGroup.members.length} miembros actuales</span>
+                  </div>
+                </div>
+              </div>
+              <button 
+                type="button" 
+                onClick={() => setIsInviteModalOpen(false)} 
+                style={iconCloseBtn}
+                title="Cerrar modal"
+                aria-label="Cerrar modal"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Segmented Tab Switcher */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '16px', background: 'var(--bg-elevated)', padding: '4px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)' }}>
+              <button
+                type="button"
+                onClick={() => setInviteTab('whatsapp')}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px',
+                  padding: '9px 12px',
+                  borderRadius: 'var(--radius-sm)',
+                  border: 'none',
+                  fontWeight: 800,
+                  fontSize: '0.82rem',
+                  cursor: 'pointer',
+                  background: inviteTab === 'whatsapp' ? '#25D366' : 'transparent',
+                  color: inviteTab === 'whatsapp' ? '#070a10' : 'var(--text-muted)',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                <MessageCircle size={15} />
+                <span>Por WhatsApp (Externos)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setInviteTab('in_app')}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px',
+                  padding: '9px 12px',
+                  borderRadius: 'var(--radius-sm)',
+                  border: 'none',
+                  fontWeight: 800,
+                  fontSize: '0.82rem',
+                  cursor: 'pointer',
+                  background: inviteTab === 'in_app' ? 'var(--team1-primary)' : 'transparent',
+                  color: inviteTab === 'in_app' ? '#070a10' : 'var(--text-muted)',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                <Users size={15} />
+                <span>In-App (PadelMatch)</span>
+              </button>
+            </div>
+
+            {/* TAB CONTENT: WHATSAPP (EXTERNAL PLAYERS) */}
+            {inviteTab === 'whatsapp' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', lineHeight: 1.4 }}>
+                  Envía una invitación directa a amigos o grupos de WhatsApp para que conozcan las ventajas de operar en el ecosistema PadelMatch, se registren gratis y se unan al grupo automáticamente:
+                </div>
+
+                {/* WhatsApp Message Preview Box */}
+                <div style={{
+                  background: 'rgba(37, 211, 102, 0.06)',
+                  border: '1px solid rgba(37, 211, 102, 0.35)',
+                  borderRadius: 'var(--radius-md)',
+                  padding: '14px',
+                  position: 'relative'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px', color: '#25D366', fontWeight: 800, fontSize: '0.78rem' }}>
+                    <MessageCircle size={14} />
+                    <span>Vista Previa del Mensaje Oficial de WhatsApp:</span>
+                  </div>
+                  <pre style={{
+                    margin: 0,
+                    whiteSpace: 'pre-wrap',
+                    fontFamily: 'inherit',
+                    fontSize: '0.8rem',
+                    color: 'var(--text-main)',
+                    lineHeight: 1.5,
+                    maxHeight: '190px',
+                    overflowY: 'auto'
+                  }}>
+                    {whatsappText}
+                  </pre>
+                </div>
+
+                {/* Big WhatsApp Send Button */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(whatsappText)}`;
+                    window.open(url, '_blank');
+                  }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    background: '#25D366',
+                    color: '#070a10',
+                    border: 'none',
+                    borderRadius: 'var(--radius-md)',
+                    padding: '12px 18px',
+                    fontWeight: 900,
+                    fontSize: '0.92rem',
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 15px rgba(37, 211, 102, 0.4)'
+                  }}
+                >
+                  <MessageCircle size={18} />
+                  <span>Enviar Invitación por WhatsApp</span>
+                </button>
+
+                {/* Quick Copy Row */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (navigator?.clipboard) {
+                        navigator.clipboard.writeText(whatsappText);
+                        setInviteCopied(true);
+                        setTimeout(() => setInviteCopied(false), 2500);
+                      }
+                    }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '6px',
+                      background: 'var(--bg-elevated)',
+                      border: '1px solid var(--border-medium)',
+                      borderRadius: 'var(--radius-md)',
+                      padding: '9px 12px',
+                      fontWeight: 700,
+                      fontSize: '0.78rem',
+                      color: inviteCopied ? 'var(--team1-primary)' : 'var(--text-main)',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {inviteCopied ? <Check size={14} /> : <Copy size={14} />}
+                    <span>{inviteCopied ? '¡Mensaje Copiado!' : 'Copiar Texto Completo'}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (navigator?.clipboard) {
+                        navigator.clipboard.writeText(inviteUrl);
+                        setInviteLinkCopied(true);
+                        setTimeout(() => setInviteLinkCopied(false), 2500);
+                      }
+                    }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '6px',
+                      background: 'var(--bg-elevated)',
+                      border: '1px solid var(--border-medium)',
+                      borderRadius: 'var(--radius-md)',
+                      padding: '9px 12px',
+                      fontWeight: 700,
+                      fontSize: '0.78rem',
+                      color: inviteLinkCopied ? 'var(--team1-primary)' : 'var(--text-main)',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {inviteLinkCopied ? <Check size={14} /> : <Share2 size={14} />}
+                    <span>{inviteLinkCopied ? '¡Enlace Copiado!' : 'Copiar Solo Enlace'}</span>
+                  </button>
+                </div>
+
+                {/* QR Code Section for Court / Presential Joining */}
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '14px',
+                  padding: '12px 14px',
+                  background: 'var(--bg-card)',
+                  border: '1px solid var(--border-subtle)',
+                  borderRadius: 'var(--radius-md)'
+                }}>
+                  <div style={{
+                    padding: '8px',
+                    background: '#ffffff',
+                    borderRadius: 'var(--radius-sm)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0
+                  }}>
+                    <QRCodeSVG value={inviteUrl} size={90} level="M" />
+                  </div>
+                  <div>
+                    <div style={{ fontWeight: 800, fontSize: '0.85rem', color: 'var(--text-main)' }}>
+                      Código QR para Escaneo en Cancha o Club
+                    </div>
+                    <div style={{ fontSize: '0.73rem', color: 'var(--text-muted)', marginTop: '2px', lineHeight: 1.4 }}>
+                      Quien esté junto a ti puede escanear este código QR directamente desde su móvil para activar su cuenta y entrar al grupo al instante.
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* TAB CONTENT: IN-APP DIRECT INVITATIONS */}
+            {inviteTab === 'in_app' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+                  Invita a tus Partners de PadelMatch o busca jugadores registrados en la comunidad. Recibirán una notificación inmediata en su feed:
+                </div>
+
+                <div style={searchWrapperStyle}>
+                  <Search size={14} color="var(--text-muted)" />
+                  <input
+                    type="text"
+                    placeholder="Buscar por nombre, club o categoría..."
+                    value={inviteSearchQuery}
+                    onChange={e => setInviteSearchQuery(e.target.value)}
+                    style={searchInputStyle}
+                  />
+                </div>
+
+                <div style={{ maxHeight: '280px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px', paddingRight: '4px' }}>
+                  {filteredInAppPlayers.length === 0 ? (
+                    <div style={{ textAlign: 'center', padding: '24px 12px', color: 'var(--text-muted)', fontSize: '0.82rem' }}>
+                      No se encontraron jugadores que coincidan con la búsqueda.
+                    </div>
+                  ) : (
+                    filteredInAppPlayers.map(player => {
+                      const isAlreadyMember = selectedGroup.members.some(m => m.playerId === player.id);
+                      const isJustInvited = inAppInvitedIds.has(player.id);
+                      const isPartner = partners.some(p => p.id === player.id);
+
+                      return (
+                        <div
+                          key={player.id}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            padding: '9px 12px',
+                            borderRadius: 'var(--radius-md)',
+                            background: isJustInvited ? 'rgba(0, 230, 118, 0.12)' : 'var(--bg-elevated)',
+                            border: isJustInvited ? '1px solid var(--team1-primary)' : '1px solid var(--border-subtle)',
+                            transition: 'all 0.2s ease'
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+                            <div style={{
+                              width: '32px',
+                              height: '32px',
+                              borderRadius: '50%',
+                              background: 'var(--bg-card)',
+                              border: '1px solid var(--border-medium)',
+                              color: 'var(--team1-primary)',
+                              fontWeight: 900,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontSize: '0.85rem',
+                              flexShrink: 0
+                            }}>
+                              {player.name.charAt(0).toUpperCase()}
+                            </div>
+                            <div style={{ minWidth: 0 }}>
+                              <div style={{ fontSize: '0.86rem', fontWeight: 800, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{player.name}</span>
+                                {isPartner && (
+                                  <span style={{ fontSize: '0.62rem', fontWeight: 900, background: 'rgba(0, 176, 255, 0.15)', color: 'var(--team2-primary)', padding: '1px 5px', borderRadius: '3px' }}>
+                                    PARTNER
+                                  </span>
+                                )}
+                              </div>
+                              <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'flex', gap: '6px', alignItems: 'center' }}>
+                                <span>Cat: {player.category}</span>
+                                <span>•</span>
+                                <span style={{ color: 'var(--gold-primary)' }}>ELO {player.elo}</span>
+                                {player.club && (
+                                  <>
+                                    <span>•</span>
+                                    <span>{player.club}</span>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div>
+                            {isAlreadyMember || isJustInvited ? (
+                              <span style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--team1-primary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <Check size={13} />
+                                <span>{isJustInvited ? '¡Invitado!' : 'Ya es Miembro'}</span>
+                              </span>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const res = groupService.inviteMember(selectedGroup.id, player, currentUser.name);
+                                  if (res.success) {
+                                    setInAppInvitedIds(prev => new Set(prev).add(player.id));
+                                  }
+                                }}
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '4px',
+                                  background: 'var(--team1-gradient)',
+                                  color: '#070a10',
+                                  border: 'none',
+                                  borderRadius: 'var(--radius-sm)',
+                                  padding: '6px 12px',
+                                  fontWeight: 800,
+                                  fontSize: '0.74rem',
+                                  cursor: 'pointer'
+                                }}
+                              >
+                                <UserPlus size={13} />
+                                <span>Invitar</span>
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
 // Styles
+const inviteHeaderBtnStyle: React.CSSProperties = {
+  background: 'rgba(0, 176, 255, 0.15)',
+  border: '1px solid var(--team2-primary)',
+  color: 'var(--team2-primary)',
+  borderRadius: 'var(--radius-md)',
+  padding: '10px 16px',
+  fontWeight: 800,
+  fontSize: '0.85rem',
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '6px',
+  cursor: 'pointer',
+  transition: 'all 0.2s ease'
+};
+
+const inviteMembersSmallBtnStyle: React.CSSProperties = {
+  background: 'var(--bg-elevated)',
+  border: '1px solid var(--border-medium)',
+  color: 'var(--team1-primary)',
+  borderRadius: 'var(--radius-sm)',
+  padding: '6px 12px',
+  fontWeight: 800,
+  fontSize: '0.75rem',
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '5px',
+  cursor: 'pointer'
+};
 const containerStyle: React.CSSProperties = {
   minHeight: '100dvh',
   background: 'var(--bg-deep)',

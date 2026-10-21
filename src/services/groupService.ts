@@ -1,5 +1,6 @@
 import type { PadelGroup, GroupCallout, GroupMember, CommunityPlayer, PlayerCategory } from '../types/padel';
 import { communityService } from './communityService';
+import { notificationService } from './notificationService';
 
 const GROUPS_STORAGE_KEY = 'padelmatch_groups_v1';
 
@@ -271,7 +272,30 @@ class GroupService {
     categoryLevel: PlayerCategory | 'abierta';
     creator: { id: string; name: string; category: PlayerCategory; elo: number };
     avatar?: string;
+    initialMembers?: Array<{ id: string; name: string; category: PlayerCategory; elo: number }>;
   }): PadelGroup {
+    const creatorMember: GroupMember = {
+      playerId: data.creator.id,
+      name: data.creator.name,
+      category: data.creator.category,
+      elo: data.creator.elo,
+      role: 'admin',
+      joinedAt: Date.now(),
+      matchesPlayedInGroup: 0
+    };
+
+    const invitedMembers: GroupMember[] = (data.initialMembers || [])
+      .filter(m => m.id !== data.creator.id)
+      .map(m => ({
+        playerId: m.id,
+        name: m.name,
+        category: m.category,
+        elo: m.elo,
+        role: 'member',
+        joinedAt: Date.now(),
+        matchesPlayedInGroup: 0
+      }));
+
     const newGroup: PadelGroup = {
       id: `grp-${Date.now().toString(36)}-${Math.random().toString(36).substr(2, 4)}`,
       name: data.name.trim(),
@@ -279,17 +303,7 @@ class GroupService {
       city: data.city.trim() || 'Santiago',
       clubPreferred: data.clubPreferred.trim() || 'Club de Pádel',
       categoryLevel: data.categoryLevel,
-      members: [
-        {
-          playerId: data.creator.id,
-          name: data.creator.name,
-          category: data.creator.category,
-          elo: data.creator.elo,
-          role: 'admin',
-          joinedAt: Date.now(),
-          matchesPlayedInGroup: 0
-        }
-      ],
+      members: [creatorMember, ...invitedMembers],
       callouts: [],
       createdAt: Date.now(),
       avatar: data.avatar || '🎾'
@@ -297,6 +311,17 @@ class GroupService {
 
     this.groups.unshift(newGroup);
     this.saveToStorage();
+
+    // Send in-app notification to invited initial members
+    invitedMembers.forEach(_invited => {
+      notificationService.addNotification({
+        type: 'friend_invite',
+        title: `🎾 Te agregaron al grupo "${newGroup.name}"`,
+        body: `${data.creator.name} te ha sumado como miembro al grupo de pádel "${newGroup.name}". ¡Entra a revisar las convocatorias!`,
+        actionUrl: `#join-group=${newGroup.id}`
+      });
+    });
+
     return newGroup;
   }
 
@@ -316,6 +341,54 @@ class GroupService {
       });
       this.saveToStorage();
     }
+  }
+
+  public inviteMember(
+    groupId: string, 
+    player: { id: string; name: string; category: PlayerCategory; elo: number }, 
+    inviterName?: string
+  ): { success: boolean; message: string } {
+    const group = this.getGroupById(groupId);
+    if (!group) return { success: false, message: 'Grupo no encontrado.' };
+
+    if (group.members.some(m => m.playerId === player.id)) {
+      return { success: false, message: `${player.name} ya es miembro de este grupo.` };
+    }
+
+    group.members.push({
+      playerId: player.id,
+      name: player.name,
+      category: player.category,
+      elo: player.elo,
+      role: 'member',
+      joinedAt: Date.now(),
+      matchesPlayedInGroup: 0
+    });
+    this.saveToStorage();
+
+    // In-app notification
+    notificationService.addNotification({
+      type: 'friend_invite',
+      title: `🎾 Invitación a Grupo: ${group.name}`,
+      body: `${inviterName || 'Un jugador'} te ha invitado al grupo de pádel "${group.name}". ¡Súmate a las próximas partidas!`,
+      actionUrl: `#join-group=${group.id}`
+    });
+
+    return { success: true, message: `¡${player.name} ha sido invitado al grupo!` };
+  }
+
+  public getWhatsAppInviteText(group: PadelGroup, inviterName: string, inviteUrl: string): string {
+    return `¡Hola! 🎾 ${inviterName} te está invitando a unirte al grupo de pádel "${group.name}" en PadelMatch.\n\n` +
+      `🏆 ¿Qué es PadelMatch?\n` +
+      `Es el ecosistema inteligente para jugadores y clubes de pádel:\n` +
+      `• 🎙️ Árbitro en vivo por voz durante tus partidos\n` +
+      `• ⌚ Control de tanteo desde Smartwatch y pulsadores\n` +
+      `• ⚡ Convocatorias de partidos en múltiplos de 4 (¡nunca más falta 1!)\n` +
+      `• 📊 Ranking ELO dinámico, tarjetas de partido y estadísticas\n` +
+      `• 🤝 Comunidad con amigos, grupos y beneficios en clubes\n\n` +
+      `👉 Súmate al grupo y activa tu cuenta gratis aquí:\n` +
+      `${inviteUrl}\n\n` +
+      `¡Te esperamos en la cancha! 🎾🔥`;
   }
 
   public leaveGroup(groupId: string, playerId: string) {

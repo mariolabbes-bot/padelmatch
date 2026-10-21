@@ -31,4 +31,46 @@ if (mainGroup && callout) {
   console.log(`✅ PASS: 8 players -> Complete multiple of 4 (2 full courts closed)`);
 }
 
+// TEST: Group creation with initial members
+const newTestGroup = groupService.createGroup({
+  name: 'Grupo de Prueba Invitaciones',
+  description: 'Grupo creado para testear flujo de invitaciones iniciales',
+  city: 'Santiago',
+  clubPreferred: 'Club Central Padel',
+  categoryLevel: '4ta',
+  creator: { id: 'test-creator', name: 'Mario Labbé', category: '4ta', elo: 1400 },
+  initialMembers: [
+    { id: 'partner-1', name: 'Fernando González', category: '4ta', elo: 1420 },
+    { id: 'partner-2', name: 'Matías Silva', category: '4ta', elo: 1380 }
+  ]
+});
+
+console.assert(newTestGroup.members.length === 3, `Expected 3 members (creator + 2 initial), got ${newTestGroup.members.length}`);
+console.assert(newTestGroup.members[0].role === 'admin', 'Creator should be admin');
+console.assert(newTestGroup.members[1].role === 'member', 'Invited member should have role member');
+console.log(`✅ PASS: Group created with 2 initial members invited automatically (Total members: ${newTestGroup.members.length})`);
+
+// TEST: In-app invitation to existing group
+const inviteRes = groupService.inviteMember(newTestGroup.id, {
+  id: 'partner-3',
+  name: 'Rodrigo Valenzuela',
+  category: '4ta',
+  elo: 1395
+}, 'Mario Labbé');
+
+console.assert(inviteRes.success === true, 'Invitation should succeed');
+console.assert(newTestGroup.members.length === 4, 'Group should now have 4 members');
+console.log('✅ PASS: Direct in-app invitation added member successfully');
+
+// TEST: WhatsApp invitation text generation
+const inviteUrl = `https://padelmatch.web.app/#join-group=${newTestGroup.id}`;
+const waText = groupService.getWhatsAppInviteText(newTestGroup, 'Mario Labbé', inviteUrl);
+
+console.assert(waText.includes('Mario Labbé te está invitando'), 'Should mention inviter name');
+console.assert(waText.includes(newTestGroup.name), 'Should mention group name');
+console.assert(waText.includes('Árbitro en vivo por voz'), 'Should describe app features');
+console.assert(waText.includes('múltiplos de 4'), 'Should describe multiples of 4');
+console.assert(waText.includes(inviteUrl), 'Should include direct join url');
+console.log('✅ PASS: WhatsApp pitch and invitation message generated accurately with ecosystem highlights');
+
 console.log('🎉 ALL PADEL GROUP TESTS PASSED SUCCESSFULLY!');

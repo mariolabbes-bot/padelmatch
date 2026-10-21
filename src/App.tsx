@@ -19,6 +19,8 @@ import type { UserSession } from './services/authService';
 import { smartwatchService } from './services/smartwatchService';
 import { matchSyncService } from './services/matchSyncService';
 import type { SyncedMatchRoom } from './services/matchSyncService';
+import { groupService } from './services/groupService';
+import { notificationService } from './services/notificationService';
 
 // Flow Views
 import { AuthScreen } from './components/AuthScreen';
@@ -99,8 +101,54 @@ export function App() {
       }
       return 'participant_join';
     }
+    if (hash.includes('join-group=')) {
+      return authService.isAuthenticated() ? 'groups' : 'auth';
+    }
     return authService.isAuthenticated() ? 'host_dashboard' : 'auth';
   });
+
+  // Automatic Join Group from WhatsApp Invitation
+  useEffect(() => {
+    if (!currentUser) return;
+
+    const checkJoinGroup = () => {
+      if (typeof window === 'undefined') return;
+      const hash = window.location.hash || '';
+      const search = window.location.search || '';
+
+      let targetGroupId: string | null = null;
+      if (hash.includes('join-group=')) {
+        const match = hash.match(/join-group=([^&]+)/);
+        if (match && match[1]) targetGroupId = decodeURIComponent(match[1]);
+      } else if (search.includes('joinGroup=')) {
+        const params = new URLSearchParams(search);
+        targetGroupId = params.get('joinGroup');
+      }
+
+      if (!targetGroupId && typeof sessionStorage !== 'undefined') {
+        targetGroupId = sessionStorage.getItem('padel_pending_join_group');
+      }
+
+      if (targetGroupId) {
+        groupService.joinGroup(targetGroupId, currentUser);
+        if (typeof sessionStorage !== 'undefined') {
+          sessionStorage.removeItem('padel_pending_join_group');
+        }
+        const grp = groupService.getGroupById(targetGroupId);
+        notificationService.addNotification({
+          type: 'friend_invite',
+          title: '🎾 ¡Te uniste al grupo!',
+          body: `Bienvenido a ${grp ? grp.name : 'tu nuevo grupo de pádel'}. ¡Ya puedes participar en sus convocatorias!`,
+          actionUrl: `#join-group=${targetGroupId}`
+        });
+        setCurrentView('groups');
+      }
+    };
+
+    checkJoinGroup();
+    window.addEventListener('hashchange', checkJoinGroup);
+    return () => window.removeEventListener('hashchange', checkJoinGroup);
+  }, [currentUser]);
 
   // Listen to hash changes (e.g. scanning QR code while app tab is open)
   useEffect(() => {
