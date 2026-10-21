@@ -174,61 +174,81 @@ export const AuthScreen: React.FC<Props> = ({ onAuthenticated }) => {
       <div style={ambientGlowTop} />
       <div style={ambientGlowBottom} />
 
-      <div style={cardStyle} className="glass-panel">
+      <div style={cardStyle} className="glass-panel apple-card">
         {/* Theme Mode Switcher in Card Header */}
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '8px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ 
+              fontSize: '0.65rem', 
+              fontWeight: 900, 
+              letterSpacing: '0.08em', 
+              textTransform: 'uppercase',
+              color: 'var(--team1-primary)',
+              background: 'rgba(0, 230, 118, 0.1)',
+              padding: '3px 8px',
+              borderRadius: 'var(--radius-full)',
+              border: '1px solid rgba(0, 230, 118, 0.25)'
+            }}>
+              PADELMATCH PASS
+            </span>
+          </div>
+
           <button
             type="button"
             onClick={handleToggleTheme}
             style={themeToggleBtnStyle}
-            title={theme === 'day' ? 'Cambiar a Modo Noche (Estadio Neón)' : 'Cambiar a Modo Día (Luz Natural / Alto Contraste)'}
+            title={theme === 'day' ? 'Modo Noche (Estadio Neón)' : 'Modo Día (Luz Natural / Alto Contraste)'}
             aria-label="Cambiar tema de visualización día/noche"
           >
             {theme === 'day' ? (
               <>
-                <Sun size={15} color="var(--gold-primary)" />
-                <span style={{ fontWeight: 700, fontSize: '0.78rem' }}>Modo Día (Sol)</span>
+                <Sun size={14} color="var(--gold-primary)" />
+                <span style={{ fontWeight: 800, fontSize: '0.75rem' }}>Modo Día</span>
               </>
             ) : (
               <>
-                <Moon size={15} color="var(--team2-primary)" />
-                <span style={{ fontWeight: 700, fontSize: '0.78rem' }}>Modo Noche (Neón)</span>
+                <Moon size={14} color="var(--team2-primary)" />
+                <span style={{ fontWeight: 800, fontSize: '0.75rem' }}>Modo Noche</span>
               </>
             )}
           </button>
         </div>
 
-        {/* Header / Brand */}
-        <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-          <img 
-            src="/logo.png" 
-            alt="PadelMatch Logo" 
-            style={{ 
-              width: '72px', 
-              height: '72px', 
-              borderRadius: '50%', 
-              objectFit: 'cover', 
-              margin: '0 auto 12px',
-              display: 'block',
-              boxShadow: '0 0 30px rgba(255, 214, 0, 0.4), 0 0 10px rgba(0, 230, 118, 0.3)',
-              border: '2px solid rgba(255, 255, 255, 0.2)'
-            }} 
-          />
+        {/* Header / Brand (Apple / Nike Athletic Elegance) */}
+        <div style={{ textAlign: 'center', marginBottom: '22px' }}>
+          <div style={{ position: 'relative', display: 'inline-block', marginBottom: '12px' }}>
+            <img 
+              src="/logo.png" 
+              alt="PadelMatch Logo" 
+              style={{ 
+                width: '76px', 
+                height: '76px', 
+                borderRadius: '50%', 
+                objectFit: 'cover', 
+                margin: '0 auto',
+                display: 'block',
+                boxShadow: '0 0 35px rgba(0, 230, 118, 0.35), 0 0 15px rgba(255, 214, 0, 0.3)',
+                border: '2px solid rgba(255, 255, 255, 0.25)'
+              }} 
+            />
+          </div>
+
           <div style={logoBadgeStyle}>
             <div className="pulsing-dot" style={{ color: 'var(--team1-primary)' }} />
-            <span style={{ fontWeight: 900, letterSpacing: '-0.02em', fontSize: '1.25rem', color: 'var(--text-main)' }}>
+            <span style={{ fontWeight: 900, letterSpacing: '-0.03em', fontSize: '1.35rem', color: 'var(--text-main)' }}>
               PADEL<span style={{ color: 'var(--team1-primary)' }}>MATCH</span>
             </span>
           </div>
-          <h1 style={{ fontSize: '1.45rem', fontWeight: 900, marginTop: '12px', letterSpacing: '-0.02em', color: 'var(--text-main)' }}>
-            Marcador Inteligente en Cancha
+
+          <h1 style={{ fontSize: '1.4rem', fontWeight: 900, marginTop: '10px', letterSpacing: '-0.02em', color: 'var(--text-main)', lineHeight: 1.2 }}>
+            Experiencia de Élite en Cancha
           </h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginTop: '4px' }}>
-            Arbitraje por voz, hardware smartwatch y comunidad competitiva
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem', marginTop: '4px', maxWidth: '340px', margin: '4px auto 0' }}>
+            Arbitraje por voz profesional, sincronización en vivo y estadísticas de alto rendimiento
           </p>
         </div>
 
-        {/* Tab Switcher (Only when not in Reset Mode) */}
+        {/* Apple-Style Segmented Control */}
         {!isResetMode && (
           <div style={tabContainerStyle}>
             <button
@@ -236,9 +256,10 @@ export const AuthScreen: React.FC<Props> = ({ onAuthenticated }) => {
               onClick={() => { setMode('login'); setError(null); setSuccessMsg(null); }}
               style={{
                 ...tabBtnStyle,
-                background: mode === 'login' ? 'var(--bg-card)' : 'transparent',
+                background: mode === 'login' ? 'var(--bg-elevated)' : 'transparent',
                 color: mode === 'login' ? 'var(--text-main)' : 'var(--text-muted)',
-                borderBottom: mode === 'login' ? '2px solid var(--team1-primary)' : '2px solid transparent'
+                boxShadow: mode === 'login' ? '0 2px 10px rgba(0, 0, 0, 0.4)' : 'none',
+                fontWeight: mode === 'login' ? 900 : 700
               }}
             >
               Iniciar Sesión
@@ -248,12 +269,13 @@ export const AuthScreen: React.FC<Props> = ({ onAuthenticated }) => {
               onClick={() => { setMode('register'); setError(null); setSuccessMsg(null); }}
               style={{
                 ...tabBtnStyle,
-                background: mode === 'register' ? 'var(--bg-card)' : 'transparent',
+                background: mode === 'register' ? 'var(--bg-elevated)' : 'transparent',
                 color: mode === 'register' ? 'var(--text-main)' : 'var(--text-muted)',
-                borderBottom: mode === 'register' ? '2px solid var(--team1-primary)' : '2px solid transparent'
+                boxShadow: mode === 'register' ? '0 2px 10px rgba(0, 0, 0, 0.4)' : 'none',
+                fontWeight: mode === 'register' ? 900 : 700
               }}
             >
-              Crear Perfil con Contraseña
+              Crear Perfil de Jugador
             </button>
           </div>
         )}
@@ -742,20 +764,21 @@ const logoBadgeStyle: React.CSSProperties = {
 const tabContainerStyle: React.CSSProperties = {
   display: 'grid',
   gridTemplateColumns: '1fr 1fr',
-  background: 'var(--bg-elevated)',
+  background: 'rgba(0, 0, 0, 0.4)',
   borderRadius: 'var(--radius-md)',
   padding: '4px',
-  marginBottom: '18px'
+  marginBottom: '20px',
+  border: '1px solid var(--border-subtle)'
 };
 
 const tabBtnStyle: React.CSSProperties = {
-  padding: '10px 12px',
-  borderRadius: 'var(--radius-sm)',
-  fontWeight: 700,
-  fontSize: '0.85rem',
+  padding: '10px 14px',
+  borderRadius: '10px',
+  fontSize: '0.84rem',
   cursor: 'pointer',
-  transition: 'all var(--transition-fast)',
-  textAlign: 'center'
+  transition: 'all 0.2s ease',
+  textAlign: 'center',
+  letterSpacing: '-0.01em'
 };
 
 const labelStyle: React.CSSProperties = {
@@ -763,26 +786,29 @@ const labelStyle: React.CSSProperties = {
   alignItems: 'center',
   gap: '6px',
   fontSize: '0.78rem',
-  fontWeight: 600,
-  color: 'var(--text-muted)',
-  marginBottom: '6px'
+  fontWeight: 800,
+  color: 'var(--text-main)',
+  marginBottom: '6px',
+  letterSpacing: '0.02em'
 };
 
 const inputStyle: React.CSSProperties = {
   width: '100%',
-  padding: '11px 14px',
-  background: 'var(--bg-elevated)',
-  border: '1px solid var(--border-medium)',
-  borderRadius: 'var(--radius-md)',
+  padding: '12px 14px',
+  background: 'rgba(0, 0, 0, 0.35)',
+  border: '1.5px solid var(--border-medium)',
+  borderRadius: '12px',
   color: 'var(--text-main)',
-  fontSize: '0.9rem',
+  fontSize: '0.92rem',
   outline: 'none',
-  boxSizing: 'border-box'
+  boxSizing: 'border-box',
+  fontFamily: 'inherit',
+  transition: 'border-color 0.2s ease, box-shadow 0.2s ease'
 };
 
 const eyeIconBtnStyle: React.CSSProperties = {
   position: 'absolute',
-  right: '10px',
+  right: '12px',
   top: '50%',
   transform: 'translateY(-50%)',
   background: 'transparent',
@@ -796,71 +822,77 @@ const eyeIconBtnStyle: React.CSSProperties = {
 
 const selectStyle: React.CSSProperties = {
   width: '100%',
-  padding: '11px 12px',
-  background: 'var(--bg-elevated)',
-  border: '1px solid var(--border-medium)',
-  borderRadius: 'var(--radius-md)',
+  padding: '12px 14px',
+  background: 'rgba(0, 0, 0, 0.35)',
+  border: '1.5px solid var(--border-medium)',
+  borderRadius: '12px',
   color: 'var(--text-main)',
-  fontSize: '0.85rem',
+  fontSize: '0.88rem',
   outline: 'none',
-  boxSizing: 'border-box'
+  boxSizing: 'border-box',
+  fontFamily: 'inherit'
 };
 
 const primaryActionBtnStyle: React.CSSProperties = {
   width: '100%',
-  padding: '14px',
+  padding: '15px',
   background: 'var(--team1-gradient)',
   color: '#070a10',
   fontWeight: 900,
-  fontSize: '0.95rem',
-  borderRadius: 'var(--radius-md)',
+  fontSize: '1rem',
+  borderRadius: '14px',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
   gap: '8px',
   marginTop: '8px',
   cursor: 'pointer',
-  boxShadow: '0 4px 20px var(--team1-glow)'
+  boxShadow: '0 4px 22px var(--team1-glow)',
+  letterSpacing: '0.02em',
+  transition: 'transform 0.15s ease, box-shadow 0.15s ease'
 };
 
 const demoBtnStyle: React.CSSProperties = {
   display: 'inline-flex',
   alignItems: 'center',
   gap: '8px',
-  padding: '8px 16px',
-  background: 'var(--bg-elevated)',
-  border: '1px solid var(--border-subtle)',
+  padding: '10px 18px',
+  background: 'linear-gradient(135deg, rgba(255, 214, 0, 0.12) 0%, rgba(0, 230, 118, 0.1) 100%)',
+  border: '1.5px solid rgba(255, 214, 0, 0.4)',
   borderRadius: 'var(--radius-full)',
   color: 'var(--text-main)',
   fontSize: '0.82rem',
-  fontWeight: 600,
-  cursor: 'pointer'
+  fontWeight: 800,
+  cursor: 'pointer',
+  boxShadow: '0 2px 12px rgba(255, 214, 0, 0.15)'
 };
 
 const errorBannerStyle: React.CSSProperties = {
   display: 'flex',
   alignItems: 'center',
-  gap: '8px',
-  padding: '10px 14px',
+  gap: '10px',
+  padding: '12px 14px',
   background: 'rgba(255, 61, 113, 0.15)',
-  border: '1px solid var(--danger-primary)',
-  borderRadius: 'var(--radius-md)',
-  color: '#ff80a0',
-  fontSize: '0.82rem',
-  fontWeight: 600,
-  marginBottom: '16px'
+  border: '1.5px solid var(--danger-primary)',
+  borderRadius: '12px',
+  color: '#ffa3ba',
+  fontSize: '0.84rem',
+  fontWeight: 700,
+  marginBottom: '16px',
+  lineHeight: 1.35
 };
 
 const successBannerStyle: React.CSSProperties = {
   display: 'flex',
   alignItems: 'center',
-  gap: '8px',
-  padding: '10px 14px',
+  gap: '10px',
+  padding: '12px 14px',
   background: 'rgba(0, 230, 118, 0.15)',
-  border: '1px solid var(--team1-primary)',
-  borderRadius: 'var(--radius-md)',
+  border: '1.5px solid var(--team1-primary)',
+  borderRadius: '12px',
   color: 'var(--team1-primary)',
-  fontSize: '0.82rem',
-  fontWeight: 700,
-  marginBottom: '16px'
+  fontSize: '0.84rem',
+  fontWeight: 800,
+  marginBottom: '16px',
+  lineHeight: 1.35
 };

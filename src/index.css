@@ -129,6 +129,18 @@
   border: 1px solid rgba(2, 132, 199, 0.35);
 }
 
+[data-theme='day'] .apple-card {
+  background: #ffffff;
+  border: 1px solid rgba(15, 23, 42, 0.14);
+  box-shadow: 0 10px 30px -10px rgba(15, 23, 42, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+[data-theme='day'] header.glass-panel,
+[data-theme='day'] footer.glass-panel {
+  background: rgba(255, 255, 255, 0.96);
+  border-color: rgba(15, 23, 42, 0.14);
+}
+
 
 *, *::before, *::after {
   box-sizing: border-box;
@@ -281,3 +293,65 @@ button:active {
   box-shadow: 0 0 8px currentColor;
   animation: pulseGlow 1.4s infinite ease-in-out;
 }
+
+/* ============================================================
+   PREMIUM SPORTS LUXURY SYSTEM (Apple / Adidas Athletic Aesthetic)
+   ============================================================ */
+
+.apple-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  transition: all var(--transition-normal);
+}
+
+.apple-card:hover {
+  border-color: var(--border-medium);
+  box-shadow: 0 14px 40px -10px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.14);
+}
+
+.glow-team1 {
+  box-shadow: 0 0 40px -5px var(--team1-glow), inset 0 0 20px -5px var(--team1-glow);
+}
+
+.glow-team2 {
+  box-shadow: 0 0 40px -5px var(--team2-glow), inset 0 0 20px -5px var(--team2-glow);
+}
+
+.glow-gold {
+  box-shadow: 0 0 40px -5px var(--gold-glow), inset 0 0 20px -5px var(--gold-glow);
+}
+
+/* High Contrast Digital Scoreboard Typography */
+.giant-point-score {
+  font-family: var(--font-mono);
+  font-weight: 900;
+  line-height: 0.85;
+  letter-spacing: -0.06em;
+  font-variant-numeric: tabular-nums;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Score pop micro-animation when point changes */
+@keyframes scorePop {
+  0% { transform: scale(0.92); opacity: 0.8; }
+  50% { transform: scale(1.04); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.score-updated {
+  animation: scorePop 0.28s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* Horizontal / Landscape Stadium Scoreboard Mode */
+@media (orientation: landscape) and (max-height: 600px) {
+  :root {
+    --safe-top: max(6px, env(safe-area-inset-top, 6px));
+    --safe-bottom: max(6px, env(safe-area-inset-bottom, 6px));
+    --safe-left: max(8px, env(safe-area-inset-left, 8px));
+    --safe-right: max(8px, env(safe-area-inset-right, 8px));
+  }
+}
+

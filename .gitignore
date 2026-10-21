@@ -25,3 +25,7 @@ dist-ssr
 
 # Firebase
 .firebase/
+
+# Large raw media files
+PALOMA*.png
+*.psd

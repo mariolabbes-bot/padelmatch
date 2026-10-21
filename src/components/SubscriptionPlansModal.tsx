@@ -280,7 +280,7 @@ export const SubscriptionPlansModal: React.FC<Props> = ({
               {/* Guest Freedom Guarantee */}
               <div style={guestGuaranteeBoxStyle}>
                 <Users size={16} color="var(--gold-primary)" />
-                <span style={{ fontSize: '0.76rem', color: '#cbd5e1' }}>
+                <span style={{ fontSize: '0.78rem', color: '#cbd5e1' }}>
                   <strong>Cero fricción en cancha:</strong> Tus compañeros de juego invitados se suman gratis escaneando el QR, sin requerir pago ni registro obligatorio.
                 </span>
               </div>
@@ -291,19 +291,27 @@ export const SubscriptionPlansModal: React.FC<Props> = ({
               <button 
                 onClick={handleActivate}
                 disabled={isProcessing}
-                style={primaryActionBtnStyle}
+                style={{
+                  ...primaryActionBtnStyle,
+                  background: selectedPlan.isFounder 
+                    ? 'linear-gradient(135deg, #ffd600 0%, #ffab00 100%)' 
+                    : 'var(--team1-gradient)',
+                  boxShadow: selectedPlan.isFounder 
+                    ? '0 4px 25px var(--gold-glow)' 
+                    : '0 4px 25px var(--team1-glow)'
+                }}
               >
                 {isProcessing ? (
                   <span className="pulsing-dot" style={{ width: '16px', height: '16px', color: '#070a10' }} />
                 ) : (
                   <>
                     <Sparkles size={18} />
-                    <span>Activar {selectedPlan.title} (${selectedPlan.priceClp.toLocaleString('es-CL')} CLP)</span>
+                    <span>Activar {selectedPlan.title} • ${selectedPlan.priceClp.toLocaleString('es-CL')} CLP</span>
                   </>
                 )}
               </button>
-              <div style={{ textAlign: 'center', marginTop: '8px', fontSize: '0.7rem', color: 'var(--text-dim)' }}>
-                🔒 Activación instantánea • Transbank WebPay & MercadoPago seguro
+              <div style={{ textAlign: 'center', marginTop: '10px', fontSize: '0.72rem', color: 'var(--text-dim)' }}>
+                🔒 Activación instantánea • Transbank WebPay & MercadoPago Seguro
               </div>
             </div>
           </>
@@ -317,8 +325,9 @@ export const SubscriptionPlansModal: React.FC<Props> = ({
 const overlayStyle: React.CSSProperties = {
   position: 'fixed',
   inset: 0,
-  backgroundColor: 'rgba(5, 8, 15, 0.88)',
-  backdropFilter: 'blur(10px)',
+  backgroundColor: 'rgba(5, 8, 15, 0.9)',
+  backdropFilter: 'blur(20px)',
+  WebkitBackdropFilter: 'blur(20px)',
   zIndex: 1200,
   display: 'flex',
   alignItems: 'center',
@@ -328,113 +337,116 @@ const overlayStyle: React.CSSProperties = {
 
 const modalCardStyle: React.CSSProperties = {
   width: '100%',
-  maxWidth: '640px',
+  maxWidth: '660px',
   maxHeight: '92vh',
   overflowY: 'auto',
-  background: 'var(--bg-surface)',
-  border: '1px solid var(--border-subtle)',
-  borderRadius: 'var(--radius-lg)',
-  padding: '22px'
+  background: 'linear-gradient(180deg, #10192e 0%, #070a10 100%)',
+  border: '1.5px solid var(--border-medium)',
+  borderRadius: '24px',
+  padding: 'clamp(18px, 4vw, 28px)',
+  boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.12)'
 };
 
 const closeBtnStyle: React.CSSProperties = {
-  background: 'var(--bg-elevated)',
+  background: 'rgba(255, 255, 255, 0.06)',
   border: '1px solid var(--border-subtle)',
-  borderRadius: '8px',
+  borderRadius: '10px',
   color: 'var(--text-muted)',
   cursor: 'pointer',
-  padding: '6px',
+  padding: '8px',
   display: 'flex',
   alignItems: 'center',
-  justifyContent: 'center'
+  justifyContent: 'center',
+  transition: 'all 0.2s ease'
 };
 
 const courtesyAlertBox: React.CSSProperties = {
   display: 'flex',
   alignItems: 'center',
   gap: '10px',
-  background: 'rgba(255, 214, 0, 0.1)',
-  border: '1px solid rgba(255, 214, 0, 0.25)',
-  borderRadius: '8px',
-  padding: '8px 12px',
-  marginBottom: '14px'
+  background: 'rgba(255, 214, 0, 0.12)',
+  border: '1.5px solid rgba(255, 214, 0, 0.35)',
+  borderRadius: '12px',
+  padding: '10px 14px',
+  marginBottom: '16px'
 };
 
 const plansGridStyle: React.CSSProperties = {
   display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
-  gap: '10px',
-  marginBottom: '14px'
+  gridTemplateColumns: 'repeat(auto-fit, minmax(270px, 1fr))',
+  gap: '12px',
+  marginBottom: '16px'
 };
 
 const planCardStyle: React.CSSProperties = {
-  border: '1.5px solid var(--border-subtle)',
-  borderRadius: '12px',
-  padding: '14px',
+  border: '1.5px solid',
+  borderRadius: '16px',
+  padding: '16px',
   cursor: 'pointer',
-  transition: 'all 0.2s ease',
+  transition: 'all 0.22s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
   position: 'relative',
   display: 'flex',
-  flexDirection: 'column'
+  flexDirection: 'column',
+  boxSizing: 'border-box'
 };
 
 const badgeStyle: React.CSSProperties = {
   position: 'absolute',
   top: '-10px',
-  right: '12px',
+  right: '14px',
   fontSize: '0.62rem',
   fontWeight: 900,
-  padding: '2px 8px',
-  borderRadius: '10px',
-  letterSpacing: '0.04em'
+  padding: '3px 10px',
+  borderRadius: '12px',
+  letterSpacing: '0.05em'
 };
 
 const featuresCardStyle: React.CSSProperties = {
-  background: 'var(--bg-elevated)',
-  border: '1px solid var(--border-subtle)',
-  borderRadius: '12px',
-  padding: '12px 14px'
+  background: 'rgba(0, 0, 0, 0.35)',
+  border: '1.5px solid var(--border-subtle)',
+  borderRadius: '16px',
+  padding: '16px 18px'
 };
 
 const featuresGridStyle: React.CSSProperties = {
   display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
-  gap: '8px',
-  fontSize: '0.8rem',
+  gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+  gap: '10px',
+  fontSize: '0.82rem',
   color: '#e2e8f0',
-  marginBottom: '10px'
+  marginBottom: '12px'
 };
 
 const featureItemStyle: React.CSSProperties = {
   display: 'flex',
   alignItems: 'center',
-  gap: '8px'
+  gap: '9px'
 };
 
 const guestGuaranteeBoxStyle: React.CSSProperties = {
   display: 'flex',
   alignItems: 'center',
-  gap: '8px',
-  background: 'rgba(0, 176, 255, 0.08)',
-  border: '1px solid rgba(0, 176, 255, 0.2)',
-  borderRadius: '8px',
-  padding: '8px 10px',
-  marginTop: '8px'
+  gap: '10px',
+  background: 'rgba(0, 176, 255, 0.1)',
+  border: '1px solid rgba(0, 176, 255, 0.25)',
+  borderRadius: '10px',
+  padding: '10px 12px',
+  marginTop: '10px'
 };
 
 const primaryActionBtnStyle: React.CSSProperties = {
   width: '100%',
-  padding: '13px',
-  borderRadius: '12px',
-  background: 'var(--team1-primary)',
+  padding: '16px',
+  borderRadius: '14px',
   color: '#070a10',
   fontWeight: 900,
-  fontSize: '0.98rem',
+  fontSize: '1.02rem',
   border: 'none',
   cursor: 'pointer',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
   gap: '8px',
-  boxShadow: '0 4px 16px rgba(0, 230, 118, 0.3)'
+  letterSpacing: '0.02em',
+  transition: 'transform 0.15s ease'
 };

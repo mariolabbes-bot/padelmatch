@@ -187,35 +187,35 @@ export const HostDashboardView: React.FC<Props> = ({
 
       <div style={mainGridStyle}>
         {/* Left Column: User Profile & Stats */}
-        <div style={profileCardStyle} className="glass-panel">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '14px' }}>
+        <div style={profileCardStyle} className="glass-panel apple-card">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '16px' }}>
             <div style={avatarStyle}>
               {user.name.charAt(0).toUpperCase()}
             </div>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                  Ficha Oficial del Jugador
+                <span style={{ fontSize: '0.68rem', color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 800 }}>
+                  Perfil Oficial de Atleta
                 </span>
                 {user.plan === 'pro_founder' && (
-                  <span style={{ fontSize: '0.65rem', fontWeight: 900, color: 'var(--gold-primary)', background: 'rgba(255, 214, 0, 0.15)', padding: '1px 6px', borderRadius: '4px' }}>
-                    PRO FUNDADOR
+                  <span style={{ fontSize: '0.65rem', fontWeight: 900, color: 'var(--gold-primary)', background: 'rgba(255, 214, 0, 0.15)', padding: '2px 8px', borderRadius: 'var(--radius-full)', border: '1px solid rgba(255, 214, 0, 0.3)' }}>
+                    👑 PRO FUNDADOR
                   </span>
                 )}
               </div>
-              <h2 style={{ fontSize: '1.3rem', fontWeight: 800, margin: '2px 0 4px' }}>{user.name}</h2>
+              <h2 style={{ fontSize: '1.35rem', fontWeight: 900, margin: '2px 0 6px', letterSpacing: '-0.02em', color: 'var(--text-main)' }}>{user.name}</h2>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                <span className="badge badge-team1" style={{ fontSize: '0.7rem' }}>
+                <span className="badge badge-team1" style={{ fontSize: '0.68rem', fontWeight: 900 }}>
                   {user.category} Cat
                 </span>
-                <span className="badge badge-gold" style={{ fontSize: '0.7rem' }}>
+                <span className="badge badge-gold" style={{ fontSize: '0.68rem', fontWeight: 900 }}>
                   ELO {player?.elo || user.elo}
                 </span>
-                <span style={{ fontSize: '0.7rem', padding: '2px 8px', borderRadius: '12px', background: 'var(--bg-elevated)', border: '1px solid var(--border-subtle)', color: '#e2e8f0' }}>
+                <span style={{ fontSize: '0.7rem', padding: '3px 10px', borderRadius: '12px', background: 'rgba(0, 0, 0, 0.35)', border: '1px solid var(--border-medium)', color: '#e2e8f0', fontWeight: 700 }}>
                   {dominant === 'zurdo' ? '⭐ Zurdo' : '🎾 Diestro'} • {pos === 'drive' ? 'Drive' : pos === 'reves' ? 'Revés' : 'Ambos'}
                 </span>
                 {city && (
-                  <span style={{ fontSize: '0.7rem', padding: '2px 8px', borderRadius: '12px', background: 'var(--bg-elevated)', border: '1px solid var(--border-subtle)', color: 'var(--text-muted)' }}>
+                  <span style={{ fontSize: '0.7rem', padding: '3px 10px', borderRadius: '12px', background: 'rgba(0, 0, 0, 0.35)', border: '1px solid var(--border-subtle)', color: 'var(--text-muted)' }}>
                     📍 {city}
                   </span>
                 )}
@@ -427,14 +427,14 @@ export const HostDashboardView: React.FC<Props> = ({
         </div>
 
         {/* Right Column: Create New Match & Parameters */}
-        <div style={matchSetupCardStyle} className="glass-panel">
+        <div style={matchSetupCardStyle} className="glass-panel apple-card">
           <div style={{ marginBottom: '20px' }}>
             <span className="badge badge-team1" style={{ marginBottom: '8px' }}>
               <Flame size={12} />
               PASO 1 DE 3
             </span>
-            <h2 style={{ fontSize: '1.4rem', fontWeight: 800 }}>Configuración de Partido</h2>
-            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '4px' }}>
+            <h2 style={{ fontSize: '1.4rem', fontWeight: 900, letterSpacing: '-0.02em', color: 'var(--text-main)' }}>Configuración de Partido</h2>
+            <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginTop: '4px' }}>
               Define las reglas y genera el código QR para sumar a los otros 3 jugadores
             </p>
           </div>
@@ -686,31 +686,32 @@ const mainGridStyle: React.CSSProperties = {
 };
 
 const profileCardStyle: React.CSSProperties = {
-  padding: '24px',
-  borderRadius: 'var(--radius-lg)'
+  padding: 'clamp(18px, 3.5vw, 26px)',
+  borderRadius: '20px'
 };
 
 const avatarStyle: React.CSSProperties = {
-  width: '52px',
-  height: '52px',
+  width: '54px',
+  height: '54px',
   borderRadius: '50%',
   background: 'var(--team1-gradient)',
   color: '#070a10',
   fontWeight: 900,
-  fontSize: '1.4rem',
+  fontSize: '1.45rem',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  boxShadow: '0 0 20px var(--team1-glow)'
+  boxShadow: '0 0 25px var(--team1-glow)'
 };
 
 const metricsGridStyle: React.CSSProperties = {
   display: 'grid',
-  gridTemplateColumns: 'repeat(3, 1fr)',
+  gridTemplateColumns: 'repeat(4, 1fr)',
   gap: '10px',
-  padding: '14px',
-  background: 'var(--bg-elevated)',
-  borderRadius: 'var(--radius-md)',
+  padding: '16px',
+  background: 'rgba(0, 0, 0, 0.4)',
+  borderRadius: '16px',
+  border: '1px solid var(--border-subtle)',
   textAlign: 'center'
 };
 
@@ -721,71 +722,78 @@ const metricItemStyle: React.CSSProperties = {
 };
 
 const metricNumStyle: React.CSSProperties = {
-  fontSize: '1.4rem',
+  fontSize: '1.45rem',
   fontWeight: 900,
   fontFamily: 'var(--font-mono)'
 };
 
 const metricLabelStyle: React.CSSProperties = {
-  fontSize: '0.7rem',
+  fontSize: '0.68rem',
   color: 'var(--text-muted)',
   textTransform: 'uppercase',
-  marginTop: '2px'
+  marginTop: '2px',
+  fontWeight: 700,
+  letterSpacing: '0.04em'
 };
 
 const secondaryLinkBtnStyle: React.CSSProperties = {
   display: 'flex',
   alignItems: 'center',
   gap: '10px',
-  padding: '12px 14px',
-  background: 'var(--bg-elevated)',
-  borderRadius: 'var(--radius-md)',
+  padding: '12px 16px',
+  background: 'rgba(255, 255, 255, 0.04)',
+  borderRadius: '12px',
   border: '1px solid var(--border-subtle)',
   color: 'var(--text-main)',
   fontSize: '0.85rem',
-  fontWeight: 600,
-  textAlign: 'left'
+  fontWeight: 700,
+  textAlign: 'left',
+  cursor: 'pointer',
+  transition: 'all 0.2s ease'
 };
 
 const matchSetupCardStyle: React.CSSProperties = {
-  padding: '24px',
-  borderRadius: 'var(--radius-lg)'
+  padding: 'clamp(18px, 3.5vw, 26px)',
+  borderRadius: '20px'
 };
 
 const labelStyle: React.CSSProperties = {
   display: 'block',
   fontSize: '0.8rem',
-  fontWeight: 700,
-  color: 'var(--text-muted)',
-  marginBottom: '6px'
+  fontWeight: 800,
+  color: 'var(--text-main)',
+  marginBottom: '6px',
+  letterSpacing: '0.02em'
 };
 
 const inputStyle: React.CSSProperties = {
   width: '100%',
-  padding: '12px 14px',
-  background: 'var(--bg-elevated)',
-  border: '1px solid var(--border-medium)',
-  borderRadius: 'var(--radius-md)',
+  padding: '13px 15px',
+  background: 'rgba(0, 0, 0, 0.35)',
+  border: '1.5px solid var(--border-medium)',
+  borderRadius: '12px',
   color: 'var(--text-main)',
   fontSize: '0.95rem',
-  outline: 'none'
+  outline: 'none',
+  boxSizing: 'border-box',
+  fontFamily: 'inherit'
 };
 
 const radioGroupStyle: React.CSSProperties = {
   display: 'grid',
   gridTemplateColumns: '1fr',
-  gap: '6px'
+  gap: '8px'
 };
 
 const radioBtnStyle: React.CSSProperties = {
-  padding: '10px 12px',
-  borderRadius: 'var(--radius-sm)',
-  border: '1px solid',
-  fontSize: '0.85rem',
-  fontWeight: 700,
+  padding: '12px 14px',
+  borderRadius: '12px',
+  border: '1.5px solid',
+  fontSize: '0.86rem',
+  fontWeight: 800,
   textAlign: 'left',
   cursor: 'pointer',
-  transition: 'all var(--transition-fast)'
+  transition: 'all 0.2s ease'
 };
 
 const primaryActionBtnStyle: React.CSSProperties = {
@@ -793,15 +801,18 @@ const primaryActionBtnStyle: React.CSSProperties = {
   padding: '16px',
   background: 'var(--team1-gradient)',
   color: '#070a10',
-  borderRadius: 'var(--radius-md)',
+  borderRadius: '14px',
   fontWeight: 900,
-  fontSize: '1rem',
+  fontSize: '1.02rem',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
   gap: '8px',
-  marginTop: '10px',
-  boxShadow: '0 4px 20px var(--team1-glow)'
+  marginTop: '12px',
+  boxShadow: '0 4px 25px var(--team1-glow)',
+  letterSpacing: '0.02em',
+  cursor: 'pointer',
+  transition: 'transform 0.15s ease'
 };
 
 const notifBellBtnStyle: React.CSSProperties = {
