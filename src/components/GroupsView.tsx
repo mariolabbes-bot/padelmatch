@@ -45,6 +45,12 @@ export const GroupsView: React.FC<Props> = ({
   const [activeTab, setActiveTab] = useState<'my_groups' | 'explore'>('my_groups');
   const [searchQuery, setSearchQuery] = useState('');
 
+  // Mobile Responsiveness States
+  const [isMobile, setIsMobile] = useState<boolean>(() =>
+    typeof window !== 'undefined' ? window.innerWidth < 768 : false
+  );
+  const [mobileTab, setMobileTab] = useState<'list' | 'detail'>('list');
+
   // Modals State
   const [isCreateGroupModalOpen, setIsCreateGroupModalOpen] = useState(false);
   const [isCreateCalloutModalOpen, setIsCreateCalloutModalOpen] = useState(false);
@@ -77,9 +83,16 @@ export const GroupsView: React.FC<Props> = ({
     const unsubGroups = groupService.subscribe(() => {
       setGroups([...groupService.getGroups()]);
     });
+
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    window.addEventListener('resize', handleResize);
+
     return () => {
       unsubTheme();
       unsubGroups();
+      window.removeEventListener('resize', handleResize);
     };
   }, []);
 
@@ -153,6 +166,7 @@ export const GroupsView: React.FC<Props> = ({
 
     setIsCreateGroupModalOpen(false);
     setSelectedGroupId(created.id);
+    if (isMobile) setMobileTab('detail');
     setSelectedInitialMembers([]);
     setInitialMemberSearch('');
     setNewGroupName('');
@@ -198,6 +212,14 @@ export const GroupsView: React.FC<Props> = ({
     groupService.respondCallout(selectedGroup.id, calloutId, player.id, 'accept');
   };
 
+  const handleTopBack = () => {
+    if (isMobile && mobileTab === 'detail') {
+      setMobileTab('list');
+    } else {
+      onBackToDashboard();
+    }
+  };
+
   return (
     <div style={containerStyle}>
       {/* Top Header */}
@@ -205,20 +227,20 @@ export const GroupsView: React.FC<Props> = ({
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <button 
             type="button" 
-            onClick={onBackToDashboard}
+            onClick={handleTopBack}
             style={backBtnStyle}
-            title="Volver al Inicio"
-            aria-label="Volver al Inicio"
+            title={isMobile && mobileTab === 'detail' ? "Volver a la lista de grupos" : "Volver al Inicio"}
+            aria-label={isMobile && mobileTab === 'detail' ? "Volver a la lista de grupos" : "Volver al Inicio"}
           >
             <ArrowLeft size={18} />
           </button>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span className="badge badge-team1" style={{ fontSize: '0.68rem' }}>Módulo Grupos</span>
-              <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Convocatorias en Cancha</span>
+              {!isMobile && <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Convocatorias en Cancha</span>}
             </div>
-            <h1 style={{ fontSize: '1.25rem', fontWeight: 900, margin: '2px 0 0', color: 'var(--text-main)' }}>
-              Grupos & Convocatorias de Pádel
+            <h1 style={{ fontSize: isMobile ? '1.05rem' : '1.25rem', fontWeight: 900, margin: '2px 0 0', color: 'var(--text-main)' }}>
+              {isMobile ? 'Grupos de Pádel' : 'Grupos & Convocatorias de Pádel'}
             </h1>
           </div>
         </div>
@@ -238,160 +260,258 @@ export const GroupsView: React.FC<Props> = ({
           <button
             type="button"
             onClick={() => setIsCreateGroupModalOpen(true)}
-            style={primaryMiniBtn}
+            style={{ ...primaryMiniBtn, padding: isMobile ? '8px 10px' : '8px 14px' }}
           >
             <Plus size={16} />
-            <span>Crear Grupo</span>
+            <span>{isMobile ? 'Crear' : 'Crear Grupo'}</span>
           </button>
         </div>
       </header>
 
+      {/* Mobile Master/Detail Segmented Switcher */}
+      {isMobile && (
+        <div style={mobileSegmentedBarStyle}>
+          <button
+            type="button"
+            onClick={() => setMobileTab('list')}
+            style={{
+              ...mobileSegmentedBtnStyle,
+              background: mobileTab === 'list' ? 'var(--team1-primary)' : 'var(--bg-elevated)',
+              color: mobileTab === 'list' ? '#070a10' : 'var(--text-muted)',
+              borderColor: mobileTab === 'list' ? 'var(--team1-primary)' : 'var(--border-subtle)'
+            }}
+          >
+            <Users size={15} />
+            <span>Grupos ({groups.length})</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => selectedGroup && setMobileTab('detail')}
+            style={{
+              ...mobileSegmentedBtnStyle,
+              background: mobileTab === 'detail' ? 'var(--team1-primary)' : 'var(--bg-elevated)',
+              color: mobileTab === 'detail' ? '#070a10' : 'var(--text-muted)',
+              borderColor: mobileTab === 'detail' ? 'var(--team1-primary)' : 'var(--border-subtle)',
+              maxWidth: '52%'
+            }}
+          >
+            <span>{selectedGroup?.avatar || '🎾'}</span>
+            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {selectedGroup ? selectedGroup.name : 'Detalle'}
+            </span>
+          </button>
+        </div>
+      )}
+
       {/* Main Content Layout */}
-      <div style={contentGridStyle}>
-        {/* Left Column: Groups List */}
-        <aside style={groupsSidebarStyle} className="glass-panel">
-          <div style={tabsRowStyle}>
-            <button
-              type="button"
-              onClick={() => setActiveTab('my_groups')}
-              style={{
-                ...tabBtnStyle,
-                color: activeTab === 'my_groups' ? 'var(--team1-primary)' : 'var(--text-muted)',
-                borderBottomColor: activeTab === 'my_groups' ? 'var(--team1-primary)' : 'transparent'
-              }}
-            >
-              Mis Grupos ({groups.filter(g => g.members.some(m => m.playerId === currentUser.id)).length})
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab('explore')}
-              style={{
-                ...tabBtnStyle,
-                color: activeTab === 'explore' ? 'var(--team1-primary)' : 'var(--text-muted)',
-                borderBottomColor: activeTab === 'explore' ? 'var(--team1-primary)' : 'transparent'
-              }}
-            >
-              Explorar ({groups.length})
-            </button>
-          </div>
+      <div style={{
+        ...contentGridStyle,
+        display: isMobile ? 'block' : 'grid',
+        gridTemplateColumns: isMobile ? '1fr' : 'clamp(280px, 30vw, 360px) 1fr',
+        padding: isMobile ? '0 12px' : '0 16px',
+        margin: isMobile ? '10px auto' : '16px auto'
+      }}>
+        {/* Left Column: Groups List (Shown if desktop OR (mobile and mobileTab === 'list')) */}
+        {(!isMobile || mobileTab === 'list') && (
+          <aside style={{
+            ...groupsSidebarStyle,
+            background: isMobile ? 'transparent' : 'var(--bg-card)',
+            border: isMobile ? 'none' : '1px solid var(--border-medium)',
+            padding: isMobile ? '0' : '16px',
+            height: isMobile ? 'auto' : 'calc(100vh - 160px)'
+          }} className={isMobile ? '' : 'glass-panel'}>
+            <div style={tabsRowStyle}>
+              <button
+                type="button"
+                onClick={() => setActiveTab('my_groups')}
+                style={{
+                  ...tabBtnStyle,
+                  color: activeTab === 'my_groups' ? 'var(--team1-primary)' : 'var(--text-muted)',
+                  borderBottomColor: activeTab === 'my_groups' ? 'var(--team1-primary)' : 'transparent'
+                }}
+              >
+                Mis Grupos ({groups.filter(g => g.members.some(m => m.playerId === currentUser.id)).length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('explore')}
+                style={{
+                  ...tabBtnStyle,
+                  color: activeTab === 'explore' ? 'var(--team1-primary)' : 'var(--text-muted)',
+                  borderBottomColor: activeTab === 'explore' ? 'var(--team1-primary)' : 'transparent'
+                }}
+              >
+                Explorar ({groups.length})
+              </button>
+            </div>
 
-          {/* Search Input */}
-          <div style={searchWrapperStyle}>
-            <Search size={15} color="var(--text-muted)" />
-            <input
-              type="text"
-              placeholder="Buscar grupo o club..."
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              style={searchInputStyle}
-            />
-          </div>
+            {/* Search Input */}
+            <div style={searchWrapperStyle}>
+              <Search size={15} color="var(--text-muted)" />
+              <input
+                type="text"
+                placeholder="Buscar grupo o club..."
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                style={searchInputStyle}
+              />
+            </div>
 
-          <div style={groupsListScrollStyle}>
-            {groups
-              .filter(g => {
-                const matchesTab = activeTab === 'explore' || g.members.some(m => m.playerId === currentUser.id);
-                const matchesSearch = !searchQuery || g.name.toLowerCase().includes(searchQuery.toLowerCase()) || g.clubPreferred.toLowerCase().includes(searchQuery.toLowerCase());
-                return matchesTab && matchesSearch;
-              })
-              .map(group => {
-                const isSelected = selectedGroupId === group.id;
-                const activeCalloutsCount = group.callouts.filter(c => c.status === 'open').length;
-                return (
-                  <div
-                    key={group.id}
-                    onClick={() => setSelectedGroupId(group.id)}
-                    style={{
-                      ...groupCardItemStyle,
-                      borderColor: isSelected ? 'var(--team1-primary)' : 'var(--border-subtle)',
-                      background: isSelected ? 'rgba(0, 230, 118, 0.08)' : 'var(--bg-elevated)'
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <div style={groupAvatarCircle}>{group.avatar || '🎾'}</div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontWeight: 800, fontSize: '0.9rem', color: 'var(--text-main)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {group.name}
-                        </div>
-                        <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'flex', gap: '6px', alignItems: 'center' }}>
-                          <span>📍 {group.clubPreferred}</span>
-                          <span>•</span>
-                          <span>{group.members.length} miembros</span>
+            <div style={groupsListScrollStyle}>
+              {groups
+                .filter(g => {
+                  const matchesTab = activeTab === 'explore' || g.members.some(m => m.playerId === currentUser.id);
+                  const matchesSearch = !searchQuery || g.name.toLowerCase().includes(searchQuery.toLowerCase()) || g.clubPreferred.toLowerCase().includes(searchQuery.toLowerCase());
+                  return matchesTab && matchesSearch;
+                })
+                .map(group => {
+                  const isSelected = selectedGroupId === group.id;
+                  const activeCalloutsCount = group.callouts.filter(c => c.status === 'open').length;
+                  return (
+                    <div
+                      key={group.id}
+                      onClick={() => {
+                        setSelectedGroupId(group.id);
+                        if (isMobile) setMobileTab('detail');
+                      }}
+                      style={{
+                        ...groupCardItemStyle,
+                        borderColor: isSelected ? 'var(--team1-primary)' : 'var(--border-subtle)',
+                        background: isSelected ? 'rgba(0, 230, 118, 0.08)' : 'var(--bg-elevated)',
+                        padding: isMobile ? '14px 12px' : '12px'
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div style={groupAvatarCircle}>{group.avatar || '🎾'}</div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontWeight: 800, fontSize: '0.9rem', color: 'var(--text-main)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {group.name}
+                          </div>
+                          <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'flex', gap: '6px', alignItems: 'center' }}>
+                            <span>📍 {group.clubPreferred}</span>
+                            <span>•</span>
+                            <span>{group.members.length} miembros</span>
+                          </div>
                         </div>
                       </div>
+
+                      {activeCalloutsCount > 0 && (
+                        <span style={activeBadgeStyle}>
+                          {activeCalloutsCount} partido{activeCalloutsCount > 1 ? 's' : ''}
+                        </span>
+                      )}
                     </div>
+                  );
+                })}
+            </div>
 
-                    {activeCalloutsCount > 0 && (
-                      <span style={activeBadgeStyle}>
-                        {activeCalloutsCount} partido{activeCalloutsCount > 1 ? 's' : ''}
-                      </span>
-                    )}
-                  </div>
-                );
-              })}
-          </div>
-        </aside>
+            {/* Mobile Create Group Action Card */}
+            {isMobile && (
+              <button
+                type="button"
+                onClick={() => setIsCreateGroupModalOpen(true)}
+                style={mobileCreateGroupFullBtn}
+              >
+                <Plus size={16} />
+                <span>+ Crear un Nuevo Grupo de Pádel</span>
+              </button>
+            )}
+          </aside>
+        )}
 
-        {/* Right Column: Active Group Detail & Callouts */}
-        {selectedGroup && (
+        {/* Right Column: Active Group Detail & Callouts (Shown if desktop OR (mobile and mobileTab === 'detail')) */}
+        {selectedGroup && (!isMobile || mobileTab === 'detail') && (
           <main style={groupDetailMainStyle}>
+            {/* Mobile Return to Groups Button */}
+            {isMobile && (
+              <button
+                type="button"
+                onClick={() => setMobileTab('list')}
+                style={mobileReturnToListBtn}
+              >
+                <ArrowLeft size={16} />
+                <span>← Volver a la Lista de Grupos</span>
+              </button>
+            )}
+
             {/* Group Banner Header */}
-            <div style={groupHeaderCardStyle} className="glass-panel">
+            <div style={{
+              ...groupHeaderCardStyle,
+              padding: isMobile ? '14px' : '20px'
+            }} className="glass-panel">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div style={bigGroupAvatar}>{selectedGroup.avatar || '🎾'}</div>
-                  <div>
-                    <h2 style={{ fontSize: '1.35rem', fontWeight: 900, margin: 0, color: 'var(--text-main)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '10px' : '14px', width: isMobile ? '100%' : 'auto' }}>
+                  <div style={isMobile ? { ...bigGroupAvatar, width: '46px', height: '46px', fontSize: '1.4rem' } : bigGroupAvatar}>
+                    {selectedGroup.avatar || '🎾'}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <h2 style={{ fontSize: isMobile ? '1.15rem' : '1.35rem', fontWeight: 900, margin: 0, color: 'var(--text-main)' }}>
                       {selectedGroup.name}
                     </h2>
-                    <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: '4px 0 8px', maxWidth: '560px' }}>
+                    <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', margin: '3px 0 6px', lineHeight: 1.35 }}>
                       {selectedGroup.description}
                     </p>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                      <span className="badge badge-gold" style={{ fontSize: '0.7rem' }}>
+                      <span className="badge badge-gold" style={{ fontSize: '0.68rem' }}>
                         Cat: {selectedGroup.categoryLevel}
                       </span>
                       <span style={infoPillStyle}>
-                        <MapPin size={12} /> {selectedGroup.clubPreferred}
+                        <MapPin size={11} /> {selectedGroup.clubPreferred}
                       </span>
                       <span style={infoPillStyle}>
-                        <Users size={12} /> {selectedGroup.members.length} Jugadores
+                        <Users size={11} /> {selectedGroup.members.length} Jugadores
                       </span>
                     </div>
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: isMobile ? '1fr 1fr' : 'auto auto',
+                  gap: '8px',
+                  width: isMobile ? '100%' : 'auto',
+                  marginTop: isMobile ? '8px' : 0
+                }}>
                   <button
                     type="button"
                     onClick={() => {
                       setIsInviteModalOpen(true);
                       setInviteTab('whatsapp');
                     }}
-                    style={inviteHeaderBtnStyle}
+                    style={{
+                      ...inviteHeaderBtnStyle,
+                      justifyContent: 'center',
+                      padding: isMobile ? '10px 8px' : '10px 16px',
+                      fontSize: isMobile ? '0.78rem' : '0.85rem'
+                    }}
                   >
-                    <UserPlus size={16} />
-                    <span>Invitar Jugadores</span>
+                    <UserPlus size={15} />
+                    <span>{isMobile ? 'Invitar' : 'Invitar Jugadores'}</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => setIsCreateCalloutModalOpen(true)}
-                    style={primaryActionBtnStyle}
+                    style={{
+                      ...primaryActionBtnStyle,
+                      justifyContent: 'center',
+                      padding: isMobile ? '10px 8px' : '10px 18px',
+                      fontSize: isMobile ? '0.78rem' : '0.85rem'
+                    }}
                   >
-                    <Plus size={16} />
-                    <span>Abrir Convocatoria</span>
+                    <Plus size={15} />
+                    <span>{isMobile ? 'Convocatoria' : 'Abrir Convocatoria'}</span>
                   </button>
                 </div>
               </div>
             </div>
 
             {/* CALLOUTS SECTION (Lógica Múltiplos de 4 de Mario Labbé) */}
-            <div style={{ marginTop: '20px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                <h3 style={{ fontSize: '1.1rem', fontWeight: 900, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <Calendar size={18} color="var(--team1-primary)" />
-                  <span>Convocatorias de Partidos Activas</span>
+            <div style={{ marginTop: isMobile ? '14px' : '20px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                <h3 style={{ fontSize: isMobile ? '1rem' : '1.1rem', fontWeight: 900, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
+                  <Calendar size={17} color="var(--team1-primary)" />
+                  <span>Convocatorias Activas</span>
                 </h3>
               </div>
 
@@ -421,22 +541,28 @@ export const GroupsView: React.FC<Props> = ({
                     const isRejectedByMe = callout.rejectedPlayerIds.includes(currentUser.id);
 
                     return (
-                      <div key={callout.id} style={calloutCardStyle} className="glass-panel">
+                      <div key={callout.id} style={{ ...calloutCardStyle, padding: isMobile ? '14px' : '18px' }} className="glass-panel">
                         {/* Callout Header */}
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '10px' }}>
+                        <div style={{
+                          display: 'flex',
+                          flexDirection: isMobile ? 'column' : 'row',
+                          justifyContent: 'space-between',
+                          alignItems: isMobile ? 'stretch' : 'flex-start',
+                          gap: isMobile ? '10px' : '10px'
+                        }}>
                           <div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                              <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--team1-primary)', background: 'rgba(0, 230, 118, 0.12)', padding: '2px 8px', borderRadius: '4px' }}>
+                              <span style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--team1-primary)', background: 'rgba(0, 230, 118, 0.12)', padding: '2px 8px', borderRadius: '4px' }}>
                                 CONVOCATORIA OFICIAL
                               </span>
-                              <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>
-                                Creada por {callout.creatorName}
+                              <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>
+                                Por {callout.creatorName}
                               </span>
                             </div>
-                            <h4 style={{ fontSize: '1.1rem', fontWeight: 900, color: 'var(--text-main)', margin: '4px 0 2px' }}>
+                            <h4 style={{ fontSize: isMobile ? '1.02rem' : '1.1rem', fontWeight: 900, color: 'var(--text-main)', margin: '4px 0 2px' }}>
                               {callout.clubName} • {callout.courtName || 'Pista de Pádel'}
                             </h4>
-                            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '8px' }}>
                               <span>📅 {callout.matchDate}</span>
                               <span>⏰ {callout.matchTime} hrs</span>
                               <span>⏳ Límite: {callout.deadlineTime}</span>
@@ -444,9 +570,9 @@ export const GroupsView: React.FC<Props> = ({
                           </div>
 
                           {/* MULTIPLES OF 4 BADGE BANNER */}
-                          <div style={{ textAlign: 'right' }}>
+                          <div style={{ width: isMobile ? '100%' : 'auto', marginTop: isMobile ? '4px' : 0 }}>
                             {status.isMultipleOfFour ? (
-                              <div style={multipleSuccessBadge}>
+                              <div style={{ ...multipleSuccessBadge, justifyContent: isMobile ? 'center' : 'flex-start' }}>
                                 <CheckCircle2 size={16} color="var(--team1-primary)" />
                                 <div>
                                   <div style={{ fontWeight: 900, fontSize: '0.85rem', color: 'var(--team1-primary)' }}>
@@ -458,7 +584,7 @@ export const GroupsView: React.FC<Props> = ({
                                 </div>
                               </div>
                             ) : (
-                              <div style={multipleWarningBadge}>
+                              <div style={{ ...multipleWarningBadge, justifyContent: isMobile ? 'center' : 'flex-start' }}>
                                 <AlertCircle size={16} color="var(--gold-primary)" />
                                 <div>
                                   <div style={{ fontWeight: 900, fontSize: '0.85rem', color: 'var(--gold-primary)' }}>
@@ -475,26 +601,26 @@ export const GroupsView: React.FC<Props> = ({
 
                         {/* Notes */}
                         {callout.notes && (
-                          <div style={{ marginTop: '10px', padding: '8px 12px', background: 'var(--bg-elevated)', borderRadius: 'var(--radius-sm)', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                          <div style={{ marginTop: '10px', padding: '8px 12px', background: 'var(--bg-elevated)', borderRadius: 'var(--radius-sm)', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
                             💬 {callout.notes}
                           </div>
                         )}
 
                         {/* Confirmed Players Chips */}
-                        <div style={{ marginTop: '14px' }}>
-                          <div style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-dim)', marginBottom: '8px', textTransform: 'uppercase' }}>
+                        <div style={{ marginTop: '12px' }}>
+                          <div style={{ fontSize: '0.74rem', fontWeight: 800, color: 'var(--text-dim)', marginBottom: '8px', textTransform: 'uppercase' }}>
                             Jugadores Confirmados ({status.totalAccepted}):
                           </div>
-                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                             {callout.acceptedPlayerIds.map((pId, idx) => {
                               const member = selectedGroup.members.find(m => m.playerId === pId);
                               const isMe = pId === currentUser.id;
                               return (
                                 <div key={pId} style={confirmedPlayerChip}>
-                                  <span style={{ fontSize: '0.7rem', fontWeight: 900, color: 'var(--team1-primary)' }}>
+                                  <span style={{ fontSize: '0.68rem', fontWeight: 900, color: 'var(--team1-primary)' }}>
                                     #{idx + 1}
                                   </span>
-                                  <span style={{ fontWeight: 700, fontSize: '0.82rem', color: isMe ? 'var(--team1-primary)' : 'var(--text-main)' }}>
+                                  <span style={{ fontWeight: 700, fontSize: '0.8rem', color: isMe ? 'var(--team1-primary)' : 'var(--text-main)' }}>
                                     {member?.name || (isMe ? currentUser.name : 'Jugador')}
                                   </span>
                                   {member && (
@@ -512,12 +638,12 @@ export const GroupsView: React.FC<Props> = ({
                         {!status.isMultipleOfFour && status.recommendedPlayers.length > 0 && (
                           <div style={recommendedBoxStyle}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                              <div style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--gold-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <div style={{ fontSize: '0.76rem', fontWeight: 800, color: 'var(--gold-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
                                 <Sparkles size={14} />
-                                <span>Jugadores recomendados compatibles para completar la cancha:</span>
+                                <span>Jugadores recomendados para completar cancha:</span>
                               </div>
                             </div>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '8px' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(200px, 1fr))', gap: '8px' }}>
                               {status.recommendedPlayers.map(rec => (
                                 <div key={rec.id} style={recPlayerCard}>
                                   <div>
@@ -544,20 +670,28 @@ export const GroupsView: React.FC<Props> = ({
                         )}
 
                         {/* Callout Actions Toolbar */}
-                        <div style={calloutActionsRow}>
-                          <div style={{ display: 'flex', gap: '8px' }}>
+                        <div style={{
+                          ...calloutActionsRow,
+                          flexDirection: isMobile ? 'column' : 'row',
+                          alignItems: isMobile ? 'stretch' : 'center',
+                          gap: '10px'
+                        }}>
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', width: isMobile ? '100%' : 'auto' }}>
                             <button
                               type="button"
                               onClick={() => handleRespond(callout.id, 'accept')}
                               style={{
                                 ...rsvpBtnStyle,
+                                minHeight: '42px',
+                                justifyContent: 'center',
                                 background: isAcceptedByMe ? 'var(--team1-primary)' : 'rgba(0, 230, 118, 0.15)',
                                 color: isAcceptedByMe ? '#070a10' : 'var(--team1-primary)',
-                                fontWeight: 800
+                                fontWeight: 800,
+                                fontSize: isMobile ? '0.78rem' : '0.82rem'
                               }}
                             >
                               <CheckCircle2 size={16} />
-                              <span>{isAcceptedByMe ? '¡Asistiré (Confirmado)!' : 'Aceptar Invitación'}</span>
+                              <span>{isAcceptedByMe ? '¡Confirmado!' : 'Aceptar'}</span>
                             </button>
 
                             <button
@@ -565,8 +699,11 @@ export const GroupsView: React.FC<Props> = ({
                               onClick={() => handleRespond(callout.id, 'reject')}
                               style={{
                                 ...rsvpBtnStyle,
+                                minHeight: '42px',
+                                justifyContent: 'center',
                                 background: isRejectedByMe ? 'rgba(255, 61, 113, 0.25)' : 'transparent',
-                                color: isRejectedByMe ? 'var(--danger-primary)' : 'var(--text-muted)'
+                                color: isRejectedByMe ? 'var(--danger-primary)' : 'var(--text-muted)',
+                                fontSize: isMobile ? '0.78rem' : '0.82rem'
                               }}
                             >
                               <X size={16} />
@@ -585,7 +722,12 @@ export const GroupsView: React.FC<Props> = ({
                                 });
                                 onStartMatchWithPlayers(confirmedMembers.slice(0, 4));
                               }}
-                              style={launchCourtBtnStyle}
+                              style={{
+                                ...launchCourtBtnStyle,
+                                minHeight: '44px',
+                                width: isMobile ? '100%' : 'auto',
+                                justifyContent: 'center'
+                              }}
                             >
                               <Play size={15} fill="#070a10" color="#070a10" />
                               <span>Lanzar Marcador en Cancha</span>
@@ -600,10 +742,10 @@ export const GroupsView: React.FC<Props> = ({
             </div>
 
             {/* Group Members List */}
-            <div style={{ marginTop: '24px' }}>
+            <div style={{ marginTop: '22px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
-                <h3 style={{ fontSize: '1.05rem', fontWeight: 900, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
-                  <Users size={18} color="var(--gold-primary)" />
+                <h3 style={{ fontSize: isMobile ? '0.98rem' : '1.05rem', fontWeight: 900, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
+                  <Users size={17} color="var(--gold-primary)" />
                   <span>Miembros del Grupo ({selectedGroup.members.length})</span>
                 </h3>
                 <button
@@ -619,7 +761,7 @@ export const GroupsView: React.FC<Props> = ({
                 </button>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '10px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(240px, 1fr))', gap: '8px' }}>
                 {selectedGroup.members.map(member => (
                   <div key={member.playerId} style={memberItemCard} className="glass-panel">
                     <div style={memberAvatarCircle}>
@@ -685,7 +827,7 @@ export const GroupsView: React.FC<Props> = ({
                 />
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '10px' }}>
                 <div>
                   <label style={formLabel}>Club Preferido</label>
                   <input
@@ -871,7 +1013,7 @@ export const GroupsView: React.FC<Props> = ({
             </div>
 
             <form onSubmit={handleCreateCallout} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '10px' }}>
                 <div>
                   <label style={formLabel}>Club Sede</label>
                   <input
@@ -894,7 +1036,7 @@ export const GroupsView: React.FC<Props> = ({
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '10px' }}>
                 <div>
                   <label style={formLabel}>Fecha del Partido</label>
                   <input
@@ -1098,7 +1240,7 @@ export const GroupsView: React.FC<Props> = ({
                 </button>
 
                 {/* Quick Copy Row */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '10px' }}>
                   <button
                     type="button"
                     onClick={() => {
@@ -1159,7 +1301,9 @@ export const GroupsView: React.FC<Props> = ({
                 {/* QR Code Section for Court / Presential Joining */}
                 <div style={{
                   display: 'flex',
+                  flexDirection: isMobile ? 'column' : 'row',
                   alignItems: 'center',
+                  textAlign: isMobile ? 'center' : 'left',
                   gap: '14px',
                   padding: '12px 14px',
                   background: 'var(--bg-card)',
@@ -1408,6 +1552,70 @@ const primaryMiniBtn: React.CSSProperties = {
   alignItems: 'center',
   gap: '6px',
   cursor: 'pointer'
+};
+
+const mobileSegmentedBarStyle: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  gap: '8px',
+  padding: '8px 12px',
+  background: 'var(--bg-glass)',
+  borderBottom: '1px solid var(--border-subtle)',
+  position: 'sticky',
+  top: '56px',
+  zIndex: 90,
+  backdropFilter: 'blur(12px)'
+};
+
+const mobileSegmentedBtnStyle: React.CSSProperties = {
+  flex: 1,
+  padding: '8px 10px',
+  borderRadius: 'var(--radius-md)',
+  border: '1px solid var(--border-subtle)',
+  fontWeight: 800,
+  fontSize: '0.8rem',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: '6px',
+  cursor: 'pointer',
+  transition: 'all 0.2s ease'
+};
+
+const mobileReturnToListBtn: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: '6px',
+  padding: '10px 14px',
+  background: 'var(--bg-card)',
+  border: '1px solid var(--border-medium)',
+  borderRadius: 'var(--radius-md)',
+  color: 'var(--team1-primary)',
+  fontWeight: 800,
+  fontSize: '0.82rem',
+  marginBottom: '10px',
+  cursor: 'pointer',
+  width: '100%',
+  boxSizing: 'border-box'
+};
+
+const mobileCreateGroupFullBtn: React.CSSProperties = {
+  width: '100%',
+  padding: '14px',
+  background: 'rgba(0, 230, 118, 0.1)',
+  border: '1px dashed var(--team1-primary)',
+  borderRadius: 'var(--radius-md)',
+  color: 'var(--team1-primary)',
+  fontWeight: 800,
+  fontSize: '0.85rem',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: '8px',
+  cursor: 'pointer',
+  marginTop: '10px',
+  boxSizing: 'border-box'
 };
 
 const contentGridStyle: React.CSSProperties = {
