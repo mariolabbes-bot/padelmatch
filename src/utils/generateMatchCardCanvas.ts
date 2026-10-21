@@ -6,6 +6,8 @@ export interface MatchCardOptions {
   state: MatchScoreState;
   rules?: MatchRules;
   matchDurationSeconds?: number;
+  qrDataUrl?: string;
+  guestClaimName?: string;
 }
 
 // Helper: load image safely as Promise
@@ -490,8 +492,8 @@ export async function generateMatchCardCanvas(options: MatchCardOptions): Promis
     ctx.restore();
   });
 
-  // 7. FOOTER & VERIFICATION
-  const footerY = 1180;
+  // 7. FOOTER & VERIFICATION (WITH EMBEDDED SCANNABLE QR CODE)
+  const footerY = 1170;
   ctx.save();
   ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
   ctx.beginPath();
@@ -499,18 +501,58 @@ export async function generateMatchCardCanvas(options: MatchCardOptions): Promis
   ctx.lineTo(boardX + boardW, footerY);
   ctx.stroke();
 
-  ctx.textAlign = 'center';
-  ctx.font = '800 15px Outfit, sans-serif';
-  ctx.fillStyle = '#00e676';
-  ctx.fillText('VERIFICADO POR PADELMATCH • PWA DEPORTIVA EN CANCHA', 540, footerY + 45);
+  // Try to load QR image if provided
+  let qrImg: HTMLImageElement | null = null;
+  if (options.qrDataUrl) {
+    qrImg = await loadImage(options.qrDataUrl);
+  }
 
-  ctx.font = '600 13px Outfit, sans-serif';
-  ctx.fillStyle = '#64748b';
-  ctx.fillText('Lleva el marcador por voz, vincula tu reloj y compite en el ranking de tu club', 540, footerY + 70);
+  if (qrImg) {
+    // QR Code box on right
+    const qrBoxSize = 120;
+    const qrBoxX = boardX + boardW - qrBoxSize - 10;
+    const qrBoxY = footerY + 16;
 
-  ctx.font = '800 15px Outfit, sans-serif';
-  ctx.fillStyle = '#ffffff';
-  ctx.fillText('padelmatch.web.app', 540, footerY + 100);
+    drawRoundRect(ctx, qrBoxX, qrBoxY, qrBoxSize, qrBoxSize, 14);
+    ctx.fillStyle = '#ffffff';
+    ctx.fill();
+    ctx.drawImage(qrImg, qrBoxX + 6, qrBoxY + 6, qrBoxSize - 12, qrBoxSize - 12);
+
+    // Left text aligned
+    ctx.textAlign = 'left';
+    ctx.font = '800 15px Outfit, sans-serif';
+    ctx.fillStyle = '#00e676';
+    ctx.fillText('VERIFICADO POR PADELMATCH • PWA DEPORTIVA EN CANCHA', boardX + 10, footerY + 42);
+
+    ctx.font = '900 15px Outfit, sans-serif';
+    ctx.fillStyle = '#ffd600';
+    const claimMsg = options.guestClaimName 
+      ? `👉 ESCANEA CON TU CÁMARA PARA RECLAMAR ESTE PARTIDO (${options.guestClaimName})`
+      : '👉 ESCANEA CON TU CÁMARA PARA REGISTRARTE Y SUMAR ESTE PARTIDO';
+    ctx.fillText(claimMsg, boardX + 10, footerY + 70);
+
+    ctx.font = '600 13px Outfit, sans-serif';
+    ctx.fillStyle = '#94a3b8';
+    ctx.fillText('Crea tu cuenta, guarda tus estadísticas de juego y sube en el ranking de tu club', boardX + 10, footerY + 95);
+
+    ctx.font = '800 14px Outfit, sans-serif';
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText('padelmatch.web.app', boardX + 10, footerY + 120);
+  } else {
+    // Fallback centered
+    ctx.textAlign = 'center';
+    ctx.font = '800 15px Outfit, sans-serif';
+    ctx.fillStyle = '#00e676';
+    ctx.fillText('VERIFICADO POR PADELMATCH • PWA DEPORTIVA EN CANCHA', 540, footerY + 45);
+
+    ctx.font = '600 13px Outfit, sans-serif';
+    ctx.fillStyle = '#64748b';
+    ctx.fillText('Lleva el marcador por voz, vincula tu reloj y compite en el ranking de tu club', 540, footerY + 70);
+
+    ctx.font = '800 15px Outfit, sans-serif';
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText('padelmatch.web.app', 540, footerY + 100);
+  }
   ctx.restore();
 
   return canvas;

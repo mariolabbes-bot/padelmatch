@@ -21,7 +21,9 @@ import {
   Moon,
   Maximize2,
   Minimize2,
-  Smartphone
+  Smartphone,
+  Home,
+  Flag
 } from 'lucide-react';
 
 interface Props {
@@ -201,8 +203,46 @@ export const Scoreboard: React.FC<Props> = ({
           )}
         </div>
 
-        {/* Right Tools: Fullscreen, Watch, Audio, Theme, Menu */}
+        {/* Right Tools: Fullscreen, Dashboard, Finish, Watch, Audio, Theme, Menu */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          {/* Go to Dashboard (Leaves match in-progress with floating widget) */}
+          <button
+            onClick={() => onNavigateToView('host_dashboard')}
+            style={{
+              ...iconBtnStyle,
+              background: 'rgba(255, 255, 255, 0.08)',
+              borderColor: 'var(--border-subtle)',
+              color: 'var(--text-main)',
+              padding: '0 8px',
+              width: 'auto',
+              gap: '4px'
+            }}
+            title="Ir al Dashboard (El partido continúa activo)"
+            aria-label="Ir al Dashboard"
+          >
+            <Home size={15} color="var(--team1-primary)" />
+            {!isLandscape && <span style={{ fontSize: '0.68rem', fontWeight: 800 }}>DASHBOARD</span>}
+          </button>
+
+          {/* Quick Finish Early Button */}
+          <button
+            onClick={onOpenFinishEarlyModal}
+            style={{
+              ...iconBtnStyle,
+              background: 'rgba(255, 214, 0, 0.12)',
+              borderColor: 'rgba(255, 214, 0, 0.35)',
+              color: 'var(--gold-primary)',
+              padding: '0 8px',
+              width: 'auto',
+              gap: '4px'
+            }}
+            title="Terminar partido anticipadamente"
+            aria-label="Terminar partido anticipadamente"
+          >
+            <Flag size={14} />
+            {!isLandscape && <span style={{ fontSize: '0.68rem', fontWeight: 800 }}>TERMINAR</span>}
+          </button>
+
           {/* Fullscreen & Landscape Switcher Button */}
           <button
             onClick={handleToggleOrientationFullscreen}
@@ -303,10 +343,40 @@ export const Scoreboard: React.FC<Props> = ({
               </div>
             </div>
           </div>
-          <button onClick={onTogglePause} style={resumeBtnStyle}>
-            <Play size={13} />
-            <span>Reanudar</span>
-          </button>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button
+              type="button"
+              onClick={() => onNavigateToView('host_dashboard')}
+              style={{
+                ...resumeBtnStyle,
+                background: 'rgba(255, 255, 255, 0.08)',
+                color: 'var(--text-main)',
+                border: '1px solid var(--border-subtle)'
+              }}
+              title="Ir al Dashboard mientras está pausado"
+            >
+              <Home size={13} color="var(--team1-primary)" />
+              <span>Dashboard</span>
+            </button>
+            <button
+              type="button"
+              onClick={onOpenFinishEarlyModal}
+              style={{
+                ...resumeBtnStyle,
+                background: 'rgba(255, 214, 0, 0.15)',
+                color: 'var(--gold-primary)',
+                border: '1px solid var(--gold-primary)'
+              }}
+              title="Terminar partido anticipadamente"
+            >
+              <Flag size={13} />
+              <span>Terminar</span>
+            </button>
+            <button type="button" onClick={onTogglePause} style={resumeBtnStyle}>
+              <Play size={13} />
+              <span>Reanudar</span>
+            </button>
+          </div>
         </div>
       )}
 
@@ -333,10 +403,26 @@ export const Scoreboard: React.FC<Props> = ({
             </div>
           </div>
 
-          <button onClick={onSkipRest} style={skipRestBtnStyle} title="Comenzar el siguiente game inmediatamente">
-            <Play size={13} />
-            <span>Comenzar Ya</span>
-          </button>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button 
+              type="button"
+              onClick={() => onNavigateToView('host_dashboard')} 
+              style={{
+                ...skipRestBtnStyle,
+                background: 'rgba(255, 255, 255, 0.08)',
+                color: 'var(--text-main)',
+                border: '1px solid var(--border-subtle)'
+              }} 
+              title="Revisar Dashboard durante el descanso"
+            >
+              <Home size={13} color="var(--team1-primary)" />
+              <span>Dashboard</span>
+            </button>
+            <button type="button" onClick={onSkipRest} style={skipRestBtnStyle} title="Comenzar el siguiente game inmediatamente">
+              <Play size={13} />
+              <span>Comenzar Ya</span>
+            </button>
+          </div>
         </div>
       )}
 

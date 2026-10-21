@@ -43,6 +43,7 @@ import { FinishMatchEarlyModal } from './components/FinishMatchEarlyModal';
 import { InstallPwaPrompt } from './components/InstallPwaPrompt';
 import { NotificationsModal } from './components/NotificationsModal';
 import { SubscriptionPlansModal } from './components/SubscriptionPlansModal';
+import { FloatingActiveMatchWidget } from './components/FloatingActiveMatchWidget';
 
 function parseMatchIdFromHash(): string | null {
   if (typeof window === 'undefined') return null;
@@ -870,6 +871,7 @@ export function App() {
       <MatchSetupModal
         isOpen={isSetupModalOpen}
         onClose={() => setIsSetupModalOpen(false)}
+        currentUser={currentUser}
         rules={rules}
         teams={teams}
         onStartMatch={(newRules, newTeams) => {
@@ -928,6 +930,17 @@ export function App() {
 
       {/* Automatic Guided PWA Installation Prompt (Android 1-Click & iOS Visual Guide) */}
       <InstallPwaPrompt />
+
+      {/* Persistent Floating Live Match Widget (allows browsing dashboard during breaks and jumping right back to court) */}
+      {!state.isMatchOver && (history.length > 0 || state.currentGame.team1 !== '0' || state.currentGame.team2 !== '0' || state.sets[0].team1 > 0 || state.sets[0].team2 > 0) && 
+       currentView !== 'scoreboard' && currentView !== 'court_tv' && currentView !== 'auth' && (
+        <FloatingActiveMatchWidget
+          state={state}
+          teams={teams}
+          onResumeMatch={() => setCurrentView('scoreboard')}
+          onFinishEarly={() => setIsFinishEarlyModalOpen(true)}
+        />
+      )}
 
       {/* Mobile-First Bottom Navigation Bar with Central Hero Button for IN-COURT MATCH */}
       <BottomNavBar

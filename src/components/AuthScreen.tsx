@@ -46,6 +46,36 @@ export const AuthScreen: React.FC<Props> = ({ onAuthenticated }) => {
   const [loginPassword, setLoginPassword] = useState('');
   const [showLoginPassword, setShowLoginPassword] = useState(false);
 
+  // Claiming Guest State from QR Scan
+  const [claimingGuestName, setClaimingGuestName] = useState<string | null>(null);
+
+  useEffect(() => {
+    const handleUrlClaim = () => {
+      if (typeof window === 'undefined') return;
+      const hash = window.location.hash || '';
+      const search = window.location.search || '';
+
+      let foundGuest: string | null = null;
+      if (hash.includes('claimGuest=')) {
+        const match = hash.match(/claimGuest=([^&]+)/);
+        if (match && match[1]) foundGuest = decodeURIComponent(match[1]);
+      } else if (search.includes('claimGuest=')) {
+        const params = new URLSearchParams(search);
+        foundGuest = params.get('claimGuest');
+      }
+
+      if (foundGuest) {
+        setMode('register');
+        setRegisterName(foundGuest);
+        setClaimingGuestName(foundGuest);
+      }
+    };
+
+    handleUrlClaim();
+    window.addEventListener('hashchange', handleUrlClaim);
+    return () => window.removeEventListener('hashchange', handleUrlClaim);
+  }, []);
+
   // Reset Password State
   const [isResetMode, setIsResetMode] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
@@ -476,6 +506,29 @@ export const AuthScreen: React.FC<Props> = ({ onAuthenticated }) => {
         ) : (
           /* Form: REGISTER */
           <form onSubmit={handleRegister} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            {/* Claim Guest Match Banner */}
+            {claimingGuestName && (
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                background: 'rgba(255, 214, 0, 0.12)',
+                border: '1px solid rgba(255, 214, 0, 0.4)',
+                borderRadius: '10px',
+                padding: '10px 14px'
+              }}>
+                <Sparkles size={20} color="var(--gold-primary)" style={{ flexShrink: 0 }} />
+                <div>
+                  <div style={{ fontWeight: 900, fontSize: '0.84rem', color: '#fff' }}>
+                    ¡Reclamando Partido para {claimingGuestName}!
+                  </div>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                    Al completar tu registro, este partido, sus estadísticas y ELO inicial se sumarán a tu cuenta oficial.
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Guest History Linking Notice */}
             <div style={{
               display: 'flex',

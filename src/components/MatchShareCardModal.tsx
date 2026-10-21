@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import type { Team, MatchScoreState, MatchRules } from '../types/padel';
 import { generateMatchCardCanvas } from '../utils/generateMatchCardCanvas';
+import { QRCodeSVG, QRCodeCanvas } from 'qrcode.react';
+import { authService } from '../services/authService';
+import { partnerService } from '../services/partnerService';
 import { 
   X, 
   Share2, 
@@ -9,7 +12,9 @@ import {
   Check, 
   Sparkles, 
   Loader2,
-  Image as ImageIcon
+  Image as ImageIcon,
+  QrCode,
+  MessageCircle
 } from 'lucide-react';
 
 interface Props {
@@ -29,14 +34,40 @@ export const MatchShareCardModal: React.FC<Props> = ({
   rules,
   matchDurationSeconds
 }) => {
+  const currentUser = authService.getCurrentUser();
+  const partners = currentUser ? partnerService.getPartners(currentUser) : [];
+  const partnerIds = new Set(partners.map(p => p.id));
+
+  const allPlayers = [
+    teams.team1.player1,
+    teams.team1.player2,
+    teams.team2.player1,
+    teams.team2.player2
+  ];
+
+  // Identify unregistered / guest players
+  const guestPlayers = allPlayers.filter(p => {
+    if (p.id === currentUser?.id) return false;
+    if (partnerIds.has(p.id)) return false;
+    return true;
+  });
+
+  const [selectedGuestName, setSelectedGuestName] = useState(() => guestPlayers[0]?.name || '');
   const [dataUrl, setDataUrl] = useState<string | null>(null);
   const [blob, setBlob] = useState<Blob | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
   const [downloadSuccess, setDownloadSuccess] = useState(false);
   const [shareSuccess, setShareSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+
+  // Active target for claim QR code
+  const activeGuest = selectedGuestName || (guestPlayers[0]?.name ?? 'Invitado');
+  const claimUrl = typeof window !== 'undefined'
+    ? `${window.location.origin}/#register?claimGuest=${encodeURIComponent(activeGuest)}`
+    : `https://padelmatch.web.app/#register?claimGuest=${encodeURIComponent(activeGuest)}`;
 
   useEffect(() => {
     if (!isOpen) {
@@ -50,38 +81,46 @@ export const MatchShareCardModal: React.FC<Props> = ({
     setIsGenerating(true);
     setErrorMessage(null);
 
-    generateMatchCardCanvas({
-      teams,
-      state,
-      rules,
-      matchDurationSeconds
-    })
-      .then(canvas => {
-        if (!isMounted) return;
-        canvasRef.current = canvas;
-        const url = canvas.toDataURL('image/png');
-        setDataUrl(url);
+    const timer = setTimeout(() => {
+      const qrCanvas = document.getElementById('match-card-qr-canvas') as HTMLCanvasElement;
+      const qrDataUrl = qrCanvas ? qrCanvas.toDataURL('image/png') : undefined;
 
-        canvas.toBlob(b => {
-          if (isMounted && b) {
-            setBlob(b);
+      generateMatchCardCanvas({
+        teams,
+        state,
+        rules,
+        matchDurationSeconds,
+        qrDataUrl,
+        guestClaimName: guestPlayers.length > 0 ? activeGuest : undefined
+      })
+        .then(canvas => {
+          if (!isMounted) return;
+          canvasRef.current = canvas;
+          const url = canvas.toDataURL('image/png');
+          setDataUrl(url);
+
+          canvas.toBlob(b => {
+            if (isMounted && b) {
+              setBlob(b);
+            }
+          }, 'image/png');
+        })
+        .catch(err => {
+          console.error('Error generating match card:', err);
+          if (isMounted) {
+            setErrorMessage('No se pudo generar la imagen. Intenta de nuevo.');
           }
-        }, 'image/png');
-      })
-      .catch(err => {
-        console.error('Error generating match card:', err);
-        if (isMounted) {
-          setErrorMessage('No se pudo generar la imagen. Intenta de nuevo.');
-        }
-      })
-      .finally(() => {
-        if (isMounted) setIsGenerating(false);
-      });
+        })
+        .finally(() => {
+          if (isMounted) setIsGenerating(false);
+        });
+    }, 80);
 
     return () => {
       isMounted = false;
+      clearTimeout(timer);
     };
-  }, [isOpen, state, teams, rules, matchDurationSeconds]);
+  }, [isOpen, state, teams, rules, matchDurationSeconds, selectedGuestName, activeGuest, guestPlayers.length]);
 
   if (!isOpen) return null;
 
@@ -147,8 +186,35 @@ export const MatchShareCardModal: React.FC<Props> = ({
     }
   };
 
+  // Handle sharing claim link directly via WhatsApp
+  const handleShareWhatsAppClaim = () => {
+    const setsStr = state.sets.map(s => `${s.team1}-${s.team2}`).join(' ');
+    const court = rules?.courtName || 'la pista';
+    const text = `🎾 ¡Hola ${activeGuest}! Aquí tienes la tarjeta oficial del partido que jugamos en ${court} (${setsStr}).\n\nIngresa al siguiente enlace o escanea el código QR de la tarjeta para guardarlo y registrarte en PadelMatch sumando este partido a tu perfil oficial:\n${claimUrl}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+  };
+
+  // Handle copying claim link
+  const handleCopyClaimUrl = () => {
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(claimUrl);
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 2500);
+    }
+  };
+
   return (
     <div style={overlayStyle} onClick={onClose}>
+      {/* Hidden QRCodeCanvas used to embed into high-res downloaded canvas */}
+      <div style={{ display: 'none' }}>
+        <QRCodeCanvas
+          id="match-card-qr-canvas"
+          value={claimUrl}
+          size={240}
+          includeMargin={true}
+        />
+      </div>
+
       <div 
         style={modalStyle} 
         className="glass-panel" 
@@ -165,7 +231,7 @@ export const MatchShareCardModal: React.FC<Props> = ({
                 Tarjeta Gráfica de Partido
               </h3>
               <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', margin: 0 }}>
-                Formato HD (4:5) optimizado para WhatsApp e Instagram Stories
+                Formato HD (4:5) con QR oficial para compartir y registrarse
               </p>
             </div>
           </div>
@@ -181,7 +247,7 @@ export const MatchShareCardModal: React.FC<Props> = ({
             <div style={loadingStateStyle}>
               <Loader2 size={36} color="var(--team1-primary)" className="spinner" />
               <span style={{ fontSize: '0.85rem', color: '#cbd5e1', fontWeight: 700, marginTop: '12px' }}>
-                Generando tarjeta de alta resolución...
+                Generando tarjeta de alta resolución con QR...
               </span>
               <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>
                 Calculando ELO, estadísticas y aplicando diseño oficial
@@ -200,7 +266,7 @@ export const MatchShareCardModal: React.FC<Props> = ({
               />
               <div style={imageBadgeStyle}>
                 <ImageIcon size={12} />
-                <span>1080 × 1350 HD</span>
+                <span>1080 × 1350 HD • QR ACTIVO</span>
               </div>
             </div>
           ) : null}
@@ -223,6 +289,12 @@ export const MatchShareCardModal: React.FC<Props> = ({
           <div style={feedbackBannerSuccess}>
             <Check size={16} />
             <span>¡Tarjeta enviada con éxito!</span>
+          </div>
+        )}
+        {linkCopied && (
+          <div style={feedbackBannerSuccess}>
+            <Check size={16} />
+            <span>¡Enlace de reclamo copiado al portapapeles!</span>
           </div>
         )}
 
@@ -268,6 +340,89 @@ export const MatchShareCardModal: React.FC<Props> = ({
               <span>{copied ? '¡Copiada!' : 'Copiar Imagen'}</span>
             </button>
           </div>
+
+          {/* DEDICATED GUEST PLAYER CLAIM & QR SECTION */}
+          {guestPlayers.length > 0 && (
+            <div style={guestClaimBoxStyle}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                <QrCode size={18} color="var(--gold-primary)" />
+                <div>
+                  <div style={{ fontSize: '0.85rem', fontWeight: 900, color: '#fff' }}>
+                    QR & Registro para Jugadores Invitados
+                  </div>
+                  <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                    Escanea para ver la tarjeta y registrarte sumando este partido
+                  </div>
+                </div>
+              </div>
+
+              {/* Multiple Guests Tab Switcher */}
+              {guestPlayers.length > 1 && (
+                <div style={{ display: 'flex', gap: '6px', marginBottom: '10px', flexWrap: 'wrap' }}>
+                  {guestPlayers.map(gp => (
+                    <button
+                      key={gp.id}
+                      type="button"
+                      onClick={() => setSelectedGuestName(gp.name)}
+                      style={{
+                        padding: '4px 10px',
+                        borderRadius: '6px',
+                        fontSize: '0.72rem',
+                        fontWeight: 800,
+                        background: activeGuest === gp.name ? 'var(--team1-primary)' : 'rgba(255, 255, 255, 0.06)',
+                        color: activeGuest === gp.name ? '#000' : 'var(--text-muted)',
+                        border: '1px solid ' + (activeGuest === gp.name ? 'var(--team1-primary)' : 'var(--border-subtle)')
+                      }}
+                    >
+                      👤 {gp.name}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* QR Display Card */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(0, 0, 0, 0.35)', padding: '10px', borderRadius: '12px', border: '1px solid var(--border-subtle)' }}>
+                <div style={{ background: '#fff', padding: '6px', borderRadius: '8px', flexShrink: 0 }}>
+                  <QRCodeSVG
+                    value={claimUrl}
+                    size={96}
+                    level="M"
+                  />
+                </div>
+
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: '0.78rem', fontWeight: 900, color: 'var(--gold-primary)' }}>
+                    {activeGuest} (No registrado)
+                  </div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', margin: '2px 0 8px' }}>
+                    Muestra este código o compártelo para que {activeGuest} se registre y guarde sus victorias.
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                    <button
+                      type="button"
+                      onClick={handleShareWhatsAppClaim}
+                      style={whatsappClaimBtnStyle}
+                      title="Enviar por WhatsApp"
+                    >
+                      <MessageCircle size={13} />
+                      <span>WhatsApp</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleCopyClaimUrl}
+                      style={copyClaimLinkBtnStyle}
+                      title="Copiar enlace"
+                    >
+                      {linkCopied ? <Check size={13} color="var(--team1-primary)" /> : <Copy size={13} />}
+                      <span>{linkCopied ? 'Copiado' : 'Enlace'}</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -442,5 +597,41 @@ const secondaryActionBtnStyle: React.CSSProperties = {
   borderRadius: '12px',
   fontWeight: 800,
   fontSize: '0.82rem',
+  cursor: 'pointer'
+};
+
+const guestClaimBoxStyle: React.CSSProperties = {
+  marginTop: '4px',
+  padding: '12px',
+  background: 'rgba(255, 214, 0, 0.06)',
+  border: '1px solid rgba(255, 214, 0, 0.3)',
+  borderRadius: '14px'
+};
+
+const whatsappClaimBtnStyle: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: '5px',
+  padding: '6px 12px',
+  background: '#25D366',
+  color: '#070a10',
+  borderRadius: '8px',
+  fontSize: '0.75rem',
+  fontWeight: 900,
+  border: 'none',
+  cursor: 'pointer'
+};
+
+const copyClaimLinkBtnStyle: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: '5px',
+  padding: '6px 10px',
+  background: 'rgba(255, 255, 255, 0.08)',
+  color: '#fff',
+  borderRadius: '8px',
+  fontSize: '0.75rem',
+  fontWeight: 800,
+  border: '1px solid var(--border-subtle)',
   cursor: 'pointer'
 };

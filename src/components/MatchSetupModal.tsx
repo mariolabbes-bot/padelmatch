@@ -8,11 +8,14 @@ import type {
   ThirdSetRule, 
   SuperTieBreakTarget 
 } from '../types/padel';
+import type { UserSession } from '../services/authService';
+import { partnerService } from '../services/partnerService';
 import { Settings2, X } from 'lucide-react';
 
 interface Props {
   isOpen: boolean;
   onClose: () => void;
+  currentUser?: UserSession | null;
   rules: MatchRules;
   teams: { team1: Team; team2: Team };
   onStartMatch: (newRules: MatchRules, newTeams: { team1: Team; team2: Team }) => void;
@@ -21,38 +24,163 @@ interface Props {
 export const MatchSetupModal: React.FC<Props> = ({
   isOpen,
   onClose,
+  currentUser,
   rules,
   teams,
   onStartMatch
 }) => {
+  interface AssignedPlayer {
+    id: string;
+    name: string;
+    elo: number;
+    isPartner: boolean;
+    isHost: boolean;
+    category?: string;
+  }
+
+  const partners = currentUser ? partnerService.getPartners(currentUser) : [];
+
   const [localRules, setLocalRules] = useState<MatchRules>(rules);
   const [team1Name, setTeam1Name] = useState(teams.team1.name);
-  const [team1Player1, setTeam1Player1] = useState(teams.team1.player1.name);
-  const [team1Player2, setTeam1Player2] = useState(teams.team1.player2.name);
-
   const [team2Name, setTeam2Name] = useState(teams.team2.name);
-  const [team2Player1, setTeam2Player1] = useState(teams.team2.player1.name);
-  const [team2Player2, setTeam2Player2] = useState(teams.team2.player2.name);
+
+  // Slot 1: Team 1 Drive
+  const [p1, setP1] = useState<AssignedPlayer>(() => ({
+    id: currentUser?.id || teams.team1.player1.id || 'p1',
+    name: currentUser?.name || teams.team1.player1.name || 'Jugador 1',
+    elo: currentUser?.elo || teams.team1.player1.elo || 1200,
+    isPartner: false,
+    isHost: !!currentUser,
+    category: currentUser?.category
+  }));
+
+  // Slot 2: Team 1 Revés
+  const [p2, setP2] = useState<AssignedPlayer>(() => {
+    // If user has a first partner, default to them or fallback to team1.player2
+    const firstPartner = partners[0];
+    if (firstPartner && (!teams.team1.player2.name || teams.team1.player2.name === 'Jugador 2')) {
+      return {
+        id: firstPartner.id,
+        name: firstPartner.name,
+        elo: firstPartner.elo,
+        isPartner: true,
+        isHost: false,
+        category: firstPartner.category
+      };
+    }
+    return {
+      id: teams.team1.player2.id || 'p2',
+      name: teams.team1.player2.name || 'Jugador 2',
+      elo: teams.team1.player2.elo || 1200,
+      isPartner: false,
+      isHost: false,
+      category: teams.team1.player2.category
+    };
+  });
+
+  // Slot 3: Team 2 Drive
+  const [p3, setP3] = useState<AssignedPlayer>(() => ({
+    id: teams.team2.player1.id || 'p3',
+    name: teams.team2.player1.name || 'Jugador 3',
+    elo: teams.team2.player1.elo || 1200,
+    isPartner: false,
+    isHost: false,
+    category: teams.team2.player1.category
+  }));
+
+  // Slot 4: Team 2 Revés
+  const [p4, setP4] = useState<AssignedPlayer>(() => ({
+    id: teams.team2.player2.id || 'p4',
+    name: teams.team2.player2.name || 'Jugador 4',
+    elo: teams.team2.player2.elo || 1200,
+    isPartner: false,
+    isHost: false,
+    category: teams.team2.player2.category
+  }));
 
   const [courtName, setCourtName] = useState(rules.courtName || 'Pista Central');
 
   if (!isOpen) return null;
 
+  const handleAssignPlayer = (
+    setter: React.Dispatch<React.SetStateAction<AssignedPlayer>>,
+    value: string
+  ) => {
+    if (value === 'host' && currentUser) {
+      setter({
+        id: currentUser.id,
+        name: currentUser.name,
+        elo: currentUser.elo,
+        isPartner: false,
+        isHost: true,
+        category: currentUser.category
+      });
+    } else if (value.startsWith('partner_')) {
+      const partnerId = value.replace('partner_', '');
+      const part = partners.find(p => p.id === partnerId);
+      if (part) {
+        setter({
+          id: part.id,
+          name: part.name,
+          elo: part.elo,
+          isPartner: true,
+          isHost: false,
+          category: part.category
+        });
+      }
+    } else {
+      // Guest
+      setter(prev => ({
+        ...prev,
+        id: `guest_${Math.random().toString(36).substring(2, 7)}`,
+        isPartner: false,
+        isHost: false
+      }));
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    const finalT1Name = team1Name.trim() || `${p1.name.split(' ')[0]} & ${p2.name.split(' ')[0]}`;
+    const finalT2Name = team2Name.trim() || `${p3.name.split(' ')[0]} & ${p4.name.split(' ')[0]}`;
 
     const updatedTeams = {
       team1: {
         ...teams.team1,
-        name: team1Name || 'Pareja 1',
-        player1: { ...teams.team1.player1, name: team1Player1 || 'Jugador 1' },
-        player2: { ...teams.team1.player2, name: team1Player2 || 'Jugador 2' }
+        name: finalT1Name,
+        player1: {
+          ...teams.team1.player1,
+          id: p1.id,
+          name: p1.name.trim() || 'Jugador 1',
+          elo: p1.elo,
+          category: p1.category as any
+        },
+        player2: {
+          ...teams.team1.player2,
+          id: p2.id,
+          name: p2.name.trim() || 'Jugador 2',
+          elo: p2.elo,
+          category: p2.category as any
+        }
       },
       team2: {
         ...teams.team2,
-        name: team2Name || 'Pareja 2',
-        player1: { ...teams.team2.player1, name: team2Player1 || 'Jugador 3' },
-        player2: { ...teams.team2.player2, name: team2Player2 || 'Jugador 4' }
+        name: finalT2Name,
+        player1: {
+          ...teams.team2.player1,
+          id: p3.id,
+          name: p3.name.trim() || 'Jugador 3',
+          elo: p3.elo,
+          category: p3.category as any
+        },
+        player2: {
+          ...teams.team2.player2,
+          id: p4.id,
+          name: p4.name.trim() || 'Jugador 4',
+          elo: p4.elo,
+          category: p4.category as any
+        }
       }
     };
 
@@ -278,8 +406,14 @@ export const MatchSetupModal: React.FC<Props> = ({
 
           {/* Section: Teams & Roster */}
           <div style={{ marginBottom: '20px' }}>
-            <label style={sectionTitleStyle}>Parejas y Jugadores</label>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+              <label style={sectionTitleStyle}>Parejas y Jugadores en Pista</label>
+              <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                {partners.length} Partners disponibles para asociar
+              </span>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '14px' }}>
               {/* Team 1 */}
               <div style={{ background: 'rgba(0, 230, 118, 0.05)', border: '1px solid rgba(0, 230, 118, 0.25)', borderRadius: '12px', padding: '12px' }}>
                 <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--team1-primary)', display: 'block', marginBottom: '8px' }}>
@@ -287,25 +421,87 @@ export const MatchSetupModal: React.FC<Props> = ({
                 </span>
                 <input
                   type="text"
-                  placeholder="Nombre Pareja (ej: Galán / Chingotto)"
+                  placeholder="Nombre Pareja (ej: Galán & Chingotto)"
                   value={team1Name}
                   onChange={e => setTeam1Name(e.target.value)}
                   style={inputStyle}
                 />
-                <input
-                  type="text"
-                  placeholder="Drive (Derecha)"
-                  value={team1Player1}
-                  onChange={e => setTeam1Player1(e.target.value)}
-                  style={{ ...inputStyle, marginTop: '6px' }}
-                />
-                <input
-                  type="text"
-                  placeholder="Revés (Izquierda)"
-                  value={team1Player2}
-                  onChange={e => setTeam1Player2(e.target.value)}
-                  style={{ ...inputStyle, marginTop: '6px' }}
-                />
+
+                {/* Team 1 - Player 1 (Drive) */}
+                <div style={playerSlotBox}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                    <span style={slotLabel}>DRIVE (DERECHA)</span>
+                    {p1.isHost ? (
+                      <span className="badge badge-gold" style={{ fontSize: '0.62rem' }}>⭐ Anfitrión Host</span>
+                    ) : p1.isPartner ? (
+                      <span className="badge badge-team1" style={{ fontSize: '0.62rem' }}>🤝 Partner (ELO {p1.elo})</span>
+                    ) : (
+                      <span style={{ fontSize: '0.62rem', color: 'var(--text-dim)' }}>👤 Invitado</span>
+                    )}
+                  </div>
+                  <select
+                    value={p1.isHost ? 'host' : p1.isPartner ? `partner_${p1.id}` : 'guest'}
+                    onChange={e => handleAssignPlayer(setP1, e.target.value)}
+                    style={{ ...selectStyle, padding: '6px 8px', fontSize: '0.78rem', marginBottom: '6px' }}
+                  >
+                    <option value="guest">👤 Jugador Invitado / Genérico</option>
+                    {currentUser && <option value="host">⭐ Yo ({currentUser.name})</option>}
+                    {partners.length > 0 && (
+                      <optgroup label="Mis Partners Conectados">
+                        {partners.map(part => (
+                          <option key={part.id} value={`partner_${part.id}`}>
+                            🤝 {part.name} ({part.category} Cat • ELO {part.elo})
+                          </option>
+                        ))}
+                      </optgroup>
+                    )}
+                  </select>
+                  <input
+                    type="text"
+                    placeholder="Nombre en pista"
+                    value={p1.name}
+                    onChange={e => setP1(prev => ({ ...prev, name: e.target.value }))}
+                    style={{ ...inputStyle, padding: '6px 8px', fontSize: '0.82rem' }}
+                  />
+                </div>
+
+                {/* Team 1 - Player 2 (Revés) */}
+                <div style={playerSlotBox}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                    <span style={slotLabel}>REVÉS (IZQUIERDA)</span>
+                    {p2.isHost ? (
+                      <span className="badge badge-gold" style={{ fontSize: '0.62rem' }}>⭐ Anfitrión Host</span>
+                    ) : p2.isPartner ? (
+                      <span className="badge badge-team1" style={{ fontSize: '0.62rem' }}>🤝 Partner (ELO {p2.elo})</span>
+                    ) : (
+                      <span style={{ fontSize: '0.62rem', color: 'var(--text-dim)' }}>👤 Invitado</span>
+                    )}
+                  </div>
+                  <select
+                    value={p2.isHost ? 'host' : p2.isPartner ? `partner_${p2.id}` : 'guest'}
+                    onChange={e => handleAssignPlayer(setP2, e.target.value)}
+                    style={{ ...selectStyle, padding: '6px 8px', fontSize: '0.78rem', marginBottom: '6px' }}
+                  >
+                    <option value="guest">👤 Jugador Invitado / Genérico</option>
+                    {currentUser && <option value="host">⭐ Yo ({currentUser.name})</option>}
+                    {partners.length > 0 && (
+                      <optgroup label="Mis Partners Conectados">
+                        {partners.map(part => (
+                          <option key={part.id} value={`partner_${part.id}`}>
+                            🤝 {part.name} ({part.category} Cat • ELO {part.elo})
+                          </option>
+                        ))}
+                      </optgroup>
+                    )}
+                  </select>
+                  <input
+                    type="text"
+                    placeholder="Nombre en pista"
+                    value={p2.name}
+                    onChange={e => setP2(prev => ({ ...prev, name: e.target.value }))}
+                    style={{ ...inputStyle, padding: '6px 8px', fontSize: '0.82rem' }}
+                  />
+                </div>
               </div>
 
               {/* Team 2 */}
@@ -315,25 +511,87 @@ export const MatchSetupModal: React.FC<Props> = ({
                 </span>
                 <input
                   type="text"
-                  placeholder="Nombre Pareja (ej: Coello / Tapia)"
+                  placeholder="Nombre Pareja (ej: Coello & Tapia)"
                   value={team2Name}
                   onChange={e => setTeam2Name(e.target.value)}
                   style={inputStyle}
                 />
-                <input
-                  type="text"
-                  placeholder="Drive (Derecha)"
-                  value={team2Player1}
-                  onChange={e => setTeam2Player1(e.target.value)}
-                  style={{ ...inputStyle, marginTop: '6px' }}
-                />
-                <input
-                  type="text"
-                  placeholder="Revés (Izquierda)"
-                  value={team2Player2}
-                  onChange={e => setTeam2Player2(e.target.value)}
-                  style={{ ...inputStyle, marginTop: '6px' }}
-                />
+
+                {/* Team 2 - Player 1 (Drive) */}
+                <div style={playerSlotBox}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                    <span style={slotLabel}>DRIVE (DERECHA)</span>
+                    {p3.isHost ? (
+                      <span className="badge badge-gold" style={{ fontSize: '0.62rem' }}>⭐ Anfitrión Host</span>
+                    ) : p3.isPartner ? (
+                      <span className="badge badge-team1" style={{ fontSize: '0.62rem' }}>🤝 Partner (ELO {p3.elo})</span>
+                    ) : (
+                      <span style={{ fontSize: '0.62rem', color: 'var(--text-dim)' }}>👤 Invitado</span>
+                    )}
+                  </div>
+                  <select
+                    value={p3.isHost ? 'host' : p3.isPartner ? `partner_${p3.id}` : 'guest'}
+                    onChange={e => handleAssignPlayer(setP3, e.target.value)}
+                    style={{ ...selectStyle, padding: '6px 8px', fontSize: '0.78rem', marginBottom: '6px' }}
+                  >
+                    <option value="guest">👤 Jugador Invitado / Genérico</option>
+                    {currentUser && <option value="host">⭐ Yo ({currentUser.name})</option>}
+                    {partners.length > 0 && (
+                      <optgroup label="Mis Partners Conectados">
+                        {partners.map(part => (
+                          <option key={part.id} value={`partner_${part.id}`}>
+                            🤝 {part.name} ({part.category} Cat • ELO {part.elo})
+                          </option>
+                        ))}
+                      </optgroup>
+                    )}
+                  </select>
+                  <input
+                    type="text"
+                    placeholder="Nombre en pista"
+                    value={p3.name}
+                    onChange={e => setP3(prev => ({ ...prev, name: e.target.value }))}
+                    style={{ ...inputStyle, padding: '6px 8px', fontSize: '0.82rem' }}
+                  />
+                </div>
+
+                {/* Team 2 - Player 2 (Revés) */}
+                <div style={playerSlotBox}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                    <span style={slotLabel}>REVÉS (IZQUIERDA)</span>
+                    {p4.isHost ? (
+                      <span className="badge badge-gold" style={{ fontSize: '0.62rem' }}>⭐ Anfitrión Host</span>
+                    ) : p4.isPartner ? (
+                      <span className="badge badge-team1" style={{ fontSize: '0.62rem' }}>🤝 Partner (ELO {p4.elo})</span>
+                    ) : (
+                      <span style={{ fontSize: '0.62rem', color: 'var(--text-dim)' }}>👤 Invitado</span>
+                    )}
+                  </div>
+                  <select
+                    value={p4.isHost ? 'host' : p4.isPartner ? `partner_${p4.id}` : 'guest'}
+                    onChange={e => handleAssignPlayer(setP4, e.target.value)}
+                    style={{ ...selectStyle, padding: '6px 8px', fontSize: '0.78rem', marginBottom: '6px' }}
+                  >
+                    <option value="guest">👤 Jugador Invitado / Genérico</option>
+                    {currentUser && <option value="host">⭐ Yo ({currentUser.name})</option>}
+                    {partners.length > 0 && (
+                      <optgroup label="Mis Partners Conectados">
+                        {partners.map(part => (
+                          <option key={part.id} value={`partner_${part.id}`}>
+                            🤝 {part.name} ({part.category} Cat • ELO {part.elo})
+                          </option>
+                        ))}
+                      </optgroup>
+                    )}
+                  </select>
+                  <input
+                    type="text"
+                    placeholder="Nombre en pista"
+                    value={p4.name}
+                    onChange={e => setP4(prev => ({ ...prev, name: e.target.value }))}
+                    style={{ ...inputStyle, padding: '6px 8px', fontSize: '0.82rem' }}
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -493,4 +751,19 @@ const primaryBtnStyle: React.CSSProperties = {
   fontWeight: 800,
   fontSize: '0.9rem',
   boxShadow: '0 4px 14px var(--team1-glow)'
+};
+
+const playerSlotBox: React.CSSProperties = {
+  marginTop: '8px',
+  padding: '8px 10px',
+  background: 'rgba(0, 0, 0, 0.25)',
+  borderRadius: '10px',
+  border: '1px solid var(--border-subtle)'
+};
+
+const slotLabel: React.CSSProperties = {
+  fontSize: '0.68rem',
+  fontWeight: 800,
+  color: 'var(--text-dim)',
+  letterSpacing: '0.04em'
 };
