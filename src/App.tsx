@@ -666,6 +666,8 @@ export function App() {
           onOpenBluetoothModal={() => setIsBluetoothModalOpen(true)}
           onOpenNotifications={() => setIsNotificationsModalOpen(true)}
           onOpenSubscriptionModal={() => setIsSubscriptionModalOpen(true)}
+          onNavigateToGroups={() => setCurrentView('groups')}
+          onStartMatch={() => setIsSetupModalOpen(true)}
           onLogout={handleLogout}
         />
       )}

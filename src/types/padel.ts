@@ -247,3 +247,74 @@ export interface PadelGroup {
   bannerColor?: string;
   isPrivate?: boolean;
 }
+
+// ==========================================
+// MÓDULO PARTNERS (RED DE AMIGOS DE PÁDEL)
+// ==========================================
+
+export type PartnerStatus = 'pending' | 'accepted' | 'rejected';
+
+export interface PartnerConnection {
+  id: string;
+  requesterId: string;
+  requesterName: string;
+  requesterCategory: PlayerCategory;
+  requesterElo: number;
+  targetId: string;
+  targetName: string;
+  status: PartnerStatus;
+  createdAt: number;
+}
+
+export interface PartnerComment {
+  id: string;
+  authorId: string;
+  authorName: string;
+  content: string;
+  timestamp: number;
+}
+
+export interface PartnerPost {
+  id: string;
+  authorId: string;
+  authorName: string;
+  authorCategory: PlayerCategory;
+  authorAvatar?: string;
+  timestamp: number;
+  content: string;
+  matchSnippet?: {
+    courtName: string;
+    scoreSets: string;
+    isVictory: boolean;
+  };
+  clapsCount: number;
+  hasClapped?: boolean;
+  comments: PartnerComment[];
+}
+
+// ==========================================
+// MÓDULO CLUBES, CAMPAÑAS Y NOTICIAS
+// ==========================================
+
+export interface ClubCampaign {
+  id: string;
+  clubName: string;
+  clubCity: string;
+  title: string;
+  description: string;
+  discountLabel?: string;
+  validUntil?: string;
+  tag: 'oferta' | 'torneo' | 'evento' | 'clinica';
+  contactPhone?: string;
+  imageUrl?: string;
+}
+
+export interface PadelNewsItem {
+  id: string;
+  title: string;
+  summary: string;
+  category: 'circuito' | 'tactica' | 'equipamiento' | 'comunidad';
+  timestamp: number;
+  readTimeMinutes: number;
+  source: string;
+}
