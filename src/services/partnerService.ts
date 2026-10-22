@@ -9,9 +9,16 @@ import type {
 import type { UserSession } from './authService';
 import { communityService } from './communityService';
 import { notificationService } from './notificationService';
+import { 
+  collection, 
+  doc, 
+  setDoc, 
+  onSnapshot 
+} from 'firebase/firestore';
+import { db, cleanForFirestore } from './firebase';
 
-const CONNECTIONS_KEY = 'padelmatch_partner_connections_v1';
-const POSTS_KEY = 'padelmatch_partner_posts_v1';
+const CONNECTIONS_KEY = 'padelmatch_partner_connections_v2';
+const POSTS_KEY = 'padelmatch_partner_posts_v2';
 
 class PartnerService {
   private connections: PartnerConnection[] = [];
@@ -19,30 +26,66 @@ class PartnerService {
   private listeners: Set<() => void> = new Set();
 
   constructor() {
+    this.cleanupLegacyStorage();
     this.loadFromStorage();
+    this.initFirestoreSync();
+  }
+
+  private cleanupLegacyStorage() {
+    if (typeof window === 'undefined' || !window.localStorage) return;
+    try {
+      localStorage.removeItem('padelmatch_partner_connections_v1');
+      localStorage.removeItem('padelmatch_partner_posts_v1');
+    } catch {
+      // ignore
+    }
   }
 
   private loadFromStorage() {
     if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
-      this.seedInitialData();
+      this.connections = [];
+      this.posts = [];
       return;
     }
     try {
       const rawConn = localStorage.getItem(CONNECTIONS_KEY);
-      if (rawConn) {
-        this.connections = JSON.parse(rawConn);
-      } else {
-        this.seedInitialConnections();
-      }
+      this.connections = rawConn ? JSON.parse(rawConn) : [];
 
       const rawPosts = localStorage.getItem(POSTS_KEY);
-      if (rawPosts) {
-        this.posts = JSON.parse(rawPosts);
-      } else {
-        this.seedInitialPosts();
-      }
+      this.posts = rawPosts ? JSON.parse(rawPosts) : [];
     } catch {
-      this.seedInitialData();
+      this.connections = [];
+      this.posts = [];
+    }
+  }
+
+  private initFirestoreSync() {
+    try {
+      // 1. Sync Partner Connections
+      onSnapshot(collection(db, 'partner_connections'), (snapshot) => {
+        const cloudConn: PartnerConnection[] = [];
+        snapshot.forEach(docSnap => {
+          cloudConn.push(docSnap.data() as PartnerConnection);
+        });
+        this.connections = cloudConn;
+        this.saveConnections();
+      }, (err) => {
+        console.warn('Firestore connections sync notice:', err);
+      });
+
+      // 2. Sync Partner Posts
+      onSnapshot(collection(db, 'partner_posts'), (snapshot) => {
+        const cloudPosts: PartnerPost[] = [];
+        snapshot.forEach(docSnap => {
+          cloudPosts.push(docSnap.data() as PartnerPost);
+        });
+        this.posts = cloudPosts;
+        this.savePosts();
+      }, (err) => {
+        console.warn('Firestore posts sync notice:', err);
+      });
+    } catch (e) {
+      console.warn('Error starting Firestore partner sync:', e);
     }
   }
 
@@ -75,112 +118,6 @@ class PartnerService {
 
   private notify() {
     this.listeners.forEach(l => l());
-  }
-
-  private seedInitialData() {
-    this.seedInitialConnections();
-    this.seedInitialPosts();
-  }
-
-  private seedInitialConnections() {
-    // Pre-seed Mario Labbé with Fernando González and Rodrigo Valenzuela as accepted partners
-    // and Matías Silva with a pending request to Mario
-    this.connections = [
-      {
-        id: 'conn-1',
-        requesterId: 'founder-mario-labbe',
-        requesterName: 'Mario Labbé',
-        requesterCategory: '4ta',
-        requesterElo: 1400,
-        targetId: 'player-fernando',
-        targetName: 'Fernando González',
-        status: 'accepted',
-        createdAt: Date.now() - 86400000 * 3
-      },
-      {
-        id: 'conn-2',
-        requesterId: 'founder-mario-labbe',
-        requesterName: 'Mario Labbé',
-        requesterCategory: '4ta',
-        requesterElo: 1400,
-        targetId: 'player-rodrigo',
-        targetName: 'Rodrigo Valenzuela',
-        status: 'accepted',
-        createdAt: Date.now() - 86400000 * 5
-      },
-      {
-        id: 'conn-3',
-        requesterId: 'player-matias',
-        requesterName: 'Matías Silva',
-        requesterCategory: '4ta',
-        requesterElo: 1380,
-        targetId: 'founder-mario-labbe',
-        targetName: 'Mario Labbé',
-        status: 'pending',
-        createdAt: Date.now() - 3600000 * 2 // 2 hours ago
-      }
-    ];
-    this.saveConnections();
-  }
-
-  private seedInitialPosts() {
-    this.posts = [
-      {
-        id: 'post-1',
-        authorId: 'player-fernando',
-        authorName: 'Fernando González',
-        authorCategory: '4ta',
-        timestamp: Date.now() - 1000 * 60 * 45, // 45 mins ago
-        content: '¡Tremendo partido anoche en Club Padel Oriente! Sacamos adelante el 3er set con punto de oro. ¡Gran nivel de juego!',
-        matchSnippet: {
-          courtName: 'Club Padel Oriente • Pista 3',
-          scoreSets: '6-4 | 4-6 | 7-6 (Punto de Oro)',
-          isVictory: true
-        },
-        clapsCount: 6,
-        hasClapped: false,
-        comments: [
-          {
-            id: 'c-1',
-            authorId: 'player-rodrigo',
-            authorName: 'Rodrigo Valenzuela',
-            content: '¡Ese punto de oro estuvo infartante! Hay que repetirlo la próxima semana 🎾🔥',
-            timestamp: Date.now() - 1000 * 60 * 20
-          }
-        ]
-      },
-      {
-        id: 'post-2',
-        authorId: 'player-matias',
-        authorName: 'Matías Silva',
-        authorCategory: '4ta',
-        timestamp: Date.now() - 1000 * 60 * 180, // 3 hours ago
-        content: '¿Alguien disponible para un americano este sábado a las 10:00 en Padel City? Nos falta 1 para armar la cuadratura perfecta.',
-        clapsCount: 4,
-        hasClapped: true,
-        comments: [
-          {
-            id: 'c-2',
-            authorId: 'player-ignacio',
-            authorName: 'Ignacio Morales',
-            content: 'Yo me anoto de revés si confirmamos antes de las 18:00 🙌',
-            timestamp: Date.now() - 1000 * 60 * 90
-          }
-        ]
-      },
-      {
-        id: 'post-3',
-        authorId: 'player-rodrigo',
-        authorName: 'Rodrigo Valenzuela',
-        authorCategory: '4ta',
-        timestamp: Date.now() - 1000 * 60 * 60 * 12, // 12 hours ago
-        content: 'Estrenando pala nueva hoy. Notable la diferencia de control en las salidas de pared. Listo para el próximo desafío.',
-        clapsCount: 9,
-        hasClapped: false,
-        comments: []
-      }
-    ];
-    this.savePosts();
   }
 
   // --- Partner Management ---
@@ -252,6 +189,9 @@ class PartnerService {
     this.connections.unshift(newConn);
     this.saveConnections();
 
+    // Push to Cloud Firestore
+    setDoc(doc(db, 'partner_connections', newConn.id), cleanForFirestore(newConn)).catch(console.warn);
+
     // Trigger in-app notification
     notificationService.addNotification({
       type: 'friend_invite',
@@ -268,6 +208,9 @@ class PartnerService {
 
     conn.status = accept ? 'accepted' : 'rejected';
     this.saveConnections();
+
+    // Push update to Cloud Firestore
+    setDoc(doc(db, 'partner_connections', conn.id), cleanForFirestore(conn), { merge: true }).catch(console.warn);
 
     if (accept) {
       notificationService.addNotification({
@@ -299,6 +242,10 @@ class PartnerService {
 
     this.posts.unshift(newPost);
     this.savePosts();
+
+    // Push to Cloud Firestore
+    setDoc(doc(db, 'partner_posts', newPost.id), cleanForFirestore(newPost)).catch(console.warn);
+
     return newPost;
   }
 
@@ -314,6 +261,9 @@ class PartnerService {
       post.hasClapped = true;
     }
     this.savePosts();
+
+    // Push to Cloud Firestore
+    setDoc(doc(db, 'partner_posts', post.id), cleanForFirestore(post), { merge: true }).catch(console.warn);
   }
 
   public addComment(postId: string, author: UserSession, content: string) {
@@ -330,46 +280,15 @@ class PartnerService {
 
     post.comments.push(comment);
     this.savePosts();
+
+    // Push to Cloud Firestore
+    setDoc(doc(db, 'partner_posts', post.id), cleanForFirestore(post), { merge: true }).catch(console.warn);
   }
 
   // --- Clubs & Campaigns ---
 
   public getClubCampaigns(): ClubCampaign[] {
-    return [
-      {
-        id: 'camp-1',
-        clubName: 'Club Padel Oriente',
-        clubCity: 'Santiago',
-        title: '25% OFF Horario Valle',
-        description: 'Pistas panorámicas techadas con descuento de Lunes a Viernes de 10:00 a 16:00 hrs.',
-        discountLabel: '25% OFF',
-        validUntil: 'Válido todo Octubre',
-        tag: 'oferta',
-        contactPhone: '+56987654321'
-      },
-      {
-        id: 'camp-2',
-        clubName: 'Padel City Santiago',
-        clubCity: 'Santiago',
-        title: 'Torneo Americano 4ª & 5ª Cat',
-        description: 'Sábado 15:30 hrs. Premios en equipamiento Nox & Bullpadel. Inscripciones abiertas.',
-        discountLabel: 'TORNEO',
-        validUntil: 'Cierre Jueves 20:00',
-        tag: 'torneo',
-        contactPhone: '+56911223344'
-      },
-      {
-        id: 'camp-3',
-        clubName: 'Club Deportivo Padel Pro',
-        clubCity: 'Viña del Mar',
-        title: 'Clínica de Saque y Volea con Pro',
-        description: 'Mejora tu juego ofensivo y salida de pared. Cupos limitados a 8 jugadores.',
-        discountLabel: 'CLÍNICA',
-        validUntil: 'Domingo 11:00',
-        tag: 'clinica',
-        contactPhone: '+56955667788'
-      }
-    ];
+    return [];
   }
 
   // --- Padel News ---

@@ -129,12 +129,12 @@ export const AuthScreen: React.FC<Props> = ({ onAuthenticated }) => {
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setSuccessMsg(null);
 
-    const res = authService.login(loginEmail, loginPassword);
+    const res = await authService.login(loginEmail, loginPassword);
     if (res.success && res.user) {
       onAuthenticated(res.user);
     } else {
@@ -142,7 +142,7 @@ export const AuthScreen: React.FC<Props> = ({ onAuthenticated }) => {
     }
   };
 
-  const handleResetPassword = (e: React.FormEvent) => {
+  const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setSuccessMsg(null);
@@ -157,7 +157,7 @@ export const AuthScreen: React.FC<Props> = ({ onAuthenticated }) => {
       return;
     }
 
-    const res = authService.resetPassword(resetEmail, newPassword);
+    const res = await authService.resetPassword(resetEmail, newPassword);
     if (res.success && res.user) {
       setSuccessMsg('¡Contraseña actualizada con éxito! Ingresando...');
       setTimeout(() => {
@@ -168,7 +168,7 @@ export const AuthScreen: React.FC<Props> = ({ onAuthenticated }) => {
     }
   };
 
-  const handleRegister = (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setSuccessMsg(null);
@@ -183,7 +183,7 @@ export const AuthScreen: React.FC<Props> = ({ onAuthenticated }) => {
       return;
     }
 
-    const res = authService.register({
+    const res = await authService.register({
       name: registerName,
       email: registerEmail,
       password: registerPassword,
@@ -209,11 +209,12 @@ export const AuthScreen: React.FC<Props> = ({ onAuthenticated }) => {
     }
   };
 
-  const handleQuickDemoUser = () => {
+  const handleQuickDemoUser = async () => {
     const founderEmail = 'mariolabbes@gmail.com';
-    let user = authService.login(founderEmail, 'padel123').user;
+    const loginRes = await authService.login(founderEmail, 'padel123');
+    let user = loginRes.user;
     if (!user) {
-      user = authService.register({
+      const regRes = await authService.register({
         name: 'Mario Labbé',
         email: founderEmail,
         password: 'padel123',
@@ -222,7 +223,8 @@ export const AuthScreen: React.FC<Props> = ({ onAuthenticated }) => {
         city: 'Santiago',
         category: '4ta',
         favoritePosition: 'drive'
-      }).user;
+      });
+      user = regRes.user;
     }
     if (user) {
       onAuthenticated(user);

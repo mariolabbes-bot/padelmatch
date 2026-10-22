@@ -318,3 +318,20 @@ export interface PadelNewsItem {
   readTimeMinutes: number;
   source: string;
 }
+
+export interface PadelClub {
+  id: string;
+  name: string;
+  city: 'La Serena' | 'Coquimbo' | string;
+  commune?: string;
+  address?: string;
+  courtsCount?: number;
+  indoorOutdoor?: 'indoor' | 'outdoor' | 'mixto';
+  phone?: string;
+  instagram?: string;
+  website?: string;
+  services?: string[];
+  verified?: boolean;
+  createdAt?: number;
+}
+

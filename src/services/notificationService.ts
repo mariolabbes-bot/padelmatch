@@ -1,6 +1,6 @@
 import type { AppNotification } from '../types/padel';
 
-const NOTIFICATIONS_STORAGE_KEY = 'padelmatch_notifications_feed';
+const NOTIFICATIONS_STORAGE_KEY = 'padelmatch_notifications_v2';
 const NOTIF_PERMISSION_KEY = 'padelmatch_push_permission_requested';
 
 class NotificationService {
@@ -162,47 +162,17 @@ class NotificationService {
     if (typeof localStorage === 'undefined') return;
 
     try {
+      localStorage.removeItem('padelmatch_notifications_feed');
       const saved = localStorage.getItem(NOTIFICATIONS_STORAGE_KEY);
       if (saved) {
         this.notifications = JSON.parse(saved);
       } else {
-        // Initial Demo / Welcome Feed
-        this.notifications = [
-          {
-            id: 'notif-demo-1',
-            type: 'open_match',
-            title: '🎾 ¡Falta 1 en 4ª Categoría!',
-            body: 'Partido hoy a las 19:30 en Club Central Padel (Cancha 2). Buscan jugador de Drive.',
-            timestamp: Date.now() - 1000 * 60 * 25,
-            clubName: 'Club Central Padel',
-            courtName: 'Cancha 2',
-            category: '4ta',
-            read: false
-          },
-          {
-            id: 'notif-demo-2',
-            type: 'friend_invite',
-            title: '✉️ Invitación de Mario Labbé',
-            body: 'Te ha invitado a un partido de revancha este sábado a las 11:00 hrs.',
-            timestamp: Date.now() - 1000 * 60 * 90,
-            clubName: 'Club Padel Oriente',
-            read: false
-          },
-          {
-            id: 'notif-demo-3',
-            type: 'club_offer',
-            title: '🔥 30% Descuento en Pistas Libres',
-            body: 'Club Deportivo Padel: Canchas techadas disponibles hoy entre 14:00 y 17:00 con tarifa promocional.',
-            timestamp: Date.now() - 1000 * 60 * 180,
-            clubName: 'Club Deportivo Padel',
-            discountPercentage: 30,
-            read: true
-          }
-        ];
+        this.notifications = [];
         this.saveToStorage();
       }
     } catch (e) {
       console.warn('Error loading notifications:', e);
+      this.notifications = [];
     }
   }
 

@@ -1,27 +1,43 @@
 import type { CommunityPlayer, MatchRecord, HeadToHeadStats, SetScore, DominantHand, UserPlan, TimeOfDay } from '../types/padel';
+import { 
+  collection, 
+  doc, 
+  setDoc, 
+  deleteDoc, 
+  onSnapshot 
+} from 'firebase/firestore';
+import { db, cleanForFirestore } from './firebase';
 
-const PLAYERS_STORAGE_KEY = 'padelmatch_community_players_v2';
-const MATCHES_STORAGE_KEY = 'padelmatch_community_matches_v2';
+const PLAYERS_STORAGE_KEY = 'padelmatch_community_players_v3';
+const MATCHES_STORAGE_KEY = 'padelmatch_community_matches_v3';
 
 class CommunityService {
   private players: CommunityPlayer[] = [];
   private matches: MatchRecord[] = [];
+  private listeners: Set<() => void> = new Set();
 
   constructor() {
     this.loadFromStorage();
+    this.initFirestoreSync();
   }
 
   private loadFromStorage() {
     try {
       if (typeof window !== 'undefined' && window.localStorage) {
-        // Clear legacy v1 mock data if present
+        // Clear legacy mock versions
         localStorage.removeItem('padelmatch_community_players_v1');
         localStorage.removeItem('padelmatch_community_matches_v1');
+        localStorage.removeItem('padelmatch_community_players_v2');
+        localStorage.removeItem('padelmatch_community_matches_v2');
 
         const rawPlayers = localStorage.getItem(PLAYERS_STORAGE_KEY);
-        this.players = rawPlayers ? JSON.parse(rawPlayers) : [];
+        if (rawPlayers) {
+          const parsed: CommunityPlayer[] = JSON.parse(rawPlayers);
+          // Filter out legacy mock players
+          this.players = parsed.filter(p => !p.id.startsWith('player-'));
+        }
 
-        // Ensure Mario Labbé (Founder) is always seeded in roster
+        // Pristine Mario Labbé (Founder)
         if (!this.players.some(p => p.email?.toLowerCase() === 'mariolabbes@gmail.com')) {
           this.players.unshift({
             id: 'founder-mario-labbe',
@@ -30,23 +46,25 @@ class CommunityService {
             phone: '+56912345678',
             elo: 1400,
             category: '4ta',
-            matchesPlayed: 14,
-            matchesWon: 10,
-            winStreak: 3,
+            matchesPlayed: 0,
+            matchesWon: 0,
+            winStreak: 0,
             favoritePosition: 'drive',
             dominantHand: 'diestro',
             city: 'Santiago',
-            club: 'Club Padel Pro',
+            club: undefined,
             plan: 'pro_founder',
-            registeredAt: 1700000000000,
-            dayMatchesPlayed: 8,
-            dayMatchesWon: 6,
-            nightMatchesPlayed: 6,
-            nightMatchesWon: 4,
-            goldenPointsPlayed: 7,
-            goldenPointsWon: 5
+            registeredAt: Date.now(),
+            dayMatchesPlayed: 0,
+            dayMatchesWon: 0,
+            nightMatchesPlayed: 0,
+            nightMatchesWon: 0,
+            goldenPointsPlayed: 0,
+            goldenPointsWon: 0,
+            tieBreaksPlayed: 0,
+            tieBreaksWon: 0
           });
-          localStorage.setItem(PLAYERS_STORAGE_KEY, JSON.stringify(this.players));
+          this.savePlayers();
         }
 
         const rawMatches = localStorage.getItem(MATCHES_STORAGE_KEY);
@@ -59,6 +77,56 @@ class CommunityService {
       this.players = [];
       this.matches = [];
     }
+  }
+
+  private initFirestoreSync() {
+    try {
+      // 1. Sync Players from Cloud Firestore
+      onSnapshot(collection(db, 'players'), (snapshot) => {
+        const cloudPlayers: CommunityPlayer[] = [];
+        snapshot.forEach(docSnap => {
+          cloudPlayers.push(docSnap.data() as CommunityPlayer);
+        });
+
+        if (cloudPlayers.length > 0) {
+          this.players = cloudPlayers;
+          this.savePlayers();
+          this.notify();
+        } else {
+          // If Firestore is empty, seed clean Mario Labbé
+          const mario = this.players.find(p => p.email?.toLowerCase() === 'mariolabbes@gmail.com');
+          if (mario) {
+            setDoc(doc(db, 'players', mario.id), cleanForFirestore(mario)).catch(console.warn);
+          }
+        }
+      }, (err) => {
+        console.warn('Firestore players sync notice:', err);
+      });
+
+      // 2. Sync Completed Matches from Cloud Firestore
+      onSnapshot(collection(db, 'completed_matches'), (snapshot) => {
+        const cloudMatches: MatchRecord[] = [];
+        snapshot.forEach(docSnap => {
+          cloudMatches.push(docSnap.data() as MatchRecord);
+        });
+        this.matches = cloudMatches;
+        this.saveMatches();
+        this.notify();
+      }, (err) => {
+        console.warn('Firestore matches sync notice:', err);
+      });
+    } catch (e) {
+      console.warn('Firestore sync init error:', e);
+    }
+  }
+
+  public subscribe(listener: () => void): () => void {
+    this.listeners.add(listener);
+    return () => this.listeners.delete(listener);
+  }
+
+  private notify() {
+    this.listeners.forEach(l => l());
   }
 
   public getPlayers(): CommunityPlayer[] {
@@ -136,6 +204,13 @@ class CommunityService {
 
     this.players.push(newPlayer);
     this.savePlayers();
+
+    // Push to Cloud Firestore
+    setDoc(doc(db, 'players', newPlayer.id), cleanForFirestore(newPlayer), { merge: true }).catch(err => {
+      console.warn('Failed to sync player to Firestore:', err);
+    });
+
+    this.notify();
     return newPlayer;
   }
 
@@ -150,6 +225,7 @@ class CommunityService {
       if (phone && !existing.phone) {
         existing.phone = phone;
         this.savePlayers();
+        setDoc(doc(db, 'players', existing.id), cleanForFirestore(existing), { merge: true }).catch(console.warn);
       }
       return existing;
     }
@@ -160,6 +236,8 @@ class CommunityService {
   public deletePlayer(id: string) {
     this.players = this.players.filter(p => p.id !== id);
     this.savePlayers();
+    deleteDoc(doc(db, 'players', id)).catch(console.warn);
+    this.notify();
   }
 
   public clearAllData() {
@@ -171,6 +249,7 @@ class CommunityService {
     } catch {
       // ignore
     }
+    this.notify();
   }
 
   public saveMatchResult(
@@ -192,7 +271,6 @@ class CommunityService {
     const team1SetsWon = sets.filter(s => s.team1 > s.team2).length;
     const team2SetsWon = sets.filter(s => s.team2 > s.team1).length;
 
-    // Detect if match was played with Natural Light (08:00 - 18:30) or Artificial Light (18:30+)
     const currentHour = new Date().getHours();
     const timeOfDay: TimeOfDay = (currentHour >= 8 && currentHour < 19) ? 'day' : 'night';
 
@@ -242,7 +320,7 @@ class CommunityService {
             nightMatchesPlayed: (p.nightMatchesPlayed || 0) + (isNight ? 1 : 0),
             nightMatchesWon: (p.nightMatchesWon || 0) + (isNight ? 1 : 0),
             goldenPointsPlayed: (p.goldenPointsPlayed || 0) + gpCount,
-            goldenPointsWon: (p.goldenPointsWon || 0) + Math.ceil(gpCount * 0.6), // Estimación proporcional
+            goldenPointsWon: (p.goldenPointsWon || 0) + Math.ceil(gpCount * 0.6),
             tieBreaksPlayed: (p.tieBreaksPlayed || 0) + tbCount,
             tieBreaksWon: (p.tieBreaksWon || 0) + (tbCount > 0 ? 1 : 0)
           };
@@ -268,7 +346,6 @@ class CommunityService {
         return p;
       });
     } else {
-      // Unfinished match without declared winner
       this.players = this.players.map(p => {
         if ([...team1PlayerNames, ...team2PlayerNames].includes(p.name)) {
           return {
@@ -288,6 +365,19 @@ class CommunityService {
     });
 
     this.savePlayers();
+
+    // Sync match and players to Cloud Firestore
+    setDoc(doc(db, 'completed_matches', record.id), cleanForFirestore(record)).catch(err => {
+      console.warn('Failed to sync completed match to Firestore:', err);
+    });
+
+    this.players.forEach(p => {
+      if ([...team1PlayerNames, ...team2PlayerNames].includes(p.name)) {
+        setDoc(doc(db, 'players', p.id), cleanForFirestore(p), { merge: true }).catch(console.warn);
+      }
+    });
+
+    this.notify();
     return record;
   }
 
@@ -307,7 +397,6 @@ class CommunityService {
       const rivalTeam = isTeam1 ? m.team2 : m.team1;
       const won = (m.winner === 'team1' && isTeam1) || (m.winner === 'team2' && isTeam2);
 
-      // Partner
       const partner = myTeam.playerNames.find(p => p !== player.name);
       if (partner) {
         if (!partnerStats[partner]) partnerStats[partner] = { matches: 0, wins: 0 };
@@ -315,7 +404,6 @@ class CommunityService {
         if (won) partnerStats[partner].wins++;
       }
 
-      // Rivals
       rivalTeam.playerNames.forEach(rival => {
         if (!rivalStats[rival]) rivalStats[rival] = { matches: 0, losses: 0 };
         rivalStats[rival].matches++;
@@ -323,7 +411,6 @@ class CommunityService {
       });
     });
 
-    // Best Partner: partner with highest win rate (min 1 match)
     let bestPartner: { name: string; winRate: number; matchesTogether: number } | undefined;
     let maxPartnerScore = -1;
     Object.entries(partnerStats).forEach(([name, s]) => {
@@ -334,7 +421,6 @@ class CommunityService {
       }
     });
 
-    // Nemesis: rival against whom player has most losses / highest loss rate
     let nemesis: { name: string; lossRate: number; matchesAgainst: number } | undefined;
     let maxNemesisLosses = 0;
     Object.entries(rivalStats).forEach(([name, s]) => {

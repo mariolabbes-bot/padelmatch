@@ -1,15 +1,35 @@
 import type { PadelGroup, GroupCallout, GroupMember, CommunityPlayer, PlayerCategory } from '../types/padel';
 import { communityService } from './communityService';
 import { notificationService } from './notificationService';
+import { 
+  collection, 
+  doc, 
+  setDoc, 
+  deleteDoc,
+  onSnapshot 
+} from 'firebase/firestore';
+import { db, cleanForFirestore } from './firebase';
 
-const GROUPS_STORAGE_KEY = 'padelmatch_groups_v1';
+const GROUPS_STORAGE_KEY = 'padelmatch_groups_v3';
 
 class GroupService {
   private groups: PadelGroup[] = [];
   private listeners: Set<() => void> = new Set();
 
   constructor() {
+    this.cleanupLegacyStorage();
     this.loadFromStorage();
+    this.initFirestoreSync();
+  }
+
+  private cleanupLegacyStorage() {
+    if (typeof window === 'undefined' || !window.localStorage) return;
+    try {
+      localStorage.removeItem('padelmatch_groups_v1');
+      localStorage.removeItem('padelmatch_groups_v2');
+    } catch {
+      // ignore
+    }
   }
 
   private loadFromStorage() {
@@ -20,7 +40,7 @@ class GroupService {
     try {
       const raw = localStorage.getItem(GROUPS_STORAGE_KEY);
       if (raw) {
-        this.groups = JSON.parse(raw);
+        this.groups = (JSON.parse(raw) as PadelGroup[]).filter(g => g && g.id !== 'grp-cruzados-4ta');
       } else {
         this.seedInitialGroups();
       }
@@ -29,15 +49,46 @@ class GroupService {
     }
   }
 
-  private saveToStorage() {
+  private initFirestoreSync() {
+    try {
+      // Purge any legacy mock group from remote Firestore
+      deleteDoc(doc(db, 'groups', 'grp-cruzados-4ta')).catch(() => {});
+
+      onSnapshot(collection(db, 'groups'), (snapshot) => {
+        const cloudGroups: PadelGroup[] = [];
+        snapshot.forEach(docSnap => {
+          if (docSnap.id === 'grp-cruzados-4ta') {
+            deleteDoc(doc(db, 'groups', 'grp-cruzados-4ta')).catch(() => {});
+            return;
+          }
+          cloudGroups.push(docSnap.data() as PadelGroup);
+        });
+
+        this.groups = cloudGroups;
+        this.saveToStorage(false);
+      }, (err) => {
+        console.warn('Firestore groups sync notice:', err);
+      });
+    } catch (e) {
+      console.warn('Error starting Firestore groups sync:', e);
+    }
+  }
+
+  private saveToStorage(syncToCloud = true) {
     if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
       this.notify();
       return;
     }
     try {
+      this.groups = this.groups.filter(g => g.id !== 'grp-cruzados-4ta');
       localStorage.setItem(GROUPS_STORAGE_KEY, JSON.stringify(this.groups));
     } catch (e) {
       console.warn('Error saving groups:', e);
+    }
+    if (syncToCloud) {
+      this.groups.filter(g => g.id !== 'grp-cruzados-4ta').forEach(g => {
+        setDoc(doc(db, 'groups', g.id), cleanForFirestore(g), { merge: true }).catch(console.warn);
+      });
     }
     this.notify();
   }
@@ -52,204 +103,8 @@ class GroupService {
   }
 
   private seedInitialGroups() {
-    const players = communityService.getPlayers();
-    const mario = players.find(p => p.email === 'mariolabbes@gmail.com') || players[0] || {
-      id: 'founder-mario-labbe',
-      name: 'Mario Labbé',
-      category: '4ta' as const,
-      elo: 1400
-    };
-    const fernando = players.find(p => p.name.includes('Fernando')) || players[1] || {
-      id: 'player-fernando',
-      name: 'Fernando González',
-      category: '4ta' as const,
-      elo: 1420
-    };
-    const matias = players.find(p => p.name.includes('Matías')) || players[2] || {
-      id: 'player-matias',
-      name: 'Matías Silva',
-      category: '4ta' as const,
-      elo: 1380
-    };
-    const rodrigo = players.find(p => p.name.includes('Rodrigo')) || players[3] || {
-      id: 'player-rodrigo',
-      name: 'Rodrigo Valenzuela',
-      category: '4ta' as const,
-      elo: 1395
-    };
-    const ignacio = players.find(p => p.name.includes('Ignacio')) || players[4] || {
-      id: 'player-ignacio',
-      name: 'Ignacio Morales',
-      category: '4ta' as const,
-      elo: 1360
-    };
-    const diego = players.find(p => p.name.includes('Diego')) || players[5] || {
-      id: 'player-diego',
-      name: 'Diego Castro',
-      category: '4ta' as const,
-      elo: 1350
-    };
-    const cristian = players.find(p => p.name.includes('Cristian')) || players[6] || {
-      id: 'player-cristian',
-      name: 'Cristian Rojas',
-      category: '4ta' as const,
-      elo: 1340
-    };
-
-    const initialMembers1: GroupMember[] = [
-      {
-        playerId: mario.id,
-        name: mario.name,
-        category: mario.category,
-        elo: mario.elo,
-        role: 'admin',
-        joinedAt: Date.now() - 30 * 86400000,
-        matchesPlayedInGroup: 12
-      },
-      {
-        playerId: fernando.id,
-        name: fernando.name,
-        category: fernando.category,
-        elo: fernando.elo,
-        role: 'member',
-        joinedAt: Date.now() - 25 * 86400000,
-        matchesPlayedInGroup: 10
-      },
-      {
-        playerId: matias.id,
-        name: matias.name,
-        category: matias.category,
-        elo: matias.elo,
-        role: 'member',
-        joinedAt: Date.now() - 20 * 86400000,
-        matchesPlayedInGroup: 8
-      },
-      {
-        playerId: rodrigo.id,
-        name: rodrigo.name,
-        category: rodrigo.category,
-        elo: rodrigo.elo,
-        role: 'member',
-        joinedAt: Date.now() - 18 * 86400000,
-        matchesPlayedInGroup: 7
-      },
-      {
-        playerId: ignacio.id,
-        name: ignacio.name,
-        category: ignacio.category,
-        elo: ignacio.elo,
-        role: 'member',
-        joinedAt: Date.now() - 15 * 86400000,
-        matchesPlayedInGroup: 6
-      },
-      {
-        playerId: diego.id,
-        name: diego.name,
-        category: diego.category,
-        elo: diego.elo,
-        role: 'member',
-        joinedAt: Date.now() - 10 * 86400000,
-        matchesPlayedInGroup: 5
-      },
-      {
-        playerId: cristian.id,
-        name: cristian.name,
-        category: cristian.category,
-        elo: cristian.elo,
-        role: 'member',
-        joinedAt: Date.now() - 5 * 86400000,
-        matchesPlayedInGroup: 3
-      }
-    ];
-
-    // Seed callout with 7 players accepted -> Missing 1 to reach multiple of 4 (8 players / 2 courts)
-    const callout1: GroupCallout = {
-      id: 'callout-jueves-pro',
-      groupId: 'grp-cruzados-4ta',
-      creatorId: mario.id,
-      creatorName: mario.name,
-      clubName: 'Club Padel Oriente',
-      courtName: 'Cancha 1 y Cancha 2',
-      matchDate: new Date(Date.now() + 86400000 * 2).toISOString().split('T')[0],
-      matchTime: '19:30',
-      deadlineTime: 'Jueves 14:00 hrs',
-      categoryTarget: '4ta',
-      acceptedPlayerIds: [mario.id, fernando.id, matias.id, rodrigo.id, ignacio.id, diego.id, cristian.id],
-      rejectedPlayerIds: [],
-      status: 'open',
-      notes: '¡Convocatoria para 2 canchas (8 cupos)! Falta 1 para cerrar.',
-      createdAt: Date.now() - 3600000 * 5
-    };
-
-    this.groups = [
-      {
-        id: 'grp-cruzados-4ta',
-        name: 'Los Cruzados del Pádel (4ª Cat)',
-        description: 'Grupo oficial de partidos semanales martes y jueves. Competitividad alta, tercer tiempo asegurado.',
-        city: 'Santiago',
-        clubPreferred: 'Club Padel Oriente',
-        categoryLevel: '4ta',
-        members: initialMembers1,
-        callouts: [callout1],
-        createdAt: Date.now() - 86400000 * 45,
-        avatar: '🎾'
-      },
-      {
-        id: 'grp-nocturno-oriente',
-        name: 'Pádel Nocturno Santiago',
-        description: 'Partidos bajo foco artificial después de las 20:00 hrs. Categorías 3ª y 4ª.',
-        city: 'Santiago',
-        clubPreferred: 'Club Padel Pro La Dehesa',
-        categoryLevel: 'abierta',
-        members: [
-          {
-            playerId: mario.id,
-            name: mario.name,
-            category: mario.category,
-            elo: mario.elo,
-            role: 'member',
-            joinedAt: Date.now() - 15 * 86400000,
-            matchesPlayedInGroup: 4
-          },
-          {
-            playerId: fernando.id,
-            name: fernando.name,
-            category: fernando.category,
-            elo: fernando.elo,
-            role: 'admin',
-            joinedAt: Date.now() - 40 * 86400000,
-            matchesPlayedInGroup: 18
-          }
-        ],
-        callouts: [],
-        createdAt: Date.now() - 86400000 * 60,
-        avatar: '🌙'
-      },
-      {
-        id: 'grp-circuito-chile',
-        name: 'Circuito Americano Metropolitano',
-        description: 'Torneos relámpago americanos de 2 horas. Cambios de pareja y ranking acumulado.',
-        city: 'Santiago',
-        clubPreferred: 'Padel Center Ciudad Deportiva',
-        categoryLevel: 'abierta',
-        members: [
-          {
-            playerId: mario.id,
-            name: mario.name,
-            category: mario.category,
-            elo: mario.elo,
-            role: 'member',
-            joinedAt: Date.now() - 10 * 86400000,
-            matchesPlayedInGroup: 2
-          }
-        ],
-        callouts: [],
-        createdAt: Date.now() - 86400000 * 30,
-        avatar: '🏆'
-      }
-    ];
-
-    this.saveToStorage();
+    this.groups = [];
+    this.saveToStorage(false);
   }
 
   public getGroups(): PadelGroup[] {

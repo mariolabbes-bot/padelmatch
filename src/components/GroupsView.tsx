@@ -27,6 +27,7 @@ import {
   Check,
   Share2
 } from 'lucide-react';
+import { ClubSelectCombobox } from './ClubSelectCombobox';
 
 interface Props {
   currentUser: UserSession;
@@ -41,7 +42,7 @@ export const GroupsView: React.FC<Props> = ({
 }) => {
   const [theme, setTheme] = useState<AppTheme>(themeService.getTheme());
   const [groups, setGroups] = useState<PadelGroup[]>(() => groupService.getGroups());
-  const [selectedGroupId, setSelectedGroupId] = useState<string | null>('grp-cruzados-4ta');
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'my_groups' | 'explore'>('my_groups');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -64,19 +65,29 @@ export const GroupsView: React.FC<Props> = ({
   // New Group Form
   const [newGroupName, setNewGroupName] = useState('');
   const [newGroupDesc, setNewGroupDesc] = useState('');
-  const [newGroupClub, setNewGroupClub] = useState('Club Padel Oriente');
-  const [newGroupCity, setNewGroupCity] = useState('Santiago');
+  const [newGroupClubs, setNewGroupClubs] = useState<string[]>([]);
+  const [newGroupCity, setNewGroupCity] = useState('La Serena');
   const [newGroupCategory, setNewGroupCategory] = useState<'1ra' | '2da' | '3ra' | '4ta' | '5ta' | '6ta' | '7ma' | 'abierta'>('4ta');
   const [selectedInitialMembers, setSelectedInitialMembers] = useState<CommunityPlayer[]>([]);
   const [initialMemberSearch, setInitialMemberSearch] = useState('');
 
   // New Callout Form
-  const [calloutClub, setCalloutClub] = useState('Club Padel Oriente');
-  const [calloutCourt, setCalloutCourt] = useState('Pista 1 & Pista 2');
+  const [calloutClub, setCalloutClub] = useState('');
+  const [calloutCourt, setCalloutCourt] = useState('');
   const [calloutDate, setCalloutDate] = useState(new Date().toISOString().split('T')[0]);
   const [calloutTime, setCalloutTime] = useState('19:30');
   const [calloutDeadline, setCalloutDeadline] = useState('Jueves 14:00 hrs');
-  const [calloutNotes, setCalloutNotes] = useState('Convocatoria para 2 canchas (8 jugadores en total)');
+  const [calloutNotes, setCalloutNotes] = useState('');
+
+  const openCreateCallout = () => {
+    if (selectedGroup && selectedGroup.clubPreferred) {
+      const first = selectedGroup.clubPreferred.split(',')[0].trim();
+      if (first && !first.toLowerCase().includes('club de pádel')) {
+        setCalloutClub(first);
+      }
+    }
+    setIsCreateCalloutModalOpen(true);
+  };
 
   useEffect(() => {
     const unsubTheme = themeService.subscribe(setTheme);
@@ -153,7 +164,7 @@ export const GroupsView: React.FC<Props> = ({
       name: newGroupName,
       description: newGroupDesc,
       city: newGroupCity,
-      clubPreferred: newGroupClub,
+      clubPreferred: newGroupClubs.length > 0 ? newGroupClubs.join(', ') : 'Clubes de Pádel',
       categoryLevel: newGroupCategory,
       creator: {
         id: currentUser.id,
@@ -171,6 +182,7 @@ export const GroupsView: React.FC<Props> = ({
     setInitialMemberSearch('');
     setNewGroupName('');
     setNewGroupDesc('');
+    setNewGroupClubs([]);
 
     // Open invite modal to share via WhatsApp or invite more
     setIsInviteModalOpen(true);
@@ -358,13 +370,50 @@ export const GroupsView: React.FC<Props> = ({
             </div>
 
             <div style={groupsListScrollStyle}>
-              {groups
-                .filter(g => {
+              {(() => {
+                const filteredGroups = groups.filter(g => {
                   const matchesTab = activeTab === 'explore' || g.members.some(m => m.playerId === currentUser.id);
                   const matchesSearch = !searchQuery || g.name.toLowerCase().includes(searchQuery.toLowerCase()) || g.clubPreferred.toLowerCase().includes(searchQuery.toLowerCase());
                   return matchesTab && matchesSearch;
-                })
-                .map(group => {
+                });
+
+                if (filteredGroups.length === 0) {
+                  return (
+                    <div style={{ textAlign: 'center', padding: '36px 16px', color: 'var(--text-muted)' }}>
+                      <div style={{ fontSize: '2.4rem', marginBottom: '10px' }}>🎾</div>
+                      <div style={{ fontWeight: 800, fontSize: '0.92rem', color: 'var(--text-main)', marginBottom: '6px' }}>
+                        {searchQuery ? 'No se encontraron grupos' : (activeTab === 'my_groups' ? 'Aún no perteneces a ningún grupo' : 'No hay grupos registrados')}
+                      </div>
+                      <div style={{ fontSize: '0.78rem', marginBottom: '16px', lineHeight: 1.4 }}>
+                        {searchQuery ? 'Prueba con otro término de búsqueda.' : 'Crea tu propio grupo para organizar partidos y armar tu comunidad.'}
+                      </div>
+                      {!searchQuery && (
+                        <button
+                          type="button"
+                          onClick={() => setIsCreateGroupModalOpen(true)}
+                          style={{
+                            padding: '10px 18px',
+                            borderRadius: '10px',
+                            background: 'var(--bg-elevated)',
+                            border: '1px solid var(--border-subtle)',
+                            color: 'var(--team1-primary)',
+                            fontWeight: 800,
+                            fontSize: '0.82rem',
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px'
+                          }}
+                        >
+                          <Plus size={14} />
+                          <span>Crear Nuevo Grupo</span>
+                        </button>
+                      )}
+                    </div>
+                  );
+                }
+
+                return filteredGroups.map(group => {
                   const isSelected = selectedGroupId === group.id;
                   const activeCalloutsCount = group.callouts.filter(c => c.status === 'open').length;
                   return (
@@ -402,7 +451,8 @@ export const GroupsView: React.FC<Props> = ({
                       )}
                     </div>
                   );
-                })}
+                });
+              })()}
             </div>
 
             {/* Mobile Create Group Action Card */}
@@ -491,7 +541,7 @@ export const GroupsView: React.FC<Props> = ({
 
                   <button
                     type="button"
-                    onClick={() => setIsCreateCalloutModalOpen(true)}
+                    onClick={openCreateCallout}
                     style={{
                       ...primaryActionBtnStyle,
                       justifyContent: 'center',
@@ -526,7 +576,7 @@ export const GroupsView: React.FC<Props> = ({
                   </div>
                   <button
                     type="button"
-                    onClick={() => setIsCreateCalloutModalOpen(true)}
+                    onClick={openCreateCallout}
                     style={{ ...primaryMiniBtn, marginTop: '14px' }}
                   >
                     <Plus size={14} />
@@ -789,6 +839,52 @@ export const GroupsView: React.FC<Props> = ({
             </div>
           </main>
         )}
+
+        {/* Right Column Empty State when no group is selected or available */}
+        {!selectedGroup && (!isMobile || mobileTab === 'detail') && (
+          <main style={{
+            ...groupDetailMainStyle,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            textAlign: 'center',
+            padding: isMobile ? '32px 16px' : '48px 24px',
+            background: 'var(--bg-elevated)',
+            border: '1px dashed var(--border-subtle)',
+            borderRadius: '16px',
+            minHeight: '360px'
+          }}>
+            <div style={{ fontSize: '3rem', marginBottom: '16px' }}>🎾</div>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-main)', marginBottom: '8px' }}>
+              Crea tu Primer Grupo de Pádel
+            </h3>
+            <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)', maxWidth: '420px', lineHeight: 1.5, marginBottom: '20px' }}>
+              Reúne a tus amigos, compañeros de club o jugadores de tu misma categoría. Podrás lanzar convocatorias para partidos, armar duplas y llevar las estadísticas de todos.
+            </p>
+            <button
+              type="button"
+              onClick={() => setIsCreateGroupModalOpen(true)}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '12px 24px',
+                borderRadius: '12px',
+                background: 'linear-gradient(135deg, var(--team1-primary), #00c853)',
+                color: '#000',
+                fontWeight: 800,
+                fontSize: '0.9rem',
+                border: 'none',
+                cursor: 'pointer',
+                boxShadow: '0 4px 14px rgba(0, 230, 118, 0.3)'
+              }}
+            >
+              <Plus size={18} />
+              <span>+ Crear Nuevo Grupo</span>
+            </button>
+          </main>
+        )}
       </div>
 
       {/* MODAL: CREAR NUEVO GRUPO */}
@@ -827,29 +923,28 @@ export const GroupsView: React.FC<Props> = ({
                 />
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '10px' }}>
-                <div>
-                  <label style={formLabel}>Club Preferido</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Ej: Club Padel Oriente"
-                    value={newGroupClub}
-                    onChange={e => setNewGroupClub(e.target.value)}
-                    style={formInput}
-                  />
-                </div>
-                <div>
-                  <label style={formLabel}>Ciudad</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Ej: Santiago"
-                    value={newGroupCity}
-                    onChange={e => setNewGroupCity(e.target.value)}
-                    style={formInput}
-                  />
-                </div>
+              <div>
+                <ClubSelectCombobox
+                  multiple={true}
+                  values={newGroupClubs}
+                  onMultipleChange={setNewGroupClubs}
+                  label="Club(es) Preferido(s) del Grupo"
+                  placeholder="Selecciona uno o más clubes donde juegan habitualmente..."
+                />
+              </div>
+
+              <div>
+                <label style={formLabel}>Ciudad Principal</label>
+                <select
+                  value={newGroupCity}
+                  onChange={e => setNewGroupCity(e.target.value)}
+                  style={formInput}
+                >
+                  <option value="La Serena">La Serena</option>
+                  <option value="Coquimbo">Coquimbo</option>
+                  <option value="La Serena - Coquimbo">La Serena - Coquimbo (Conurbación)</option>
+                  <option value="Otra">Otra Ciudad</option>
+                </select>
               </div>
 
               <div>
@@ -1013,22 +1108,22 @@ export const GroupsView: React.FC<Props> = ({
             </div>
 
             <form onSubmit={handleCreateCallout} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '10px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1.3fr 0.7fr', gap: '10px', alignItems: 'flex-start' }}>
                 <div>
-                  <label style={formLabel}>Club Sede</label>
-                  <input
-                    type="text"
-                    required
+                  <ClubSelectCombobox
+                    multiple={false}
                     value={calloutClub}
-                    onChange={e => setCalloutClub(e.target.value)}
-                    style={formInput}
+                    onChange={(clubName) => setCalloutClub(clubName)}
+                    label="Club Sede de la Convocatoria"
+                    placeholder="Selecciona club de La Serena o Coquimbo..."
+                    required={true}
                   />
                 </div>
                 <div>
                   <label style={formLabel}>Pista / Cancha</label>
                   <input
                     type="text"
-                    placeholder="Ej: Pista 1 & 2"
+                    placeholder="Ej: Cancha 1 y 2"
                     value={calloutCourt}
                     onChange={e => setCalloutCourt(e.target.value)}
                     style={formInput}

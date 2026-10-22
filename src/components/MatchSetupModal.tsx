@@ -11,6 +11,7 @@ import type {
 import type { UserSession } from '../services/authService';
 import { partnerService } from '../services/partnerService';
 import { Settings2, X } from 'lucide-react';
+import { ClubSelectCombobox } from './ClubSelectCombobox';
 
 interface Props {
   isOpen: boolean;
@@ -98,7 +99,37 @@ export const MatchSetupModal: React.FC<Props> = ({
     category: teams.team2.player2.category
   }));
 
-  const [courtName, setCourtName] = useState(rules.courtName || 'Pista Central');
+  const [courtName, setCourtName] = useState(rules.courtName || 'Pista 1');
+  const [selectedClub, setSelectedClub] = useState(() => {
+    if (rules.courtName && rules.courtName.includes(' - ')) {
+      return rules.courtName.split(' - ')[1].trim();
+    }
+    return '';
+  });
+  const [specificCourt, setSpecificCourt] = useState(() => {
+    if (rules.courtName && rules.courtName.includes(' - ')) {
+      return rules.courtName.split(' - ')[0].trim();
+    }
+    return rules.courtName || 'Pista 1';
+  });
+
+  const handleClubChange = (clubName: string) => {
+    setSelectedClub(clubName);
+    if (clubName) {
+      setCourtName(`${specificCourt || 'Pista 1'} - ${clubName}`);
+    } else {
+      setCourtName(specificCourt || 'Pista 1');
+    }
+  };
+
+  const handleSpecificCourtChange = (val: string) => {
+    setSpecificCourt(val);
+    if (selectedClub) {
+      setCourtName(`${val || 'Pista 1'} - ${selectedClub}`);
+    } else {
+      setCourtName(val || 'Pista 1');
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -598,14 +629,25 @@ export const MatchSetupModal: React.FC<Props> = ({
 
           {/* Court / Venue */}
           <div style={{ marginBottom: '24px' }}>
-            <label style={sectionTitleStyle}>Nombre de Cancha / Club</label>
-            <input
-              type="text"
-              placeholder="Ej: Cancha Central - Club Padel Las Condes"
-              value={courtName}
-              onChange={e => setCourtName(e.target.value)}
-              style={inputStyle}
-            />
+            <label style={sectionTitleStyle}>Club y Cancha del Partido</label>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 140px', gap: '10px', alignItems: 'flex-start' }}>
+              <ClubSelectCombobox
+                value={selectedClub}
+                onChange={handleClubChange}
+                placeholder="Seleccionar club de La Serena o Coquimbo..."
+              />
+              <input
+                type="text"
+                placeholder="Ej: Cancha 1"
+                value={specificCourt}
+                onChange={e => handleSpecificCourtChange(e.target.value)}
+                style={{ ...inputStyle, height: '44px', boxSizing: 'border-box' }}
+                title="Número o nombre de cancha específica"
+              />
+            </div>
+            <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', marginTop: '6px' }}>
+              📍 Sede asignada: <strong style={{ color: 'var(--team1-primary)' }}>{courtName || 'Pista 1'}</strong>
+            </div>
           </div>
 
           {/* Footer */}

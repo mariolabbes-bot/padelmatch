@@ -19,23 +19,24 @@ declare const process: any;
 
 console.log('🧪 Starting Monetization & Guest History Test Suite...\n');
 
-// 1. Register test free user
-const regRes = authService.register({
-  name: 'Juan Perez Test',
-  email: 'juan.perez@test.cl',
-  password: 'password123',
-  category: '5ta',
-  favoritePosition: 'drive',
-  phone: '+56999887766'
-});
+async function run() {
+  // 1. Register test free user
+  const regRes = await authService.register({
+    name: 'Juan Perez Test',
+    email: 'juan.perez@test.cl',
+    password: 'password123',
+    category: '5ta',
+    favoritePosition: 'drive',
+    phone: '+56999887766'
+  });
 
-if (!regRes.success || !regRes.user) {
-  console.error('❌ Failed to register test user:', regRes.error);
-  process.exit(1);
-}
+  if (!regRes.success || !regRes.user) {
+    console.error('❌ Failed to register test user:', regRes.error);
+    process.exit(1);
+  }
 
-const user = regRes.user!;
-console.log(`✅ Registered user: ${user.name} (${user.email}), Plan: ${user.plan}`);
+  const user = regRes.user!;
+  console.log(`✅ Registered user: ${user.name} (${user.email}), Plan: ${user.plan}`);
 
 // 2. Check initial courtesy matches
 const initialRemaining = authService.getHostedMatchesRemaining(user);
@@ -108,6 +109,22 @@ if (!claimRes.success || claimRes.claimedMatches !== 4) {
   console.error(`❌ Claim failed or wrong claimed matches:`, claimRes);
   process.exit(1);
 }
-console.log(`✅ Claimed matches transferred. New User ELO: ${authService.getCurrentUser()?.elo}`);
+  // Clean up test records
+  try {
+    const { db } = await import('../services/firebase');
+    const { deleteDoc, doc } = await import('firebase/firestore');
+    await deleteDoc(doc(db, 'users', 'juan.perez@test.cl'));
+    if (user.id) await deleteDoc(doc(db, 'players', user.id));
+    await deleteDoc(doc(db, 'players', 'guest-xyz789'));
+  } catch {
+    // ignore
+  }
 
-console.log('\n🏆 ALL MONETIZATION & UX TESTS PASSED SUCCESSFULLY! 🎾');
+  console.log('\n🏆 ALL MONETIZATION & UX TESTS PASSED SUCCESSFULLY! 🎾');
+  process.exit(0);
+}
+
+run().catch((err) => {
+  console.error('Unhandled test failure:', err);
+  process.exit(1);
+});

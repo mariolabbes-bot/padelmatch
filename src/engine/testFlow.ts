@@ -1,6 +1,10 @@
 import { createInitialMatchState, scorePoint } from './padelEngine';
 import { communityService } from '../services/communityService';
 import type { MatchRules, Team } from '../types/padel';
+import { doc, deleteDoc } from 'firebase/firestore';
+import { db } from '../services/firebase';
+
+declare const process: any;
 
 function assert(condition: boolean, msg: string) {
   if (!condition) {
@@ -98,4 +102,9 @@ const updatedP1 = communityService.searchPlayer('Juan Lebrón')[0];
 assert(updatedP1.elo === initialP1Elo, `ELO unchanged for unfinished match (ELO=${updatedP1.elo})`);
 assert(updatedP1.matchesPlayed > 0, 'Match was counted in player history');
 
+// Clean up test player & test match record
+deleteDoc(doc(db, 'players', updatedP1.id)).catch(console.warn);
+deleteDoc(doc(db, 'completed_matches', record.id)).catch(console.warn);
+
 console.log('\n🎉 ALL INTEGRATION FLOW TESTS PASSED SUCCESSFULLY!');
+process.exit(0);

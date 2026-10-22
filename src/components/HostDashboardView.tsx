@@ -592,54 +592,56 @@ export const HostDashboardView: React.FC<Props> = ({
             )}
           </div>
 
-          {/* Club Campaigns & Special Offers */}
-          <div style={sidebarCardStyle} className="glass-panel apple-card">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '12px' }}>
-              <Sparkles size={16} color="var(--team2-primary)" />
-              <h4 style={sidebarTitleStyle}>Campañas y Ofertas de Clubes</h4>
-            </div>
+          {/* Club Campaigns & Special Offers (Only rendered if official active campaigns exist) */}
+          {clubCampaigns.length > 0 && (
+            <div style={sidebarCardStyle} className="glass-panel apple-card">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '12px' }}>
+                <Sparkles size={16} color="var(--team2-primary)" />
+                <h4 style={sidebarTitleStyle}>Campañas y Ofertas de Clubes</h4>
+              </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {clubCampaigns.map(camp => (
-                <div key={camp.id} style={campaignCardStyle}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <span style={{ fontSize: '0.68rem', color: 'var(--team2-primary)', fontWeight: 800 }}>
-                      📍 {camp.clubName} ({camp.clubCity})
-                    </span>
-                    {camp.discountLabel && (
-                      <span className="badge badge-team2" style={{ fontSize: '0.62rem' }}>
-                        {camp.discountLabel}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {clubCampaigns.map(camp => (
+                  <div key={camp.id} style={campaignCardStyle}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <span style={{ fontSize: '0.68rem', color: 'var(--team2-primary)', fontWeight: 800 }}>
+                        📍 {camp.clubName} ({camp.clubCity})
                       </span>
-                    )}
-                  </div>
+                      {camp.discountLabel && (
+                        <span className="badge badge-team2" style={{ fontSize: '0.62rem' }}>
+                          {camp.discountLabel}
+                        </span>
+                      )}
+                    </div>
 
-                  <h5 style={{ fontSize: '0.88rem', fontWeight: 800, color: '#fff', margin: '4px 0 2px' }}>
-                    {camp.title}
-                  </h5>
-                  <p style={{ fontSize: '0.74rem', color: 'var(--text-muted)', margin: '0 0 8px' }}>
-                    {camp.description}
-                  </p>
+                    <h5 style={{ fontSize: '0.88rem', fontWeight: 800, color: '#fff', margin: '4px 0 2px' }}>
+                      {camp.title}
+                    </h5>
+                    <p style={{ fontSize: '0.74rem', color: 'var(--text-muted)', margin: '0 0 8px' }}>
+                      {camp.description}
+                    </p>
 
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border-subtle)', paddingTop: '6px' }}>
-                    <span style={{ fontSize: '0.65rem', color: 'var(--text-dim)' }}>
-                      {camp.validUntil}
-                    </span>
-                    {camp.contactPhone && (
-                      <a
-                        href={`https://wa.me/${camp.contactPhone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`Hola! Vi la promo "${camp.title}" en PadelMatch y me gustaría consultar disponibilidad de pista.`)}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        style={whatsappContactBtnStyle}
-                      >
-                        <span>Reservar Pista</span>
-                        <ExternalLink size={11} />
-                      </a>
-                    )}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border-subtle)', paddingTop: '6px' }}>
+                      <span style={{ fontSize: '0.65rem', color: 'var(--text-dim)' }}>
+                        {camp.validUntil}
+                      </span>
+                      {camp.contactPhone && (
+                        <a
+                          href={`https://wa.me/${camp.contactPhone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`Hola! Vi la promo "${camp.title}" en PadelMatch y me gustaría consultar disponibilidad de pista.`)}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          style={whatsappContactBtnStyle}
+                        >
+                          <span>Reservar Pista</span>
+                          <ExternalLink size={11} />
+                        </a>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Sport News & Insights */}
           <div style={sidebarCardStyle} className="glass-panel apple-card">

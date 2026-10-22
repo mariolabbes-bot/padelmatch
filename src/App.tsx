@@ -175,7 +175,7 @@ export function App() {
     tieBreakRule: 'standard',
     thirdSetRule: 'super_tiebreak',
     superTieBreakTarget: 10,
-    courtName: 'Pista Central - Club Padel Pro'
+    courtName: 'Pista 1'
   });
 
   // 5. Teams & Players

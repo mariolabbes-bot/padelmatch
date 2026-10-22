@@ -1,5 +1,13 @@
 import type { CommunityPlayer, DominantHand, UserPlan, SubscriptionTier } from '../types/padel';
 import { communityService } from './communityService';
+import { 
+  collection, 
+  doc, 
+  getDoc, 
+  setDoc, 
+  onSnapshot 
+} from 'firebase/firestore';
+import { db, cleanForFirestore } from './firebase';
 
 export interface UserSession {
   id: string;
@@ -24,7 +32,7 @@ interface StoredUserCredential {
   name: string;
   email: string;
   phone?: string;
-  passwordHash: string; // Stored securely in client storage
+  passwordHash: string;
   category: CommunityPlayer['category'];
   favoritePosition: 'drive' | 'reves' | 'ambas';
   dominantHand?: DominantHand;
@@ -37,15 +45,29 @@ interface StoredUserCredential {
   createdAt: number;
 }
 
-const AUTH_STORAGE_KEY = 'padelmatch_auth_session_v1';
-const USERS_REGISTRY_KEY = 'padelmatch_registered_users_v2';
+const AUTH_STORAGE_KEY = 'padelmatch_auth_session_v3';
+const USERS_REGISTRY_KEY = 'padelmatch_registered_users_v3';
 
 class AuthService {
   private currentUser: UserSession | null = null;
   private listeners: Set<(user: UserSession | null) => void> = new Set();
 
   constructor() {
+    this.cleanupLegacyStorage();
     this.restoreSession();
+    this.initFirestoreSync();
+  }
+
+  private cleanupLegacyStorage() {
+    if (typeof window === 'undefined' || !window.localStorage) return;
+    try {
+      localStorage.removeItem('padelmatch_auth_session_v1');
+      localStorage.removeItem('padelmatch_auth_session_v2');
+      localStorage.removeItem('padelmatch_registered_users_v1');
+      localStorage.removeItem('padelmatch_registered_users_v2');
+    } catch {
+      // ignore
+    }
   }
 
   private restoreSession() {
@@ -69,6 +91,46 @@ class AuthService {
       }
     } catch {
       this.currentUser = null;
+    }
+  }
+
+  private initFirestoreSync() {
+    try {
+      onSnapshot(collection(db, 'users'), (snapshot) => {
+        const registry = this.getRegistry();
+        let changed = false;
+        snapshot.forEach(docSnap => {
+          const u = docSnap.data() as StoredUserCredential;
+          if (u && u.email) {
+            const emailKey = u.email.toLowerCase();
+            registry[emailKey] = {
+              ...registry[emailKey],
+              ...u
+            };
+            changed = true;
+          }
+        });
+
+        if (changed) {
+          this.saveRegistry(registry);
+          if (this.currentUser && this.currentUser.email) {
+            const currentEmail = this.currentUser.email.toLowerCase();
+            const fresh = registry[currentEmail];
+            if (fresh) {
+              this.currentUser.name = fresh.name;
+              this.currentUser.plan = fresh.plan || this.currentUser.plan || 'free';
+              this.currentUser.category = fresh.category || this.currentUser.category;
+              this.currentUser.subscriptionExpiresAt = fresh.subscriptionExpiresAt;
+              this.currentUser.hostedMatchesCount = fresh.hostedMatchesCount;
+              this.saveSession(this.currentUser);
+            }
+          }
+        }
+      }, (err) => {
+        console.warn('Firestore users sync notice:', err);
+      });
+    } catch (e) {
+      console.warn('Error starting Firestore users listener:', e);
     }
   }
 
@@ -96,29 +158,12 @@ class AuthService {
       const raw = localStorage.getItem(USERS_REGISTRY_KEY);
       if (raw) {
         registry = JSON.parse(raw);
-      } else {
-        // Fallback: check legacy v1 registry
-        const legacyRaw = localStorage.getItem('padelmatch_registered_users_v1');
-        if (legacyRaw) {
-          const legacy = JSON.parse(legacyRaw);
-          Object.entries(legacy).forEach(([email, val]: [string, any]) => {
-            registry[email.toLowerCase()] = {
-              id: val.id,
-              name: val.name,
-              email: email.toLowerCase(),
-              passwordHash: val.password || 'padel123',
-              category: val.category || '4ta',
-              favoritePosition: val.favoritePosition || 'ambas',
-              createdAt: val.createdAt || Date.now()
-            };
-          });
-        }
       }
     } catch {
       registry = {};
     }
 
-    // MANDATORY SEED: Ensure Mario Labbé (Founder) is ALWAYS present in registry
+    // MANDATORY SEED: Ensure Mario Labbé (Founder) is ALWAYS present in registry with clean stats
     if (!registry['mariolabbes@gmail.com']) {
       registry['mariolabbes@gmail.com'] = {
         id: 'founder-mario-labbe',
@@ -130,11 +175,13 @@ class AuthService {
         favoritePosition: 'drive',
         dominantHand: 'diestro',
         city: 'Santiago',
-        club: 'Club Padel Pro',
+        club: undefined,
         plan: 'pro_founder',
-        createdAt: 1700000000000
+        createdAt: 1700000000000,
+        hostedMatchesCount: 0
       };
       this.saveRegistry(registry);
+      setDoc(doc(db, 'users', 'mariolabbes@gmail.com'), cleanForFirestore(registry['mariolabbes@gmail.com']), { merge: true }).catch(console.warn);
     }
 
     return registry;
@@ -148,7 +195,7 @@ class AuthService {
     }
   }
 
-  public register(data: {
+  public async register(data: {
     name: string;
     email: string;
     password: string;
@@ -159,7 +206,7 @@ class AuthService {
     city?: string;
     club?: string;
     avatar?: string;
-  }): { success: boolean; error?: string; user?: UserSession } {
+  }): Promise<{ success: boolean; error?: string; user?: UserSession }> {
     const trimmedName = data.name.trim();
     const trimmedEmail = data.email.trim().toLowerCase();
     const trimmedPhone = data.phone ? data.phone.trim() : undefined;
@@ -201,7 +248,6 @@ class AuthService {
         elo: this.getDefaultEloForCategory(data.category)
       });
     } else {
-      // Update existing player with chosen category and profile data
       player.name = trimmedName;
       player.category = data.category;
       player.favoritePosition = data.favoritePosition;
@@ -211,8 +257,7 @@ class AuthService {
       if (data.club) player.club = data.club;
     }
 
-    // Save in registry with password
-    registry[trimmedEmail] = {
+    const newRecord: StoredUserCredential = {
       id: player.id,
       name: trimmedName,
       email: trimmedEmail,
@@ -224,9 +269,21 @@ class AuthService {
       city: data.city,
       club: data.club,
       avatar: data.avatar,
+      plan: 'free',
+      hostedMatchesCount: 0,
       createdAt: Date.now()
     };
+
+    // Save in registry with password
+    registry[trimmedEmail] = newRecord;
     this.saveRegistry(registry);
+
+    // Sync to Cloud Firestore
+    try {
+      await setDoc(doc(db, 'users', trimmedEmail), cleanForFirestore(newRecord));
+    } catch (e) {
+      console.warn('Could not save user to Firestore directly:', e);
+    }
 
     const session: UserSession = {
       id: player.id,
@@ -239,6 +296,7 @@ class AuthService {
       city: player.city,
       club: player.club,
       plan: player.plan || 'free',
+      hostedMatchesCount: 0,
       avatar: player.avatar,
       elo: player.elo,
       loggedInAt: Date.now()
@@ -248,7 +306,7 @@ class AuthService {
     return { success: true, user: session };
   }
 
-  public login(email: string, password: string): { success: boolean; error?: string; user?: UserSession } {
+  public async login(email: string, password: string): Promise<{ success: boolean; error?: string; user?: UserSession }> {
     const trimmedEmail = email.trim().toLowerCase();
     const trimmedPassword = (password || '').trim();
 
@@ -260,12 +318,26 @@ class AuthService {
     }
 
     const registry = this.getRegistry();
-    const userRecord = registry[trimmedEmail];
+    let userRecord = registry[trimmedEmail];
+
+    // If not in local cache, fetch from Cloud Firestore directly
+    if (!userRecord) {
+      try {
+        const snap = await getDoc(doc(db, 'users', trimmedEmail));
+        if (snap.exists()) {
+          userRecord = snap.data() as StoredUserCredential;
+          registry[trimmedEmail] = userRecord;
+          this.saveRegistry(registry);
+        }
+      } catch (e) {
+        console.warn('Could not fetch user from Firestore', e);
+      }
+    }
 
     // Master Founder Access for Mario Labbé: Always accept & sync password so he is never locked out
     if (trimmedEmail === 'mariolabbes@gmail.com') {
       if (!userRecord) {
-        registry[trimmedEmail] = {
+        userRecord = {
           id: 'founder-mario-labbe',
           name: 'Mario Labbé',
           email: 'mariolabbes@gmail.com',
@@ -275,21 +347,25 @@ class AuthService {
           favoritePosition: 'drive',
           dominantHand: 'diestro',
           city: 'Santiago',
-          club: 'Club Padel Pro',
+          club: undefined,
           plan: 'pro_founder',
-          createdAt: Date.now()
+          createdAt: 1700000000000,
+          hostedMatchesCount: 0
         };
+        registry[trimmedEmail] = userRecord;
         this.saveRegistry(registry);
       } else if (userRecord.passwordHash !== trimmedPassword) {
         userRecord.passwordHash = trimmedPassword;
         this.saveRegistry(registry);
       }
+      // Guarantee cloud sync
+      setDoc(doc(db, 'users', trimmedEmail), cleanForFirestore(userRecord), { merge: true }).catch(console.warn);
     } else {
       if (!userRecord) {
-        // Check if player exists in community roster but hasn't set a password yet
+        // Check if player exists in community roster
         const playerInRoster = communityService.getPlayers().find(p => p.email?.toLowerCase() === trimmedEmail);
         if (playerInRoster) {
-          registry[trimmedEmail] = {
+          userRecord = {
             id: playerInRoster.id,
             name: playerInRoster.name,
             email: trimmedEmail,
@@ -300,13 +376,17 @@ class AuthService {
             dominantHand: playerInRoster.dominantHand,
             city: playerInRoster.city,
             club: playerInRoster.club,
-            createdAt: Date.now()
+            plan: playerInRoster.plan || 'free',
+            createdAt: Date.now(),
+            hostedMatchesCount: 0
           };
+          registry[trimmedEmail] = userRecord;
           this.saveRegistry(registry);
+          setDoc(doc(db, 'users', trimmedEmail), cleanForFirestore(userRecord)).catch(console.warn);
         } else {
           return { 
             success: false, 
-            error: 'No encontramos una cuenta registrada con este correo. Por favor regístrate o pulsa restablecer.' 
+            error: 'No encontramos una cuenta registrada con este correo en la nube. Por favor regístrate o pulsa restablecer.' 
           };
         }
       } else {
@@ -323,8 +403,7 @@ class AuthService {
     // Retrieve fresh player from community roster
     let player = communityService.getPlayers().find(p => p.email?.toLowerCase() === trimmedEmail);
     if (!player) {
-      const rec = registry[trimmedEmail];
-      player = communityService.findOrCreatePlayer(rec.name, trimmedEmail, rec.phone);
+      player = communityService.findOrCreatePlayer(userRecord.name, trimmedEmail, userRecord.phone);
     }
 
     const session: UserSession = {
@@ -337,7 +416,9 @@ class AuthService {
       dominantHand: player.dominantHand || userRecord?.dominantHand,
       city: player.city || userRecord?.city,
       club: player.club || userRecord?.club,
-      plan: player.plan || 'free',
+      plan: userRecord?.plan || player.plan || 'free',
+      subscriptionExpiresAt: userRecord?.subscriptionExpiresAt || player.subscriptionExpiresAt,
+      hostedMatchesCount: userRecord?.hostedMatchesCount || 0,
       avatar: player.avatar,
       elo: player.elo,
       loggedInAt: Date.now()
@@ -347,7 +428,7 @@ class AuthService {
     return { success: true, user: session };
   }
 
-  public resetPassword(email: string, newPassword: string): { success: boolean; error?: string; user?: UserSession } {
+  public async resetPassword(email: string, newPassword: string): Promise<{ success: boolean; error?: string; user?: UserSession }> {
     const trimmedEmail = email.trim().toLowerCase();
     const trimmedPassword = (newPassword || '').trim();
 
@@ -376,6 +457,7 @@ class AuthService {
 
     userRecord.passwordHash = trimmedPassword;
     this.saveRegistry(registry);
+    setDoc(doc(db, 'users', trimmedEmail), { passwordHash: trimmedPassword }, { merge: true }).catch(console.warn);
 
     return this.login(trimmedEmail, trimmedPassword);
   }
@@ -452,6 +534,7 @@ class AuthService {
     if (target.email && registry[target.email.toLowerCase()]) {
       registry[target.email.toLowerCase()].hostedMatchesCount = newCount;
       this.saveRegistry(registry);
+      setDoc(doc(db, 'users', target.email.toLowerCase()), { hostedMatchesCount: newCount }, { merge: true }).catch(console.warn);
     }
 
     if (this.currentUser) {
@@ -486,6 +569,10 @@ class AuthService {
       registry[this.currentUser.email.toLowerCase()].plan = planType;
       registry[this.currentUser.email.toLowerCase()].subscriptionExpiresAt = expiresAt;
       this.saveRegistry(registry);
+      setDoc(doc(db, 'users', this.currentUser.email.toLowerCase()), { 
+        plan: planType, 
+        subscriptionExpiresAt: expiresAt 
+      }, { merge: true }).catch(console.warn);
     }
 
     // Update in community players roster
