@@ -21,8 +21,8 @@ export const BottomNavBar: React.FC<Props> = ({
   onOpenMenu,
   onQuickStartMatch
 }) => {
-  // Hide on auth screen, court tv mode or live scoreboard to keep maximum court focus
-  if (currentView === 'auth' || currentView === 'court_tv' || currentView === 'scoreboard') {
+  // Hide on auth screen, court tv mode, live scoreboard or admin to keep focus
+  if (currentView === 'auth' || currentView === 'court_tv' || currentView === 'scoreboard' || currentView === 'admin') {
     return null;
   }
 

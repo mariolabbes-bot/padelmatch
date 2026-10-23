@@ -19,10 +19,14 @@ import {
   Clock,
   Sun,
   Moon,
-  Crown
+  Crown,
+  User,
+  ShieldCheck
 } from 'lucide-react';
-import type { UserSession } from '../services/authService';
+import { authService, type UserSession } from '../services/authService';
 import { themeService, type AppTheme } from '../services/themeService';
+import { getEloTier } from '../engine/eloEngine';
+import { isImageAvatar } from '../utils/imageOptimizer';
 
 interface Props {
   isOpen: boolean;
@@ -36,6 +40,8 @@ interface Props {
   onOpenTvMode: () => void;
   onOpenCommunity: () => void;
   onOpenSubscriptionModal?: () => void;
+  onOpenProfile?: () => void;
+  onOpenAdmin?: () => void;
   onResetMatch: () => void;
   onNewMatch: () => void;
   onLogout: () => void;
@@ -60,6 +66,8 @@ export const MobileDrawerMenu: React.FC<Props> = ({
   onOpenTvMode,
   onOpenCommunity,
   onOpenSubscriptionModal,
+  onOpenProfile,
+  onOpenAdmin,
   onResetMatch,
   onNewMatch,
   onLogout,
@@ -78,6 +86,8 @@ export const MobileDrawerMenu: React.FC<Props> = ({
   }, []);
 
   if (!isOpen) return null;
+
+  const userTier = currentUser ? getEloTier(currentUser.elo) : null;
 
   return (
     <div style={backdropStyle} onClick={onClose}>
@@ -111,18 +121,60 @@ export const MobileDrawerMenu: React.FC<Props> = ({
 
         {/* User Card */}
         {currentUser && (
-          <div style={userCardStyle}>
-            <div style={avatarStyle}>
-              {currentUser.name.charAt(0).toUpperCase()}
+          <div 
+            style={{
+              ...userCardStyle,
+              cursor: onOpenProfile ? 'pointer' : 'default',
+              borderColor: userTier?.color || 'var(--border-subtle)'
+            }}
+            onClick={() => {
+              if (onOpenProfile) {
+                onOpenProfile();
+                onClose();
+              }
+            }}
+            title={onOpenProfile ? 'Haz clic para ver o editar tu ficha de jugador' : undefined}
+          >
+            <div style={{
+              ...avatarStyle,
+              borderColor: userTier?.color || 'var(--team1-primary)',
+              overflow: 'hidden',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              {currentUser.avatar ? (
+                isImageAvatar(currentUser.avatar) ? (
+                  <img src={currentUser.avatar} alt={currentUser.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                ) : (
+                  <span style={{ fontSize: '1.4rem', lineHeight: 1 }}>{currentUser.avatar}</span>
+                )
+              ) : (
+                currentUser.name.charAt(0).toUpperCase()
+              )}
             </div>
             <div style={{ flex: 1 }}>
-              <div style={{ fontWeight: 800, fontSize: '0.95rem', color: 'var(--text-main)' }}>
-                {currentUser.name}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                <span style={{ fontWeight: 800, fontSize: '0.95rem', color: 'var(--text-main)' }}>
+                  {currentUser.name}
+                </span>
+                {userTier && (
+                  <span style={{
+                    fontSize: '0.62rem',
+                    fontWeight: 800,
+                    color: userTier.color,
+                    background: `${userTier.color}20`,
+                    padding: '1px 5px',
+                    borderRadius: '4px'
+                  }}>
+                    {userTier.badge}
+                  </span>
+                )}
               </div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', gap: '8px' }}>
-                <span>Cat: {currentUser.category}</span>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', gap: '8px', marginTop: '2px' }}>
+                <span>(Ref: {currentUser.category} Cat)</span>
                 <span>•</span>
-                <span style={{ color: 'var(--gold-primary)' }}>ELO: {currentUser.elo}</span>
+                <span style={{ color: 'var(--gold-primary)', fontWeight: 800 }}>ELO {currentUser.elo}</span>
               </div>
             </div>
           </div>
@@ -247,6 +299,50 @@ export const MobileDrawerMenu: React.FC<Props> = ({
               </div>
               <span style={{ ...pillTagStyle, color: 'var(--gold-primary)', borderColor: 'rgba(255, 214, 0, 0.5)' }}>
                 DESDE $1.665/M
+              </span>
+            </button>
+          )}
+
+          {onOpenProfile && currentUser && (
+            <button 
+              onClick={() => { onOpenProfile(); onClose(); }} 
+              style={{
+                ...menuItemStyle,
+                background: 'rgba(0, 230, 118, 0.08)',
+                border: '1px solid rgba(0, 230, 118, 0.25)',
+                borderRadius: '8px',
+                color: 'var(--team1-primary)',
+                margin: '4px 0'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <User size={18} color="var(--team1-primary)" />
+                <span style={{ fontWeight: 800 }}>Mi Perfil & Ficha de Jugador</span>
+              </div>
+              <span style={{ ...pillTagStyle, color: 'var(--team1-primary)', borderColor: 'var(--team1-primary)' }}>
+                VER / EDITAR
+              </span>
+            </button>
+          )}
+
+          {onOpenAdmin && authService.isAdmin(currentUser) && (
+            <button 
+              onClick={() => { onOpenAdmin(); onClose(); }} 
+              style={{
+                ...menuItemStyle,
+                background: 'rgba(255, 214, 0, 0.12)',
+                border: '1px solid rgba(255, 214, 0, 0.35)',
+                borderRadius: '8px',
+                color: 'var(--gold-primary)',
+                margin: '4px 0'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <ShieldCheck size={18} color="var(--gold-primary)" />
+                <span style={{ fontWeight: 900 }}>Panel de Administración</span>
+              </div>
+              <span style={{ ...pillTagStyle, color: 'var(--gold-primary)', borderColor: 'rgba(255, 214, 0, 0.5)' }}>
+                FUNDADOR
               </span>
             </button>
           )}

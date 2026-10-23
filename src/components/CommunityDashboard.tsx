@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import type { PlayerCategory, DominantHand } from '../types/padel';
 import { communityService } from '../services/communityService';
 import { themeService, type AppTheme } from '../services/themeService';
+import { authService, type UserSession } from '../services/authService';
+import { groupService } from '../services/groupService';
+import { getEloTier, DEFAULT_INITIAL_ELO } from '../engine/eloEngine';
 import { 
   Trophy, 
   Users, 
@@ -20,10 +23,15 @@ import {
 
 interface Props {
   onBackToScoreboard: () => void;
+  currentUser?: UserSession | null;
 }
 
-export const CommunityDashboard: React.FC<Props> = ({ onBackToScoreboard }) => {
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+export type RankingScope = 'chile' | 'laserena' | 'coquimbo' | 'groups';
+
+export const CommunityDashboard: React.FC<Props> = ({ onBackToScoreboard, currentUser: propUser }) => {
+  const [currentUser] = useState<UserSession | null>(() => propUser || authService.getCurrentUser());
+  const [selectedScope, setSelectedScope] = useState<RankingScope>('chile');
+  const [selectedTier, setSelectedTier] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<'ranking' | 'matches' | 'saas'>('ranking');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -41,27 +49,64 @@ export const CommunityDashboard: React.FC<Props> = ({ onBackToScoreboard }) => {
   const [city, setCity] = useState('');
   const [dominantHand, setDominantHand] = useState<DominantHand>('diestro');
   const [category, setCategory] = useState<PlayerCategory>('4ta');
-  const [initialElo, setInitialElo] = useState<number>(1200);
+  const [initialElo, setInitialElo] = useState<number>(DEFAULT_INITIAL_ELO);
   const [position, setPosition] = useState<'drive' | 'reves' | 'ambas'>('ambas');
 
   const allPlayers = communityService.getPlayers();
   const allMatches = communityService.getMatches();
 
-  const filteredPlayers = allPlayers.filter(p => {
-    const matchesCat = selectedCategory === 'all' || p.category === selectedCategory;
-    const matchesQuery = !searchQuery || p.name.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCat && matchesQuery;
+  // User Groups members set for "Mis Grupos" scope
+  const userGroups = currentUser ? groupService.getUserGroups(currentUser.id) : groupService.getGroups();
+  const groupMemberIdentifiers = new Set<string>();
+  userGroups.forEach(g => {
+    g.members.forEach(m => {
+      groupMemberIdentifiers.add(m.playerId);
+      groupMemberIdentifiers.add(m.name.toLowerCase());
+    });
   });
 
-  const categories: { id: string; label: string }[] = [
-    { id: 'all', label: 'Todas las Categorías' },
-    { id: '1ra', label: '1ra Cat' },
-    { id: '2da', label: '2da Cat' },
-    { id: '3ra', label: '3ra Cat' },
-    { id: '4ta', label: '4ta Cat' },
-    { id: '5ta', label: '5ta Cat' },
-    { id: '6ta', label: '6ta Cat' },
-    { id: 'Iniciación', label: 'Iniciación' }
+  const filteredPlayers = allPlayers.filter(p => {
+    // 1. Territory / Scope filter
+    let matchesScope = true;
+    if (selectedScope === 'laserena') {
+      const cityMatch = p.city?.toLowerCase().includes('serena') || false;
+      const clubMatch = p.club?.toLowerCase().includes('serena') || false;
+      matchesScope = cityMatch || clubMatch;
+    } else if (selectedScope === 'coquimbo') {
+      const cityMatch = p.city?.toLowerCase().includes('coquimbo') || false;
+      const clubMatch = p.club?.toLowerCase().includes('coquimbo') || false;
+      matchesScope = cityMatch || clubMatch;
+    } else if (selectedScope === 'groups') {
+      matchesScope = groupMemberIdentifiers.has(p.id) || groupMemberIdentifiers.has(p.name.toLowerCase());
+    }
+
+    // 2. ELO Tier filter
+    const tier = getEloTier(p.elo);
+    const matchesTier = selectedTier === 'all' || tier.tier === selectedTier;
+
+    // 3. Search query
+    const matchesQuery = !searchQuery || 
+      p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (p.city && p.city.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (p.club && p.club.toLowerCase().includes(searchQuery.toLowerCase()));
+
+    return matchesScope && matchesTier && matchesQuery;
+  });
+
+  const scopes: { id: RankingScope; label: string; icon: string }[] = [
+    { id: 'chile', label: 'Todo Chile', icon: '🇨🇱' },
+    { id: 'laserena', label: 'La Serena', icon: '📍' },
+    { id: 'coquimbo', label: 'Coquimbo', icon: '📍' },
+    { id: 'groups', label: 'Mis Grupos', icon: '👥' }
+  ];
+
+  const tiers: { id: string; label: string }[] = [
+    { id: 'all', label: 'Todos los Tiers' },
+    { id: 'master', label: '👑 Master (1850+)' },
+    { id: 'competicion', label: '💎 Competición (1600+)' },
+    { id: 'avanzado', label: '🥇 Avanzado (1350+)' },
+    { id: 'intermedio', label: '🥈 Intermedio (1150+)' },
+    { id: 'amateur', label: '🥉 Amateur (<1150)' }
   ];
 
   const handleCreatePlayer = (e: React.FormEvent) => {
@@ -195,6 +240,7 @@ export const CommunityDashboard: React.FC<Props> = ({ onBackToScoreboard }) => {
               {filteredPlayers.slice(0, 3).map((player, index) => {
                 const placeColors = ['#ffd600', '#cbd5e1', '#cd7f32'];
                 const medals = ['1°', '2°', '3°'];
+                const pTier = getEloTier(player.elo);
                 return (
                   <div 
                     key={player.id} 
@@ -208,7 +254,12 @@ export const CommunityDashboard: React.FC<Props> = ({ onBackToScoreboard }) => {
                       <span style={{ fontSize: '1.2rem', fontWeight: 900, color: placeColors[index] }}>
                         {medals[index]} LUGAR
                       </span>
-                      <Crown size={20} color={placeColors[index]} />
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span style={{ fontSize: '0.7rem', fontWeight: 800, color: pTier.color, background: `${pTier.color}22`, padding: '2px 6px', borderRadius: '4px', border: `1px solid ${pTier.color}` }}>
+                          {pTier.badge}
+                        </span>
+                        <Crown size={20} color={placeColors[index]} />
+                      </div>
                     </div>
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px', margin: '14px 0' }}>
@@ -225,7 +276,7 @@ export const CommunityDashboard: React.FC<Props> = ({ onBackToScoreboard }) => {
                           )}
                         </div>
                         <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '2px' }}>
-                          {player.category} Categoría • {player.favoritePosition.toUpperCase()} {player.city ? `• 📍 ${player.city}` : ''}
+                          <span style={{ color: 'var(--text-dim)' }}>(Ref: {player.category} Cat)</span> • {player.favoritePosition.toUpperCase()} {player.city ? `• 📍 ${player.city}` : ''}
                         </div>
                       </div>
                     </div>
@@ -270,29 +321,57 @@ export const CommunityDashboard: React.FC<Props> = ({ onBackToScoreboard }) => {
             </div>
           )}
 
-          {/* Filters & Search */}
+          {/* Filters Bar: Scope / Territory & Tiers */}
           <div style={filtersBarStyle} className="glass-panel">
-            <div style={categoryChipsWrapper}>
-              {categories.map(cat => (
-                <button
-                  key={cat.id}
-                  onClick={() => setSelectedCategory(cat.id)}
-                  style={{
-                    ...catChipStyle,
-                    background: selectedCategory === cat.id ? 'var(--team1-primary)' : 'rgba(255,255,255,0.04)',
-                    color: selectedCategory === cat.id ? '#050c18' : '#cbd5e1'
-                  }}
-                >
-                  {cat.label}
-                </button>
-              ))}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1, minWidth: '280px' }}>
+              {/* Territory / Scope Buttons */}
+              <div style={categoryChipsWrapper}>
+                {scopes.map(sc => (
+                  <button
+                    key={sc.id}
+                    onClick={() => setSelectedScope(sc.id)}
+                    style={{
+                      ...catChipStyle,
+                      background: selectedScope === sc.id ? 'var(--team1-primary)' : 'rgba(255,255,255,0.04)',
+                      color: selectedScope === sc.id ? '#050c18' : '#cbd5e1',
+                      fontWeight: selectedScope === sc.id ? 900 : 700
+                    }}
+                  >
+                    <span>{sc.icon}</span>
+                    <span>{sc.label}</span>
+                  </button>
+                ))}
+              </div>
+
+              {/* Tier Filter Buttons */}
+              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                {tiers.map(t => (
+                  <button
+                    key={t.id}
+                    onClick={() => setSelectedTier(t.id)}
+                    style={{
+                      padding: '4px 8px',
+                      borderRadius: '6px',
+                      border: '1px solid',
+                      borderColor: selectedTier === t.id ? 'var(--gold-primary)' : 'rgba(255,255,255,0.08)',
+                      background: selectedTier === t.id ? 'rgba(255, 214, 0, 0.15)' : 'transparent',
+                      color: selectedTier === t.id ? 'var(--gold-primary)' : 'var(--text-dim)',
+                      fontSize: '0.72rem',
+                      fontWeight: 700,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
             </div>
 
             <div style={searchBoxStyle}>
               <Search size={16} color="var(--text-muted)" />
               <input
                 type="text"
-                placeholder="Buscar jugador..."
+                placeholder="Buscar por jugador, club o ciudad..."
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 style={searchInputStyle}
@@ -308,8 +387,9 @@ export const CommunityDashboard: React.FC<Props> = ({ onBackToScoreboard }) => {
                   <tr style={tableHeaderRowStyle}>
                     <th style={thStyle}># RANK</th>
                     <th style={thStyle}>JUGADOR REAL</th>
-                    <th style={thStyle}>CATEGORÍA</th>
+                    <th style={thStyle}>TIER ELO</th>
                     <th style={thStyle}>RATING ELO</th>
+                    <th style={thStyle}>CAT. REF.</th>
                     <th style={thStyle}>PJ</th>
                     <th style={thStyle}>PG</th>
                     <th style={thStyle}>% VICTORIAS</th>
@@ -317,57 +397,75 @@ export const CommunityDashboard: React.FC<Props> = ({ onBackToScoreboard }) => {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredPlayers.map((player, idx) => (
-                    <tr key={player.id} style={tableRowStyle}>
-                      <td style={{ ...tdStyle, fontWeight: 900, fontFamily: 'var(--font-mono)', color: idx < 3 ? 'var(--gold-primary)' : 'var(--text-muted)' }}>
-                        #{idx + 1}
-                      </td>
-                      <td style={tdStyle}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                          <div style={miniTableAvatar}>
-                            <Users size={14} color="#00e676" />
-                          </div>
-                          <div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                              <span style={{ fontWeight: 800, color: 'var(--text-main)' }}>{player.name}</span>
-                              {player.dominantHand === 'zurdo' && (
-                                <span style={{ fontSize: '0.62rem', background: 'rgba(255, 214, 0, 0.2)', color: 'var(--gold-primary)', padding: '1px 5px', borderRadius: '4px', fontWeight: 800 }}>
-                                  ⭐ ZURDO
-                                </span>
-                              )}
+                  {filteredPlayers.map((player, idx) => {
+                    const pTier = getEloTier(player.elo);
+                    return (
+                      <tr key={player.id} style={tableRowStyle}>
+                        <td style={{ ...tdStyle, fontWeight: 900, fontFamily: 'var(--font-mono)', color: idx < 3 ? 'var(--gold-primary)' : 'var(--text-muted)' }}>
+                          #{idx + 1}
+                        </td>
+                        <td style={tdStyle}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <div style={{ ...miniTableAvatar, borderColor: pTier.color }}>
+                              <Users size={14} color="#00e676" />
                             </div>
-                            <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)', display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                              <span>{player.favoritePosition === 'drive' ? 'Drive' : player.favoritePosition === 'reves' ? 'Revés' : 'Ambos'}</span>
-                              {player.city && <span>• 📍 {player.city}</span>}
-                              {player.phone && <span>• 📲 {player.phone}</span>}
+                            <div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <span style={{ fontWeight: 800, color: 'var(--text-main)' }}>{player.name}</span>
+                                {player.dominantHand === 'zurdo' && (
+                                  <span style={{ fontSize: '0.62rem', background: 'rgba(255, 214, 0, 0.2)', color: 'var(--gold-primary)', padding: '1px 5px', borderRadius: '4px', fontWeight: 800 }}>
+                                    ⭐ ZURDO
+                                  </span>
+                                )}
+                              </div>
+                              <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)', display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                                <span>{player.favoritePosition === 'drive' ? 'Drive' : player.favoritePosition === 'reves' ? 'Revés' : 'Ambos'}</span>
+                                {player.city && <span>• 📍 {player.city}</span>}
+                                {player.club && <span>• 🏟️ {player.club}</span>}
+                                {player.phone && <span>• 📲 {player.phone}</span>}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      </td>
-                      <td style={tdStyle}>
-                        <span className="badge badge-team2" style={{ fontSize: '0.7rem' }}>
-                          {player.category} Cat
-                        </span>
-                      </td>
-                      <td style={{ ...tdStyle, fontFamily: 'var(--font-mono)', fontWeight: 900, color: 'var(--team1-primary)', fontSize: '1rem' }}>
-                        ⚡ {player.elo}
-                      </td>
-                      <td style={{ ...tdStyle, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>
-                        {player.matchesPlayed}
-                      </td>
-                      <td style={{ ...tdStyle, fontFamily: 'var(--font-mono)', color: 'var(--text-main)', fontWeight: 700 }}>
-                        {player.matchesWon}
-                      </td>
-                      <td style={tdStyle}>
-                        <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: '#00e676' }}>
-                          {Math.round((player.matchesWon / (player.matchesPlayed || 1)) * 100)}%
-                        </span>
-                      </td>
-                      <td style={{ ...tdStyle, fontFamily: 'var(--font-mono)', color: 'var(--gold-primary)', fontWeight: 800 }}>
-                        {player.winStreak > 0 ? `${player.winStreak} 🔥` : '-'}
-                      </td>
-                    </tr>
-                  ))}
+                        </td>
+                        <td style={tdStyle}>
+                          <span style={{
+                            fontSize: '0.72rem',
+                            fontWeight: 800,
+                            color: pTier.color,
+                            background: `${pTier.color}20`,
+                            padding: '3px 8px',
+                            borderRadius: '6px',
+                            border: `1px solid ${pTier.color}40`,
+                            whiteSpace: 'nowrap'
+                          }}>
+                            {pTier.badge}
+                          </span>
+                        </td>
+                        <td style={{ ...tdStyle, fontFamily: 'var(--font-mono)', fontWeight: 900, color: 'var(--gold-primary)', fontSize: '1.05rem' }}>
+                          ⚡ {player.elo} <span style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>pts</span>
+                        </td>
+                        <td style={tdStyle}>
+                          <span className="badge badge-team2" style={{ fontSize: '0.68rem' }} title="Categoría deportiva de referencia (autodeclarada)">
+                            {player.category} (Ref)
+                          </span>
+                        </td>
+                        <td style={{ ...tdStyle, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>
+                          {player.matchesPlayed}
+                        </td>
+                        <td style={{ ...tdStyle, fontFamily: 'var(--font-mono)', color: 'var(--text-main)', fontWeight: 700 }}>
+                          {player.matchesWon}
+                        </td>
+                        <td style={tdStyle}>
+                          <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: '#00e676' }}>
+                            {Math.round((player.matchesWon / (player.matchesPlayed || 1)) * 100)}%
+                          </span>
+                        </td>
+                        <td style={{ ...tdStyle, fontFamily: 'var(--font-mono)', color: 'var(--gold-primary)', fontWeight: 800 }}>
+                          {player.winStreak > 0 ? `${player.winStreak} 🔥` : '-'}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

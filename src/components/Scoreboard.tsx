@@ -3,6 +3,7 @@ import type { MatchScoreState, Team, MatchRules, AppViewMode } from '../types/pa
 import type { UserSession } from '../services/authService';
 import { themeService, type AppTheme } from '../services/themeService';
 import { MobileDrawerMenu } from './MobileDrawerMenu';
+import { isImageAvatar } from '../utils/imageOptimizer';
 import { 
   RotateCcw, 
   Volume2, 
@@ -517,8 +518,28 @@ export const Scoreboard: React.FC<Props> = ({
                     </span>
                   )}
                 </div>
-                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
-                  {teams.team1.player1.name} • {teams.team1.player2.name}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.72rem', color: 'var(--text-muted)', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                    {teams.team1.player1.avatar && (
+                      isImageAvatar(teams.team1.player1.avatar) ? (
+                        <img src={teams.team1.player1.avatar} alt="" style={{ width: '16px', height: '16px', borderRadius: '50%', objectFit: 'cover' }} />
+                      ) : (
+                        <span style={{ fontSize: '0.85rem', lineHeight: 1 }}>{teams.team1.player1.avatar}</span>
+                      )
+                    )}
+                    <span>{teams.team1.player1.name}</span>
+                  </span>
+                  <span>•</span>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                    {teams.team1.player2.avatar && (
+                      isImageAvatar(teams.team1.player2.avatar) ? (
+                        <img src={teams.team1.player2.avatar} alt="" style={{ width: '16px', height: '16px', borderRadius: '50%', objectFit: 'cover' }} />
+                      ) : (
+                        <span style={{ fontSize: '0.85rem', lineHeight: 1 }}>{teams.team1.player2.avatar}</span>
+                      )
+                    )}
+                    <span>{teams.team1.player2.name}</span>
+                  </span>
                 </div>
               </div>
             </div>
@@ -614,8 +635,28 @@ export const Scoreboard: React.FC<Props> = ({
                     </span>
                   )}
                 </div>
-                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
-                  {teams.team2.player1.name} • {teams.team2.player2.name}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.72rem', color: 'var(--text-muted)', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                    {teams.team2.player1.avatar && (
+                      isImageAvatar(teams.team2.player1.avatar) ? (
+                        <img src={teams.team2.player1.avatar} alt="" style={{ width: '16px', height: '16px', borderRadius: '50%', objectFit: 'cover' }} />
+                      ) : (
+                        <span style={{ fontSize: '0.85rem', lineHeight: 1 }}>{teams.team2.player1.avatar}</span>
+                      )
+                    )}
+                    <span>{teams.team2.player1.name}</span>
+                  </span>
+                  <span>•</span>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                    {teams.team2.player2.avatar && (
+                      isImageAvatar(teams.team2.player2.avatar) ? (
+                        <img src={teams.team2.player2.avatar} alt="" style={{ width: '16px', height: '16px', borderRadius: '50%', objectFit: 'cover' }} />
+                      ) : (
+                        <span style={{ fontSize: '0.85rem', lineHeight: 1 }}>{teams.team2.player2.avatar}</span>
+                      )
+                    )}
+                    <span>{teams.team2.player2.name}</span>
+                  </span>
                 </div>
               </div>
             </div>

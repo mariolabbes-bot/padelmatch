@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import type { PadelGroup, CommunityPlayer } from '../types/padel';
+import type { PadelGroup, CommunityPlayer, PlayerCategory } from '../types/padel';
 import type { UserSession } from '../services/authService';
 import { groupService } from '../services/groupService';
 import { partnerService } from '../services/partnerService';
@@ -25,9 +25,12 @@ import {
   MessageCircle,
   Copy,
   Check,
-  Share2
+  Share2,
+  Settings
 } from 'lucide-react';
 import { ClubSelectCombobox } from './ClubSelectCombobox';
+import { AvatarSelector } from './AvatarSelector';
+import { isImageAvatar } from '../utils/imageOptimizer';
 
 interface Props {
   currentUser: UserSession;
@@ -67,9 +70,20 @@ export const GroupsView: React.FC<Props> = ({
   const [newGroupDesc, setNewGroupDesc] = useState('');
   const [newGroupClubs, setNewGroupClubs] = useState<string[]>([]);
   const [newGroupCity, setNewGroupCity] = useState('La Serena');
-  const [newGroupCategory, setNewGroupCategory] = useState<'1ra' | '2da' | '3ra' | '4ta' | '5ta' | '6ta' | '7ma' | 'abierta'>('4ta');
+  const [newGroupCategory, setNewGroupCategory] = useState<PlayerCategory | 'abierta'>('4ta');
+  const [newGroupAvatar, setNewGroupAvatar] = useState('🎾');
   const [selectedInitialMembers, setSelectedInitialMembers] = useState<CommunityPlayer[]>([]);
   const [initialMemberSearch, setInitialMemberSearch] = useState('');
+
+  // Edit Group Form
+  const [isEditGroupModalOpen, setIsEditGroupModalOpen] = useState(false);
+  const [editGroupName, setEditGroupName] = useState('');
+  const [editGroupDesc, setEditGroupDesc] = useState('');
+  const [editGroupClubs, setEditGroupClubs] = useState<string[]>([]);
+  const [editGroupCity, setEditGroupCity] = useState('La Serena');
+  const [editGroupCategory, setEditGroupCategory] = useState<PlayerCategory | 'abierta'>('4ta');
+  const [editGroupAvatar, setEditGroupAvatar] = useState('🎾');
+  const [editGroupSuccessMsg, setEditGroupSuccessMsg] = useState<string | null>(null);
 
   // New Callout Form
   const [calloutClub, setCalloutClub] = useState('');
@@ -156,6 +170,20 @@ export const GroupsView: React.FC<Props> = ({
     ? groupService.getWhatsAppInviteText(selectedGroup, currentUser.name, inviteUrl)
     : '';
 
+  const renderGroupAvatar = (avatarValue?: string, size = 36, borderRadius = '50%') => {
+    if (!avatarValue) return '🎾';
+    if (isImageAvatar(avatarValue)) {
+      return (
+        <img
+          src={avatarValue}
+          alt="Grupo"
+          style={{ width: '100%', height: '100%', maxHeight: `${size}px`, borderRadius, objectFit: 'cover', display: 'block' }}
+        />
+      );
+    }
+    return avatarValue;
+  };
+
   const handleCreateGroup = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newGroupName.trim()) return;
@@ -166,6 +194,7 @@ export const GroupsView: React.FC<Props> = ({
       city: newGroupCity,
       clubPreferred: newGroupClubs.length > 0 ? newGroupClubs.join(', ') : 'Clubes de Pádel',
       categoryLevel: newGroupCategory,
+      avatar: newGroupAvatar || '🎾',
       creator: {
         id: currentUser.id,
         name: currentUser.name,
@@ -183,10 +212,45 @@ export const GroupsView: React.FC<Props> = ({
     setNewGroupName('');
     setNewGroupDesc('');
     setNewGroupClubs([]);
+    setNewGroupAvatar('🎾');
 
     // Open invite modal to share via WhatsApp or invite more
     setIsInviteModalOpen(true);
     setInviteTab('whatsapp');
+  };
+
+  const openEditGroupModal = () => {
+    if (!selectedGroup) return;
+    setEditGroupName(selectedGroup.name);
+    setEditGroupDesc(selectedGroup.description || '');
+    setEditGroupClubs(selectedGroup.clubPreferred ? selectedGroup.clubPreferred.split(',').map(s => s.trim()).filter(Boolean) : []);
+    setEditGroupCity(selectedGroup.city || 'La Serena');
+    setEditGroupCategory(selectedGroup.categoryLevel || '4ta');
+    setEditGroupAvatar(selectedGroup.avatar || '🎾');
+    setEditGroupSuccessMsg(null);
+    setIsEditGroupModalOpen(true);
+  };
+
+  const handleSaveEditGroup = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedGroup || !editGroupName.trim()) return;
+
+    const res = groupService.updateGroup(selectedGroup.id, {
+      name: editGroupName,
+      description: editGroupDesc,
+      city: editGroupCity,
+      clubPreferred: editGroupClubs.length > 0 ? editGroupClubs.join(', ') : 'Clubes de Pádel',
+      categoryLevel: editGroupCategory,
+      avatar: editGroupAvatar
+    });
+
+    if (res.success) {
+      setEditGroupSuccessMsg('¡Grupo actualizado con éxito!');
+      setTimeout(() => {
+        setIsEditGroupModalOpen(false);
+        setEditGroupSuccessMsg(null);
+      }, 1200);
+    }
   };
 
   const handleCreateCallout = (e: React.FormEvent) => {
@@ -307,7 +371,9 @@ export const GroupsView: React.FC<Props> = ({
               maxWidth: '52%'
             }}
           >
-            <span>{selectedGroup?.avatar || '🎾'}</span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', width: '20px', height: '20px', overflow: 'hidden' }}>
+              {renderGroupAvatar(selectedGroup?.avatar, 20)}
+            </span>
             <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {selectedGroup ? selectedGroup.name : 'Detalle'}
             </span>
@@ -431,7 +497,7 @@ export const GroupsView: React.FC<Props> = ({
                       }}
                     >
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <div style={groupAvatarCircle}>{group.avatar || '🎾'}</div>
+                        <div style={{ ...groupAvatarCircle, overflow: 'hidden' }}>{renderGroupAvatar(group.avatar, 36, '50%')}</div>
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ fontWeight: 800, fontSize: '0.9rem', color: 'var(--text-main)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                             {group.name}
@@ -491,8 +557,8 @@ export const GroupsView: React.FC<Props> = ({
             }} className="glass-panel">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '10px' : '14px', width: isMobile ? '100%' : 'auto' }}>
-                  <div style={isMobile ? { ...bigGroupAvatar, width: '46px', height: '46px', fontSize: '1.4rem' } : bigGroupAvatar}>
-                    {selectedGroup.avatar || '🎾'}
+                  <div style={isMobile ? { ...bigGroupAvatar, width: '46px', height: '46px', fontSize: '1.4rem', overflow: 'hidden' } : { ...bigGroupAvatar, overflow: 'hidden' }}>
+                    {renderGroupAvatar(selectedGroup.avatar, isMobile ? 46 : 56, '12px')}
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <h2 style={{ fontSize: isMobile ? '1.15rem' : '1.35rem', fontWeight: 900, margin: 0, color: 'var(--text-main)' }}>
@@ -517,7 +583,7 @@ export const GroupsView: React.FC<Props> = ({
 
                 <div style={{
                   display: 'grid',
-                  gridTemplateColumns: isMobile ? '1fr 1fr' : 'auto auto',
+                  gridTemplateColumns: isMobile ? 'repeat(3, 1fr)' : 'auto auto auto',
                   gap: '8px',
                   width: isMobile ? '100%' : 'auto',
                   marginTop: isMobile ? '8px' : 0
@@ -531,8 +597,8 @@ export const GroupsView: React.FC<Props> = ({
                     style={{
                       ...inviteHeaderBtnStyle,
                       justifyContent: 'center',
-                      padding: isMobile ? '10px 8px' : '10px 16px',
-                      fontSize: isMobile ? '0.78rem' : '0.85rem'
+                      padding: isMobile ? '10px 6px' : '10px 14px',
+                      fontSize: isMobile ? '0.75rem' : '0.85rem'
                     }}
                   >
                     <UserPlus size={15} />
@@ -541,12 +607,27 @@ export const GroupsView: React.FC<Props> = ({
 
                   <button
                     type="button"
+                    onClick={openEditGroupModal}
+                    title="Editar perfil, clubes y foto del grupo"
+                    style={{
+                      ...inviteHeaderBtnStyle,
+                      justifyContent: 'center',
+                      padding: isMobile ? '10px 6px' : '10px 14px',
+                      fontSize: isMobile ? '0.75rem' : '0.85rem'
+                    }}
+                  >
+                    <Settings size={15} />
+                    <span>{isMobile ? 'Editar' : 'Editar Grupo'}</span>
+                  </button>
+
+                  <button
+                    type="button"
                     onClick={openCreateCallout}
                     style={{
                       ...primaryActionBtnStyle,
                       justifyContent: 'center',
-                      padding: isMobile ? '10px 8px' : '10px 18px',
-                      fontSize: isMobile ? '0.78rem' : '0.85rem'
+                      padding: isMobile ? '10px 6px' : '10px 18px',
+                      fontSize: isMobile ? '0.75rem' : '0.85rem'
                     }}
                   >
                     <Plus size={15} />
@@ -812,11 +893,24 @@ export const GroupsView: React.FC<Props> = ({
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(240px, 1fr))', gap: '8px' }}>
-                {selectedGroup.members.map(member => (
-                  <div key={member.playerId} style={memberItemCard} className="glass-panel">
-                    <div style={memberAvatarCircle}>
-                      {member.name.charAt(0).toUpperCase()}
-                    </div>
+                {selectedGroup.members.map(member => {
+                  const mAvatar = member.avatar || communityService.getPlayers().find(p => p.id === member.playerId)?.avatar;
+                  return (
+                    <div key={member.playerId} style={memberItemCard} className="glass-panel">
+                      <div style={{
+                        ...memberAvatarCircle,
+                        overflow: 'hidden'
+                      }}>
+                        {mAvatar ? (
+                          isImageAvatar(mAvatar) ? (
+                            <img src={mAvatar} alt={member.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          ) : (
+                            <span style={{ fontSize: '1.2rem', lineHeight: 1 }}>{mAvatar}</span>
+                          )
+                        ) : (
+                          member.name.charAt(0).toUpperCase()
+                        )}
+                      </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontWeight: 800, fontSize: '0.88rem', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '6px' }}>
                         <span>{member.name}</span>
@@ -834,7 +928,8 @@ export const GroupsView: React.FC<Props> = ({
                       {member.matchesPlayedInGroup} PJ
                     </div>
                   </div>
-                ))}
+                );
+              })}
               </div>
             </div>
           </main>
@@ -889,190 +984,275 @@ export const GroupsView: React.FC<Props> = ({
 
       {/* MODAL: CREAR NUEVO GRUPO */}
       {isCreateGroupModalOpen && (
-        <div style={modalBackdrop}>
-          <div style={modalBox} className="glass-panel">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <h3 style={{ fontSize: '1.2rem', fontWeight: 900, color: 'var(--text-main)', margin: 0 }}>
-                Crear Grupo de Pádel
-              </h3>
-              <button onClick={() => setIsCreateGroupModalOpen(false)} style={iconCloseBtn}>
+        <div style={modalBackdrop} onClick={() => setIsCreateGroupModalOpen(false)}>
+          <div 
+            style={{ 
+              ...modalBox, 
+              maxHeight: 'min(92vh, 880px)', 
+              display: 'flex', 
+              flexDirection: 'column', 
+              overflow: 'hidden',
+              padding: 0 
+            }} 
+            className="glass-panel"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Modal Header (Fixed at top) */}
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center', 
+              padding: '18px 24px 14px', 
+              borderBottom: '1px solid var(--border-subtle)',
+              flexShrink: 0,
+              background: 'var(--bg-card)'
+            }}>
+              <div>
+                <h3 style={{ fontSize: '1.2rem', fontWeight: 900, color: 'var(--text-main)', margin: 0 }}>
+                  Crear Grupo de Pádel
+                </h3>
+                <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>
+                  Organiza tu comunidad y cuadra partidos en múltiplos de 4
+                </span>
+              </div>
+              <button 
+                type="button"
+                onClick={() => setIsCreateGroupModalOpen(false)} 
+                style={iconCloseBtn}
+                aria-label="Cerrar modal"
+              >
                 <X size={18} />
               </button>
             </div>
 
-            <form onSubmit={handleCreateGroup} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <div>
-                <label style={formLabel}>Nombre del Grupo</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Ej: Los Halcones del Pádel (4ta Cat)"
-                  value={newGroupName}
-                  onChange={e => setNewGroupName(e.target.value)}
-                  style={formInput}
-                />
-              </div>
-
-              <div>
-                <label style={formLabel}>Descripción y Dinámica</label>
-                <textarea
-                  placeholder="Ej: Jugamos todos los martes y jueves a las 19:30. Nivel medio/alto, tercer tiempo obligado."
-                  value={newGroupDesc}
-                  onChange={e => setNewGroupDesc(e.target.value)}
-                  style={{ ...formInput, minHeight: '60px', resize: 'vertical' }}
-                />
-              </div>
-
-              <div>
-                <ClubSelectCombobox
-                  multiple={true}
-                  values={newGroupClubs}
-                  onMultipleChange={setNewGroupClubs}
-                  label="Club(es) Preferido(s) del Grupo"
-                  placeholder="Selecciona uno o más clubes donde juegan habitualmente..."
-                />
-              </div>
-
-              <div>
-                <label style={formLabel}>Ciudad Principal</label>
-                <select
-                  value={newGroupCity}
-                  onChange={e => setNewGroupCity(e.target.value)}
-                  style={formInput}
-                >
-                  <option value="La Serena">La Serena</option>
-                  <option value="Coquimbo">Coquimbo</option>
-                  <option value="La Serena - Coquimbo">La Serena - Coquimbo (Conurbación)</option>
-                  <option value="Otra">Otra Ciudad</option>
-                </select>
-              </div>
-
-              <div>
-                <label style={formLabel}>Nivel de Categoría</label>
-                <select
-                  value={newGroupCategory}
-                  onChange={e => setNewGroupCategory(e.target.value as any)}
-                  style={formInput}
-                >
-                  <option value="1ra">1ª Categoría (Pro)</option>
-                  <option value="2da">2ª Categoría</option>
-                  <option value="3ra">3ª Categoría</option>
-                  <option value="4ta">4ª Categoría (Media)</option>
-                  <option value="5ta">5ª Categoría</option>
-                  <option value="6ta">6ª Categoría</option>
-                  <option value="7ma">7ª Categoría</option>
-                  <option value="abierta">Abierta a cualquier nivel</option>
-                </select>
-              </div>
-
-              {/* Miembros Iniciales (Partners & Comunidad) */}
-              <div style={{ marginTop: '4px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                  <label style={{ ...formLabel, margin: 0 }}>
-                    Invitar Miembros Iniciales ({selectedInitialMembers.length} seleccionados)
-                  </label>
-                  <span style={{ fontSize: '0.7rem', color: 'var(--team1-primary)', fontWeight: 800 }}>
-                    {selectedInitialMembers.length > 0 ? `${selectedInitialMembers.length} añadido${selectedInitialMembers.length > 1 ? 's' : ''}` : 'Opcional'}
-                  </span>
-                </div>
-
-                <div style={searchWrapperStyle}>
-                  <Search size={14} color="var(--text-muted)" />
-                  <input
-                    type="text"
-                    placeholder="Buscar partners o jugadores por nombre, club..."
-                    value={initialMemberSearch}
-                    onChange={e => setInitialMemberSearch(e.target.value)}
-                    style={searchInputStyle}
+            {/* Scrollable Form Body */}
+            <form 
+              onSubmit={handleCreateGroup} 
+              style={{ 
+                display: 'flex', 
+                flexDirection: 'column', 
+                flex: 1, 
+                minHeight: 0,
+                overflowY: 'auto',
+                overscrollBehavior: 'contain',
+                WebkitOverflowScrolling: 'touch'
+              }}
+            >
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', padding: '20px 24px', flex: 1 }}>
+                <div>
+                  <AvatarSelector
+                    value={newGroupAvatar}
+                    onChange={setNewGroupAvatar}
+                    type="group"
+                    fallbackLetter={newGroupName.charAt(0) || 'G'}
+                    label="Emblema o Foto del Grupo"
                   />
                 </div>
 
-                {/* Available players list */}
-                <div style={{ maxHeight: '130px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '8px', paddingRight: '4px' }}>
-                  {availableInitialPlayers.length === 0 ? (
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textAlign: 'center', padding: '12px' }}>
-                      No se encontraron jugadores disponibles.
-                    </div>
-                  ) : (
-                    availableInitialPlayers.map(player => {
-                      const isSelected = selectedInitialMembers.some(p => p.id === player.id);
-                      const isPartner = partners.some(p => p.id === player.id);
-                      return (
-                        <div
-                          key={player.id}
-                          onClick={() => toggleInitialMember(player)}
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            padding: '6px 10px',
-                            borderRadius: 'var(--radius-sm)',
-                            background: isSelected ? 'rgba(0, 230, 118, 0.12)' : 'var(--bg-elevated)',
-                            border: isSelected ? '1px solid var(--team1-primary)' : '1px solid var(--border-subtle)',
-                            cursor: 'pointer',
-                            transition: 'all 0.15s ease'
-                          }}
-                        >
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
-                            <div style={{
-                              width: '24px',
-                              height: '24px',
-                              borderRadius: '50%',
-                              background: isSelected ? 'var(--team1-primary)' : 'var(--bg-card)',
-                              color: isSelected ? '#070a10' : 'var(--text-main)',
-                              fontWeight: 900,
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              fontSize: '0.72rem',
-                              flexShrink: 0
-                            }}>
-                              {player.name.charAt(0).toUpperCase()}
-                            </div>
-                            <div style={{ minWidth: 0 }}>
-                              <div style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--text-main)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                {player.name}
-                              </div>
-                              <div style={{ fontSize: '0.66rem', color: 'var(--text-muted)', display: 'flex', gap: '4px', alignItems: 'center' }}>
-                                <span>Cat: {player.category}</span>
-                                <span>•</span>
-                                <span style={{ color: 'var(--gold-primary)' }}>ELO {player.elo}</span>
-                                {isPartner && (
-                                  <>
-                                    <span>•</span>
-                                    <span style={{ color: 'var(--team2-primary)', fontWeight: 700 }}>Partner</span>
-                                  </>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-
-                          <div style={{
-                            fontSize: '0.68rem',
-                            fontWeight: 800,
-                            padding: '2px 8px',
-                            borderRadius: 'var(--radius-sm)',
-                            background: isSelected ? 'var(--team1-primary)' : 'transparent',
-                            color: isSelected ? '#070a10' : 'var(--text-muted)',
-                            border: isSelected ? 'none' : '1px solid var(--border-subtle)'
-                          }}>
-                            {isSelected ? '✓ Añadido' : '+ Sumar'}
-                          </div>
-                        </div>
-                      );
-                    })
-                  )}
+                <div>
+                  <label style={formLabel}>Nombre del Grupo</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Ej: Los Halcones del Pádel (4ta Cat)"
+                    value={newGroupName}
+                    onChange={e => setNewGroupName(e.target.value)}
+                    style={formInput}
+                  />
                 </div>
 
-                <div style={{ marginTop: '8px', padding: '8px 10px', background: 'rgba(37, 211, 102, 0.08)', borderRadius: 'var(--radius-sm)', border: '1px dashed rgba(37, 211, 102, 0.3)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <MessageCircle size={15} color="#25D366" style={{ flexShrink: 0 }} />
-                  <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-                    <strong style={{ color: '#25D366' }}>Invitación WhatsApp externa:</strong> Al crear el grupo se abrirá de inmediato el mensaje listo con el pitch de PadelMatch para enviar por WhatsApp a jugadores externos.
-                  </span>
+                <div>
+                  <label style={formLabel}>Descripción y Dinámica</label>
+                  <textarea
+                    placeholder="Ej: Jugamos todos los martes y jueves a las 19:30. Nivel medio/alto, tercer tiempo obligado."
+                    value={newGroupDesc}
+                    onChange={e => setNewGroupDesc(e.target.value)}
+                    style={{ ...formInput, minHeight: '60px', resize: 'vertical' }}
+                  />
+                </div>
+
+                <div>
+                  <ClubSelectCombobox
+                    multiple={true}
+                    values={newGroupClubs}
+                    onMultipleChange={setNewGroupClubs}
+                    label="Club(es) Preferido(s) del Grupo"
+                    placeholder="Selecciona uno o más clubes donde juegan habitualmente..."
+                  />
+                </div>
+
+                <div>
+                  <label style={formLabel}>Ciudad Principal</label>
+                  <select
+                    value={newGroupCity}
+                    onChange={e => setNewGroupCity(e.target.value)}
+                    style={formInput}
+                  >
+                    <option value="La Serena">La Serena</option>
+                    <option value="Coquimbo">Coquimbo</option>
+                    <option value="La Serena - Coquimbo">La Serena - Coquimbo (Conurbación)</option>
+                    <option value="Otra">Otra Ciudad</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label style={formLabel}>Nivel de Categoría</label>
+                  <select
+                    value={newGroupCategory}
+                    onChange={e => setNewGroupCategory(e.target.value as any)}
+                    style={formInput}
+                  >
+                    <option value="1ra">1ª Categoría (Pro)</option>
+                    <option value="2da">2ª Categoría</option>
+                    <option value="3ra">3ª Categoría</option>
+                    <option value="4ta">4ª Categoría (Media)</option>
+                    <option value="5ta">5ª Categoría</option>
+                    <option value="6ta">6ª Categoría</option>
+                    <option value="7ma">7ª Categoría</option>
+                    <option value="abierta">Abierta a cualquier nivel</option>
+                  </select>
+                </div>
+
+                {/* Miembros Iniciales (Partners & Comunidad) */}
+                <div style={{ marginTop: '4px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                    <label style={{ ...formLabel, margin: 0 }}>
+                      Invitar Miembros Iniciales ({selectedInitialMembers.length} seleccionados)
+                    </label>
+                    <span style={{ fontSize: '0.7rem', color: 'var(--team1-primary)', fontWeight: 800 }}>
+                      {selectedInitialMembers.length > 0 ? `${selectedInitialMembers.length} añadido${selectedInitialMembers.length > 1 ? 's' : ''}` : 'Opcional'}
+                    </span>
+                  </div>
+
+                  <div style={searchWrapperStyle}>
+                    <Search size={14} color="var(--text-muted)" />
+                    <input
+                      type="text"
+                      placeholder="Buscar partners o jugadores por nombre, club..."
+                      value={initialMemberSearch}
+                      onChange={e => setInitialMemberSearch(e.target.value)}
+                      style={searchInputStyle}
+                    />
+                  </div>
+
+                  {/* Available players list */}
+                  <div style={{ 
+                    maxHeight: '160px', 
+                    overflowY: 'auto', 
+                    overscrollBehavior: 'contain',
+                    WebkitOverflowScrolling: 'touch',
+                    display: 'flex', 
+                    flexDirection: 'column', 
+                    gap: '6px', 
+                    marginTop: '8px', 
+                    paddingRight: '4px' 
+                  }}>
+                    {availableInitialPlayers.length === 0 ? (
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textAlign: 'center', padding: '12px' }}>
+                        No se encontraron jugadores disponibles.
+                      </div>
+                    ) : (
+                      availableInitialPlayers.map(player => {
+                        const isSelected = selectedInitialMembers.some(p => p.id === player.id);
+                        const isPartner = partners.some(p => p.id === player.id);
+                        return (
+                          <div
+                            key={player.id}
+                            onClick={() => toggleInitialMember(player)}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              padding: '6px 10px',
+                              borderRadius: 'var(--radius-sm)',
+                              background: isSelected ? 'rgba(0, 230, 118, 0.12)' : 'var(--bg-elevated)',
+                              border: isSelected ? '1px solid var(--team1-primary)' : '1px solid var(--border-subtle)',
+                              cursor: 'pointer',
+                              transition: 'all 0.15s ease'
+                            }}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+                              <div style={{
+                                width: '24px',
+                                height: '24px',
+                                borderRadius: '50%',
+                                background: isSelected ? 'var(--team1-primary)' : 'var(--bg-card)',
+                                color: isSelected ? '#070a10' : 'var(--text-main)',
+                                fontWeight: 900,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '0.72rem',
+                                flexShrink: 0,
+                                overflow: 'hidden'
+                              }}>
+                                {player.avatar ? (
+                                  isImageAvatar(player.avatar) ? (
+                                    <img src={player.avatar} alt={player.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                  ) : (
+                                    <span style={{ fontSize: '0.85rem', lineHeight: 1 }}>{player.avatar}</span>
+                                  )
+                                ) : (
+                                  player.name.charAt(0).toUpperCase()
+                                )}
+                              </div>
+                              <div style={{ minWidth: 0 }}>
+                                <div style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--text-main)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                  {player.name}
+                                </div>
+                                <div style={{ fontSize: '0.66rem', color: 'var(--text-muted)', display: 'flex', gap: '4px', alignItems: 'center' }}>
+                                  <span>Cat: {player.category}</span>
+                                  <span>•</span>
+                                  <span style={{ color: 'var(--gold-primary)' }}>ELO {player.elo}</span>
+                                  {isPartner && (
+                                    <>
+                                      <span>•</span>
+                                      <span style={{ color: 'var(--team2-primary)', fontWeight: 700 }}>Partner</span>
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+
+                            <div style={{
+                              fontSize: '0.68rem',
+                              fontWeight: 800,
+                              padding: '2px 8px',
+                              borderRadius: 'var(--radius-sm)',
+                              background: isSelected ? 'var(--team1-primary)' : 'transparent',
+                              color: isSelected ? '#070a10' : 'var(--text-muted)',
+                              border: isSelected ? 'none' : '1px solid var(--border-subtle)'
+                            }}>
+                              {isSelected ? '✓ Añadido' : '+ Sumar'}
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+
+                  <div style={{ marginTop: '8px', padding: '8px 10px', background: 'rgba(37, 211, 102, 0.08)', borderRadius: 'var(--radius-sm)', border: '1px dashed rgba(37, 211, 102, 0.3)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <MessageCircle size={15} color="#25D366" style={{ flexShrink: 0 }} />
+                    <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                      <strong style={{ color: '#25D366' }}>Invitación WhatsApp externa:</strong> Al crear el grupo se abrirá de inmediato el mensaje listo con el pitch de PadelMatch para enviar por WhatsApp a jugadores externos.
+                    </span>
+                  </div>
                 </div>
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '12px' }}>
+              {/* Sticky Action Footer */}
+              <div style={{ 
+                display: 'flex', 
+                justifyContent: 'flex-end', 
+                gap: '10px', 
+                padding: '12px 24px',
+                borderTop: '1px solid var(--border-subtle)',
+                background: 'var(--bg-card)',
+                flexShrink: 0,
+                position: 'sticky',
+                bottom: 0,
+                zIndex: 10
+              }}>
                 <button
                   type="button"
                   onClick={() => setIsCreateGroupModalOpen(false)}
@@ -1089,11 +1269,200 @@ export const GroupsView: React.FC<Props> = ({
         </div>
       )}
 
+      {/* MODAL: EDITAR GRUPO */}
+      {isEditGroupModalOpen && selectedGroup && (
+        <div style={modalBackdrop} onClick={() => setIsEditGroupModalOpen(false)}>
+          <div 
+            style={{ 
+              ...modalBox, 
+              maxHeight: 'min(92vh, 880px)', 
+              display: 'flex', 
+              flexDirection: 'column', 
+              overflow: 'hidden',
+              padding: 0 
+            }} 
+            className="glass-panel" 
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Modal Header (Fixed at top) */}
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center', 
+              padding: '18px 24px 14px', 
+              borderBottom: '1px solid var(--border-subtle)',
+              flexShrink: 0,
+              background: 'var(--bg-card)'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Settings size={20} color="var(--team1-primary)" />
+                <h3 style={{ fontSize: '1.2rem', fontWeight: 900, color: 'var(--text-main)', margin: 0 }}>
+                  Editar Perfil del Grupo
+                </h3>
+              </div>
+              <button 
+                type="button"
+                onClick={() => setIsEditGroupModalOpen(false)} 
+                style={iconCloseBtn}
+                aria-label="Cerrar modal"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {editGroupSuccessMsg && (
+              <div style={{ ...successNotificationStyle, margin: '14px 24px 0' }}>
+                <CheckCircle2 size={16} color="var(--team1-primary)" />
+                <span>{editGroupSuccessMsg}</span>
+              </div>
+            )}
+
+            {/* Scrollable Form Body */}
+            <form 
+              onSubmit={handleSaveEditGroup} 
+              style={{ 
+                display: 'flex', 
+                flexDirection: 'column', 
+                flex: 1, 
+                minHeight: 0,
+                overflowY: 'auto',
+                overscrollBehavior: 'contain',
+                WebkitOverflowScrolling: 'touch'
+              }}
+            >
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', padding: '20px 24px', flex: 1 }}>
+                {/* Emblema o Foto del Grupo */}
+                <div>
+                  <AvatarSelector
+                    value={editGroupAvatar}
+                    onChange={setEditGroupAvatar}
+                    type="group"
+                    fallbackLetter={editGroupName.charAt(0) || 'G'}
+                    label="Emblema o Foto del Grupo"
+                  />
+                </div>
+
+                <div>
+                  <label style={formLabel}>Nombre del Grupo</label>
+                  <input
+                    type="text"
+                    required
+                    value={editGroupName}
+                    onChange={e => setEditGroupName(e.target.value)}
+                    style={formInput}
+                  />
+                </div>
+
+                <div>
+                  <label style={formLabel}>Descripción y Dinámica</label>
+                  <textarea
+                    value={editGroupDesc}
+                    onChange={e => setEditGroupDesc(e.target.value)}
+                    style={{ ...formInput, minHeight: '60px', resize: 'vertical' }}
+                  />
+                </div>
+
+                <div>
+                  <ClubSelectCombobox
+                    multiple={true}
+                    values={editGroupClubs}
+                    onMultipleChange={setEditGroupClubs}
+                    label="Club(es) Preferido(s) del Grupo"
+                    placeholder="Selecciona uno o más clubes donde juegan habitualmente..."
+                  />
+                </div>
+
+                <div>
+                  <label style={formLabel}>Ciudad Principal</label>
+                  <select
+                    value={editGroupCity}
+                    onChange={e => setNewGroupCity(e.target.value)}
+                    style={formInput}
+                  >
+                    <option value="La Serena">La Serena</option>
+                    <option value="Coquimbo">Coquimbo</option>
+                    <option value="La Serena - Coquimbo">La Serena - Coquimbo (Conurbación)</option>
+                    <option value="Otra">Otra Ciudad</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label style={formLabel}>Nivel de Categoría</label>
+                  <select
+                    value={editGroupCategory}
+                    onChange={e => setEditGroupCategory(e.target.value as any)}
+                    style={formInput}
+                  >
+                    <option value="1ra">1ª Categoría (Pro)</option>
+                    <option value="2da">2ª Categoría</option>
+                    <option value="3ra">3ª Categoría</option>
+                    <option value="4ta">4ª Categoría (Media)</option>
+                    <option value="5ta">5ª Categoría</option>
+                    <option value="6ta">6ª Categoría</option>
+                    <option value="7ma">7ª Categoría</option>
+                    <option value="abierta">Abierta a cualquier nivel</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Sticky Action Footer */}
+              <div style={{ 
+                display: 'flex', 
+                gap: '10px', 
+                justifyContent: 'flex-end', 
+                padding: '12px 24px',
+                borderTop: '1px solid var(--border-subtle)',
+                background: 'var(--bg-card)',
+                flexShrink: 0,
+                position: 'sticky',
+                bottom: 0,
+                zIndex: 10
+              }}>
+                <button
+                  type="button"
+                  onClick={() => setIsEditGroupModalOpen(false)}
+                  style={secondaryBtn}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  style={primaryActionBtnStyle}
+                >
+                  <Check size={16} />
+                  <span>Guardar Cambios del Grupo</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* MODAL: CREAR NUEVA CONVOCATORIA */}
       {isCreateCalloutModalOpen && selectedGroup && (
-        <div style={modalBackdrop}>
-          <div style={modalBox} className="glass-panel">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+        <div style={modalBackdrop} onClick={() => setIsCreateCalloutModalOpen(false)}>
+          <div 
+            style={{ 
+              ...modalBox, 
+              maxHeight: 'min(92vh, 880px)', 
+              display: 'flex', 
+              flexDirection: 'column', 
+              overflow: 'hidden',
+              padding: 0 
+            }} 
+            className="glass-panel"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Modal Header (Fixed at top) */}
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center', 
+              padding: '18px 24px 14px', 
+              borderBottom: '1px solid var(--border-subtle)',
+              flexShrink: 0,
+              background: 'var(--bg-card)'
+            }}>
               <div>
                 <h3 style={{ fontSize: '1.2rem', fontWeight: 900, color: 'var(--text-main)', margin: 0 }}>
                   Abrir Convocatoria en {selectedGroup.name}
@@ -1102,81 +1471,112 @@ export const GroupsView: React.FC<Props> = ({
                   Invita a todos los miembros y cuadra partidos en múltiplos de 4
                 </span>
               </div>
-              <button onClick={() => setIsCreateCalloutModalOpen(false)} style={iconCloseBtn}>
+              <button 
+                type="button"
+                onClick={() => setIsCreateCalloutModalOpen(false)} 
+                style={iconCloseBtn}
+                aria-label="Cerrar modal"
+              >
                 <X size={18} />
               </button>
             </div>
 
-            <form onSubmit={handleCreateCallout} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1.3fr 0.7fr', gap: '10px', alignItems: 'flex-start' }}>
-                <div>
-                  <ClubSelectCombobox
-                    multiple={false}
-                    value={calloutClub}
-                    onChange={(clubName) => setCalloutClub(clubName)}
-                    label="Club Sede de la Convocatoria"
-                    placeholder="Selecciona club de La Serena o Coquimbo..."
-                    required={true}
-                  />
+            {/* Scrollable Form Body */}
+            <form 
+              onSubmit={handleCreateCallout} 
+              style={{ 
+                display: 'flex', 
+                flexDirection: 'column', 
+                flex: 1, 
+                minHeight: 0,
+                overflowY: 'auto',
+                overscrollBehavior: 'contain',
+                WebkitOverflowScrolling: 'touch'
+              }}
+            >
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', padding: '20px 24px', flex: 1 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1.3fr 0.7fr', gap: '10px', alignItems: 'flex-start' }}>
+                  <div>
+                    <ClubSelectCombobox
+                      multiple={false}
+                      value={calloutClub}
+                      onChange={(clubName) => setCalloutClub(clubName)}
+                      label="Club Sede de la Convocatoria"
+                      placeholder="Selecciona club de La Serena o Coquimbo..."
+                      required={true}
+                    />
+                  </div>
+                  <div>
+                    <label style={formLabel}>Pista / Cancha</label>
+                    <input
+                      type="text"
+                      placeholder="Ej: Cancha 1 y 2"
+                      value={calloutCourt}
+                      onChange={e => setCalloutCourt(e.target.value)}
+                      style={formInput}
+                    />
+                  </div>
                 </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '10px' }}>
+                  <div>
+                    <label style={formLabel}>Fecha del Partido</label>
+                    <input
+                      type="date"
+                      required
+                      value={calloutDate}
+                      onChange={e => setCalloutDate(e.target.value)}
+                      style={formInput}
+                    />
+                  </div>
+                  <div>
+                    <label style={formLabel}>Horario de Inicio</label>
+                    <input
+                      type="time"
+                      required
+                      value={calloutTime}
+                      onChange={e => setCalloutTime(e.target.value)}
+                      style={formInput}
+                    />
+                  </div>
+                </div>
+
                 <div>
-                  <label style={formLabel}>Pista / Cancha</label>
+                  <label style={formLabel}>Fecha y Hora Límite de Confirmación</label>
                   <input
                     type="text"
-                    placeholder="Ej: Cancha 1 y 2"
-                    value={calloutCourt}
-                    onChange={e => setCalloutCourt(e.target.value)}
-                    style={formInput}
-                  />
-                </div>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '10px' }}>
-                <div>
-                  <label style={formLabel}>Fecha del Partido</label>
-                  <input
-                    type="date"
                     required
-                    value={calloutDate}
-                    onChange={e => setCalloutDate(e.target.value)}
+                    placeholder="Ej: Jueves 14:00 hrs"
+                    value={calloutDeadline}
+                    onChange={e => setCalloutDeadline(e.target.value)}
                     style={formInput}
                   />
                 </div>
+
                 <div>
-                  <label style={formLabel}>Horario de Inicio</label>
-                  <input
-                    type="time"
-                    required
-                    value={calloutTime}
-                    onChange={e => setCalloutTime(e.target.value)}
-                    style={formInput}
+                  <label style={formLabel}>Notas o Instrucciones para el Grupo</label>
+                  <textarea
+                    placeholder="Ej: Reservamos 2 canchas, se juega a 3 sets. ¡Confirmen pronto!"
+                    value={calloutNotes}
+                    onChange={e => setCalloutNotes(e.target.value)}
+                    style={{ ...formInput, minHeight: '60px', resize: 'vertical' }}
                   />
                 </div>
               </div>
 
-              <div>
-                <label style={formLabel}>Fecha y Hora Límite de Confirmación</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Ej: Jueves 14:00 hrs"
-                  value={calloutDeadline}
-                  onChange={e => setCalloutDeadline(e.target.value)}
-                  style={formInput}
-                />
-              </div>
-
-              <div>
-                <label style={formLabel}>Notas o Instrucciones para el Grupo</label>
-                <textarea
-                  placeholder="Ej: Reservamos 2 canchas, se juega a 3 sets. ¡Confirmen pronto!"
-                  value={calloutNotes}
-                  onChange={e => setCalloutNotes(e.target.value)}
-                  style={{ ...formInput, minHeight: '60px', resize: 'vertical' }}
-                />
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '12px' }}>
+              {/* Sticky Action Footer */}
+              <div style={{ 
+                display: 'flex', 
+                justifyContent: 'flex-end', 
+                gap: '10px', 
+                padding: '12px 24px',
+                borderTop: '1px solid var(--border-subtle)',
+                background: 'var(--bg-card)',
+                flexShrink: 0,
+                position: 'sticky',
+                bottom: 0,
+                zIndex: 10
+              }}>
                 <button
                   type="button"
                   onClick={() => setIsCreateCalloutModalOpen(false)}
@@ -1200,8 +1600,8 @@ export const GroupsView: React.FC<Props> = ({
             {/* Header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '14px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <div style={{ width: '42px', height: '42px', borderRadius: 'var(--radius-md)', background: 'var(--bg-elevated)', border: '1px solid var(--border-medium)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.4rem' }}>
-                  {selectedGroup.avatar || '🎾'}
+                <div style={{ width: '42px', height: '42px', borderRadius: 'var(--radius-md)', background: 'var(--bg-elevated)', border: '1px solid var(--border-medium)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.4rem', overflow: 'hidden' }}>
+                  {renderGroupAvatar(selectedGroup.avatar, 42, '8px')}
                 </div>
                 <div>
                   <h3 style={{ fontSize: '1.2rem', fontWeight: 900, color: 'var(--text-main)', margin: 0 }}>
@@ -1484,9 +1884,18 @@ export const GroupsView: React.FC<Props> = ({
                               alignItems: 'center',
                               justifyContent: 'center',
                               fontSize: '0.85rem',
-                              flexShrink: 0
+                              flexShrink: 0,
+                              overflow: 'hidden'
                             }}>
-                              {player.name.charAt(0).toUpperCase()}
+                              {player.avatar ? (
+                                isImageAvatar(player.avatar) ? (
+                                  <img src={player.avatar} alt={player.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                ) : (
+                                  <span style={{ fontSize: '1.1rem', lineHeight: 1 }}>{player.avatar}</span>
+                                )
+                              ) : (
+                                player.name.charAt(0).toUpperCase()
+                              )}
                             </div>
                             <div style={{ minWidth: 0 }}>
                               <div style={{ fontSize: '0.86rem', fontWeight: 800, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -2013,23 +2422,28 @@ const modalBackdrop: React.CSSProperties = {
   left: 0,
   right: 0,
   bottom: 0,
-  background: 'rgba(0, 0, 0, 0.75)',
-  backdropFilter: 'blur(8px)',
+  background: 'rgba(0, 0, 0, 0.82)',
+  backdropFilter: 'blur(10px)',
+  WebkitBackdropFilter: 'blur(10px)',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
   zIndex: 1100,
-  padding: '16px'
+  padding: '16px',
+  overflowY: 'auto',
+  overscrollBehavior: 'contain',
+  WebkitOverflowScrolling: 'touch'
 };
 
 const modalBox: React.CSSProperties = {
   width: '100%',
-  maxWidth: '480px',
+  maxWidth: '520px',
+  maxHeight: 'min(92vh, 880px)',
   background: 'var(--bg-card)',
   borderRadius: 'var(--radius-lg)',
-  padding: '24px',
-  boxShadow: 'var(--shadow-lg)',
-  border: '1px solid var(--border-medium)'
+  boxShadow: '0 24px 60px rgba(0, 0, 0, 0.75)',
+  border: '1px solid var(--border-medium)',
+  margin: 'auto'
 };
 
 const iconCloseBtn: React.CSSProperties = {
@@ -2069,4 +2483,17 @@ const secondaryBtn: React.CSSProperties = {
   fontWeight: 700,
   fontSize: '0.85rem',
   cursor: 'pointer'
+};
+
+const successNotificationStyle: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: '8px',
+  padding: '10px 14px',
+  borderRadius: '8px',
+  background: 'rgba(0, 230, 118, 0.15)',
+  border: '1px solid rgba(0, 230, 118, 0.4)',
+  color: 'var(--team1-primary)',
+  fontSize: '0.82rem',
+  marginBottom: '14px'
 };

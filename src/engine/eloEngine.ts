@@ -59,3 +59,30 @@ export function calculatePadelElo(
     }
   };
 }
+
+export const DEFAULT_INITIAL_ELO = 1200;
+
+export interface EloTierInfo {
+  tier: 'amateur' | 'intermedio' | 'avanzado' | 'competicion' | 'master';
+  label: string;
+  badge: string;
+  color: string;
+  minElo: number;
+  maxElo: number;
+}
+
+export function getEloTier(elo: number = DEFAULT_INITIAL_ELO): EloTierInfo {
+  if (elo >= 1850) {
+    return { tier: 'master', label: 'Master / Élite', badge: '👑 Master', color: '#ffb300', minElo: 1850, maxElo: 3000 };
+  }
+  if (elo >= 1600) {
+    return { tier: 'competicion', label: 'Competición', badge: '💎 Competición', color: '#00e5ff', minElo: 1600, maxElo: 1849 };
+  }
+  if (elo >= 1350) {
+    return { tier: 'avanzado', label: 'Avanzado', badge: '🥇 Avanzado', color: '#00e676', minElo: 1350, maxElo: 1599 };
+  }
+  if (elo >= 1150) {
+    return { tier: 'intermedio', label: 'Intermedio', badge: '🥈 Intermedio', color: '#90caf9', minElo: 1150, maxElo: 1349 };
+  }
+  return { tier: 'amateur', label: 'Iniciación / Bronce', badge: '🥉 Amateur', color: '#ffab91', minElo: 600, maxElo: 1149 };
+}

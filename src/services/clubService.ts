@@ -1,5 +1,5 @@
 import type { PadelClub } from '../types/padel';
-import { collection, doc, setDoc, onSnapshot } from 'firebase/firestore';
+import { collection, doc, setDoc, deleteDoc, onSnapshot } from 'firebase/firestore';
 import { db, cleanForFirestore } from './firebase';
 
 const CLUBS_STORAGE_KEY = 'padelmatch_clubs_v1';
@@ -354,6 +354,94 @@ class ClubService {
     this.clubs.push(newClub);
     this.saveToStorage(true);
     return newClub;
+  }
+
+  // --- Admin Club Management ---
+
+  public adminAddClub(clubData: {
+    name: string;
+    city: string;
+    commune?: string;
+    address?: string;
+    courtsCount?: number;
+    indoorOutdoor?: 'indoor' | 'outdoor' | 'mixto';
+    instagram?: string;
+    services?: string[];
+    verified?: boolean;
+  }): PadelClub {
+    const id = `club-${Date.now().toString(36)}-${Math.random().toString(36).substr(2, 4)}`;
+    const newClub: PadelClub = {
+      id,
+      name: clubData.name.trim(),
+      city: clubData.city.trim() || 'La Serena',
+      commune: clubData.commune?.trim() || 'Sector Central',
+      address: clubData.address?.trim() || 'Sin dirección especificada',
+      courtsCount: clubData.courtsCount || 4,
+      indoorOutdoor: clubData.indoorOutdoor || 'outdoor',
+      instagram: clubData.instagram?.trim(),
+      services: clubData.services && clubData.services.length > 0 ? clubData.services : ['Canchas de Pádel'],
+      verified: clubData.verified !== undefined ? clubData.verified : true,
+      createdAt: Date.now()
+    };
+
+    this.clubs.unshift(newClub);
+    this.saveToStorage(true);
+
+    try {
+      setDoc(doc(db, 'clubs', id), cleanForFirestore(newClub)).catch(console.warn);
+    } catch (e) {
+      console.warn('Could not save club in Firestore:', e);
+    }
+
+    return newClub;
+  }
+
+  public adminUpdateClub(id: string, updates: Partial<PadelClub>): boolean {
+    const club = this.clubs.find(c => c.id === id);
+    if (!club) return false;
+
+    Object.assign(club, updates);
+    this.saveToStorage(true);
+
+    try {
+      setDoc(doc(db, 'clubs', id), cleanForFirestore(updates), { merge: true }).catch(console.warn);
+    } catch (e) {
+      console.warn('Could not update club in Firestore:', e);
+    }
+
+    return true;
+  }
+
+  public adminDeleteClub(id: string): boolean {
+    const idx = this.clubs.findIndex(c => c.id === id);
+    if (idx < 0) return false;
+
+    this.clubs.splice(idx, 1);
+    this.saveToStorage(true);
+
+    try {
+      deleteDoc(doc(db, 'clubs', id)).catch(console.warn);
+    } catch (e) {
+      console.warn('Could not delete club in Firestore:', e);
+    }
+
+    return true;
+  }
+
+  public adminToggleVerifyClub(id: string): boolean {
+    const club = this.clubs.find(c => c.id === id);
+    if (!club) return false;
+
+    club.verified = !club.verified;
+    this.saveToStorage(true);
+
+    try {
+      setDoc(doc(db, 'clubs', id), { verified: club.verified }, { merge: true }).catch(console.warn);
+    } catch (e) {
+      console.warn('Could not update club verified status:', e);
+    }
+
+    return club.verified;
   }
 }
 

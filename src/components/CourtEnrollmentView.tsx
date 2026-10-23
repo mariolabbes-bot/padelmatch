@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import type { Team, Player, CommunityPlayer, HeadToHeadStats } from '../types/padel';
 import { communityService } from '../services/communityService';
+import { isImageAvatar } from '../utils/imageOptimizer';
 import { 
   Users, 
   Search, 
@@ -82,6 +83,14 @@ export const CourtEnrollmentView: React.FC<Props> = ({
     setNewPhone('');
   };
 
+  const renderCourtAvatar = (avatar?: string, fallbackColor = 'var(--team1-primary)') => {
+    if (!avatar) return <Users size={20} color={fallbackColor} />;
+    if (isImageAvatar(avatar)) {
+      return <img src={avatar} alt="" style={avatarImgStyle} />;
+    }
+    return <span style={{ fontSize: '1.4rem', lineHeight: 1 }}>{avatar}</span>;
+  };
+
   return (
     <div style={containerStyle}>
       {/* Top Banner */}
@@ -140,11 +149,7 @@ export const CourtEnrollmentView: React.FC<Props> = ({
                 >
                   <div style={positionTag}>DRIVE (Derecha)</div>
                   <div style={slotAvatarStyle}>
-                    {teams.team1.player1.avatar ? (
-                      <img src={teams.team1.player1.avatar} alt="" style={avatarImgStyle} />
-                    ) : (
-                      <Users size={20} color="var(--team1-primary)" />
-                    )}
+                    {renderCourtAvatar(teams.team1.player1.avatar, 'var(--team1-primary)')}
                   </div>
                   <div style={{ fontWeight: 800, fontSize: '0.9rem', color: '#fff', textAlign: 'center' }}>
                     {teams.team1.player1.name}
@@ -166,11 +171,7 @@ export const CourtEnrollmentView: React.FC<Props> = ({
                 >
                   <div style={positionTag}>REVÉS (Izquierda)</div>
                   <div style={slotAvatarStyle}>
-                    {teams.team1.player2.avatar ? (
-                      <img src={teams.team1.player2.avatar} alt="" style={avatarImgStyle} />
-                    ) : (
-                      <Users size={20} color="var(--team1-primary)" />
-                    )}
+                    {renderCourtAvatar(teams.team1.player2.avatar, 'var(--team1-primary)')}
                   </div>
                   <div style={{ fontWeight: 800, fontSize: '0.9rem', color: '#fff', textAlign: 'center' }}>
                     {teams.team1.player2.name}
@@ -201,11 +202,7 @@ export const CourtEnrollmentView: React.FC<Props> = ({
                 >
                   <div style={{ ...positionTag, color: 'var(--team2-primary)' }}>REVÉS (Izquierda)</div>
                   <div style={{ ...slotAvatarStyle, borderColor: 'rgba(0, 176, 255, 0.4)' }}>
-                    {teams.team2.player2.avatar ? (
-                      <img src={teams.team2.player2.avatar} alt="" style={avatarImgStyle} />
-                    ) : (
-                      <Users size={20} color="var(--team2-primary)" />
-                    )}
+                    {renderCourtAvatar(teams.team2.player2.avatar, 'var(--team2-primary)')}
                   </div>
                   <div style={{ fontWeight: 800, fontSize: '0.9rem', color: '#fff', textAlign: 'center' }}>
                     {teams.team2.player2.name}
@@ -227,11 +224,7 @@ export const CourtEnrollmentView: React.FC<Props> = ({
                 >
                   <div style={{ ...positionTag, color: 'var(--team2-primary)' }}>DRIVE (Derecha)</div>
                   <div style={{ ...slotAvatarStyle, borderColor: 'rgba(0, 176, 255, 0.4)' }}>
-                    {teams.team2.player1.avatar ? (
-                      <img src={teams.team2.player1.avatar} alt="" style={avatarImgStyle} />
-                    ) : (
-                      <Users size={20} color="var(--team2-primary)" />
-                    )}
+                    {renderCourtAvatar(teams.team2.player1.avatar, 'var(--team2-primary)')}
                   </div>
                   <div style={{ fontWeight: 800, fontSize: '0.9rem', color: '#fff', textAlign: 'center' }}>
                     {teams.team2.player1.name}
@@ -369,7 +362,7 @@ export const CourtEnrollmentView: React.FC<Props> = ({
                     >
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                         <div style={miniAvatarStyle}>
-                          {cp.avatar ? <img src={cp.avatar} alt="" style={avatarImgStyle} /> : <Users size={16} />}
+                          {renderCourtAvatar(cp.avatar, 'var(--team1-primary)')}
                         </div>
                         <div>
                           <div style={{ fontWeight: 700, fontSize: '0.88rem', color: '#fff' }}>{cp.name}</div>

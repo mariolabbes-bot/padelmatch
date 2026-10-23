@@ -353,5 +353,8 @@ button:active {
     --safe-left: max(8px, env(safe-area-inset-left, 8px));
     --safe-right: max(8px, env(safe-area-inset-right, 8px));
   }
+@media (min-width: 480px) {
+  .mobile-show-desktop {
+    display: inline !important;
+  }
 }
-

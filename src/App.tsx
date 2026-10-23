@@ -21,6 +21,8 @@ import { matchSyncService } from './services/matchSyncService';
 import type { SyncedMatchRoom } from './services/matchSyncService';
 import { groupService } from './services/groupService';
 import { notificationService } from './services/notificationService';
+import { scheduleService } from './services/scheduleService';
+import type { ScheduledMatch } from './types/padel';
 
 // Flow Views
 import { AuthScreen } from './components/AuthScreen';
@@ -32,6 +34,8 @@ import { MatchParticipantJoinView } from './components/MatchParticipantJoinView'
 import { CommunityDashboard } from './components/CommunityDashboard';
 import { CourtTvDisplay } from './components/CourtTvDisplay';
 import { GroupsView } from './components/GroupsView';
+import { UserProfileView } from './components/UserProfileView';
+import { AdminDashboardView } from './components/AdminDashboardView';
 import { BottomNavBar } from './components/BottomNavBar';
 import { MobileDrawerMenu } from './components/MobileDrawerMenu';
 
@@ -46,6 +50,7 @@ import { InstallPwaPrompt } from './components/InstallPwaPrompt';
 import { NotificationsModal } from './components/NotificationsModal';
 import { SubscriptionPlansModal } from './components/SubscriptionPlansModal';
 import { FloatingActiveMatchWidget } from './components/FloatingActiveMatchWidget';
+import { PublicMatchInviteModal } from './components/PublicMatchInviteModal';
 
 function parseMatchIdFromHash(): string | null {
   if (typeof window === 'undefined') return null;
@@ -57,6 +62,27 @@ export function App() {
   // 1. User Authentication Session
   const [currentUser, setCurrentUser] = useState<UserSession | null>(() => authService.getCurrentUser());
   const [isGlobalDrawerOpen, setIsGlobalDrawerOpen] = useState(false);
+
+  // Scheduled Match Public WhatsApp Invite
+  const [publicInviteMatchId, setPublicInviteMatchId] = useState<string | null>(() => {
+    if (typeof window === 'undefined') return null;
+    const hash = window.location.hash || '';
+    const match = hash.match(/match-invite=([^&]+)/) || hash.match(/scheduled-match=([^&]+)/);
+    return match ? decodeURIComponent(match[1]) : null;
+  });
+
+  useEffect(() => {
+    const checkScheduleInvite = () => {
+      if (typeof window === 'undefined') return;
+      const hash = window.location.hash || '';
+      const match = hash.match(/match-invite=([^&]+)/) || hash.match(/scheduled-match=([^&]+)/);
+      if (match && match[1]) {
+        setPublicInviteMatchId(decodeURIComponent(match[1]));
+      }
+    };
+    window.addEventListener('hashchange', checkScheduleInvite);
+    return () => window.removeEventListener('hashchange', checkScheduleInvite);
+  }, []);
 
   useEffect(() => {
     const unsubscribe = authService.subscribe(setCurrentUser);
@@ -103,6 +129,10 @@ export function App() {
     }
     if (hash.includes('join-group=')) {
       return authService.isAuthenticated() ? 'groups' : 'auth';
+    }
+    if (hash.includes('admin')) {
+      const u = authService.getCurrentUser();
+      return authService.isAdmin(u) ? 'admin' : (authService.isAuthenticated() ? 'host_dashboard' : 'auth');
     }
     return authService.isAuthenticated() ? 'host_dashboard' : 'auth';
   });
@@ -160,6 +190,12 @@ export function App() {
         if (newHashId !== saved) {
           setCurrentView('participant_join');
           setIsLoadingRoom(true);
+        }
+      } else if (window.location.hash.includes('admin')) {
+        if (authService.isAdmin(currentUser)) {
+          setCurrentView('admin');
+        } else {
+          setCurrentView('host_dashboard');
         }
       }
     };
@@ -717,6 +753,61 @@ export function App() {
           onOpenSubscriptionModal={() => setIsSubscriptionModalOpen(true)}
           onNavigateToGroups={() => setCurrentView('groups')}
           onStartMatch={() => setIsSetupModalOpen(true)}
+          onLaunchScheduledMatch={(scheduledMatch: ScheduledMatch) => {
+            const confirmedSlots = scheduledMatch.slots.filter(s => s.status === 'confirmed');
+            const s1 = confirmedSlots[0];
+            const s2 = confirmedSlots[1];
+            const s3 = confirmedSlots[2];
+            const s4 = confirmedSlots[3];
+
+            setTeams({
+              team1: {
+                id: 'team1',
+                name: `${s1?.name?.split(' ')[0] || 'J1'} & ${s2?.name?.split(' ')[0] || 'J2'}`,
+                color: 'var(--team1-primary)',
+                player1: {
+                  id: s1?.playerId || 'p1',
+                  name: s1?.name || 'Jugador 1',
+                  avatar: s1?.avatar,
+                  position: 'drive'
+                },
+                player2: {
+                  id: s2?.playerId || 'p2',
+                  name: s2?.name || 'Jugador 2',
+                  avatar: s2?.avatar,
+                  position: 'reves'
+                }
+              },
+              team2: {
+                id: 'team2',
+                name: `${s3?.name?.split(' ')[0] || 'J3'} & ${s4?.name?.split(' ')[0] || 'J4'}`,
+                color: 'var(--team2-primary)',
+                player1: {
+                  id: s3?.playerId || 'p3',
+                  name: s3?.name || 'Jugador 3',
+                  avatar: s3?.avatar,
+                  position: 'drive'
+                },
+                player2: {
+                  id: s4?.playerId || 'p4',
+                  name: s4?.name || 'Jugador 4',
+                  avatar: s4?.avatar,
+                  position: 'reves'
+                }
+              }
+            });
+
+            const fullCourtName = `${scheduledMatch.clubName}${scheduledMatch.courtName ? ' • ' + scheduledMatch.courtName : ''}`;
+            setRules(prev => ({
+              ...prev,
+              courtName: fullCourtName
+            }));
+
+            scheduleService.markInProgress(scheduledMatch.id, activeMatchId);
+            setIsSetupModalOpen(true);
+          }}
+          onOpenProfile={() => setCurrentView('user_profile')}
+          onOpenAdmin={() => setCurrentView('admin')}
           onLogout={handleLogout}
         />
       )}
@@ -885,7 +976,27 @@ export function App() {
       {/* VIEW: Community Leaderboard & ELO Rankings */}
       {currentView === 'community' && (
         <CommunityDashboard
+          currentUser={currentUser}
           onBackToScoreboard={() => setCurrentView(currentUser ? 'host_dashboard' : 'scoreboard')}
+        />
+      )}
+
+      {/* VIEW: User Profile & Athlete Technical Sheet */}
+      {currentView === 'user_profile' && currentUser && (
+        <UserProfileView
+          currentUser={currentUser}
+          onBack={() => setCurrentView('host_dashboard')}
+          onNavigateToView={(view) => setCurrentView(view)}
+          onLogout={handleLogout}
+        />
+      )}
+
+      {/* VIEW: Admin Central Control Panel (Authorised Founder Only) */}
+      {currentView === 'admin' && (
+        <AdminDashboardView
+          currentUser={currentUser}
+          onBack={() => setCurrentView('host_dashboard')}
+          onNavigateToView={(view) => setCurrentView(view)}
         />
       )}
 
@@ -1016,6 +1127,8 @@ export function App() {
         onOpenCourtAlignment={() => setCurrentView('court_enrollment')}
         onOpenTvMode={() => setCurrentView('court_tv')}
         onOpenCommunity={() => setCurrentView('community')}
+        onOpenProfile={() => setCurrentView('user_profile')}
+        onOpenAdmin={() => setCurrentView('admin')}
         onResetMatch={handleResetMatch}
         onNewMatch={() => setCurrentView('host_dashboard')}
         onLogout={handleLogout}
@@ -1037,6 +1150,23 @@ export function App() {
         isOpen={isSubscriptionModalOpen}
         onClose={() => setIsSubscriptionModalOpen(false)}
         currentUser={currentUser}
+      />
+
+      {/* Public / WhatsApp Match Invite Modal */}
+      <PublicMatchInviteModal
+        matchId={publicInviteMatchId}
+        currentUser={currentUser}
+        onClose={() => {
+          setPublicInviteMatchId(null);
+          if (typeof window !== 'undefined' && window.location.hash.includes('match-invite=')) {
+            window.location.hash = '';
+          }
+        }}
+        onMatchConfirmed={() => {
+          if (currentUser) {
+            setCurrentView('host_dashboard');
+          }
+        }}
       />
     </div>
   );

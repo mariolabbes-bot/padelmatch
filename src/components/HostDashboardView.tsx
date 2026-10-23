@@ -6,6 +6,13 @@ import { notificationService } from '../services/notificationService';
 import { themeService, type AppTheme } from '../services/themeService';
 import { partnerService } from '../services/partnerService';
 import { groupService } from '../services/groupService';
+import { getEloTier } from '../engine/eloEngine';
+import { isImageAvatar } from '../utils/imageOptimizer';
+import { scheduleService } from '../services/scheduleService';
+import { ScheduleMatchModal } from './ScheduleMatchModal';
+import { ScheduledMatchDetailModal } from './ScheduledMatchDetailModal';
+import { InviteExternalPartnerModal } from './InviteExternalPartnerModal';
+import type { ScheduledMatch } from '../types/padel';
 import { 
   Trophy, 
   LogOut, 
@@ -25,7 +32,12 @@ import {
   Sparkles,
   Search,
   ExternalLink,
-  TrendingUp
+  TrendingUp,
+  User,
+  Calendar,
+  Plus,
+  Share2,
+  ShieldCheck
 } from 'lucide-react';
 
 interface Props {
@@ -39,6 +51,9 @@ interface Props {
   onOpenSubscriptionModal?: () => void;
   onNavigateToGroups?: () => void;
   onStartMatch?: () => void;
+  onLaunchScheduledMatch?: (match: ScheduledMatch) => void;
+  onOpenProfile?: () => void;
+  onOpenAdmin?: () => void;
   onLogout: () => void;
 }
 
@@ -49,6 +64,9 @@ export const HostDashboardView: React.FC<Props> = ({
   onOpenSubscriptionModal,
   onNavigateToGroups,
   onStartMatch,
+  onLaunchScheduledMatch,
+  onOpenProfile,
+  onOpenAdmin,
   onLogout
 }) => {
   const [theme, setTheme] = useState<AppTheme>(themeService.getTheme());
@@ -61,6 +79,9 @@ export const HostDashboardView: React.FC<Props> = ({
   const [clubCampaigns] = useState<ClubCampaign[]>(() => partnerService.getClubCampaigns());
   const [padelNews] = useState<PadelNewsItem[]>(() => partnerService.getPadelNews());
   const [groups, setGroups] = useState<PadelGroup[]>(() => groupService.getGroups());
+  const [scheduledData, setScheduledData] = useState(() => scheduleService.getMatchesForUser(user));
+  const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
+  const [selectedDetailMatch, setSelectedDetailMatch] = useState<ScheduledMatch | null>(null);
 
   // Post Composer State
   const [newPostContent, setNewPostContent] = useState('');
@@ -72,6 +93,10 @@ export const HostDashboardView: React.FC<Props> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<CommunityPlayer[]>([]);
   const [partnerFeedbackMsg, setPartnerFeedbackMsg] = useState<string | null>(null);
+
+  // External Partner WhatsApp Invite State
+  const [isInviteExternalOpen, setIsInviteExternalOpen] = useState(false);
+  const [inviteFriendName, setInviteFriendName] = useState('');
 
   useEffect(() => {
     return themeService.subscribe(setTheme);
@@ -89,11 +114,15 @@ export const HostDashboardView: React.FC<Props> = ({
     const unsubGroups = groupService.subscribe(() => {
       setGroups(groupService.getGroups());
     });
+    const unsubSchedule = scheduleService.subscribe(() => {
+      setScheduledData(scheduleService.getMatchesForUser(user));
+    });
 
     return () => {
       unsubNotifs();
       unsubPartners();
       unsubGroups();
+      unsubSchedule();
     };
   }, [user]);
 
@@ -111,6 +140,7 @@ export const HostDashboardView: React.FC<Props> = ({
 
   const remainingFree = authService.getHostedMatchesRemaining(user);
   const isSubscribed = user.plan === 'subscribed' || user.plan === 'pro_founder' || user.plan === 'captain' || user.plan === 'club';
+  const isAdmin = authService.isAdmin(user);
 
   // Find active group callouts needing players ("Falta 1")
   const activeCallouts = groups.flatMap(g => 
@@ -149,44 +179,81 @@ export const HostDashboardView: React.FC<Props> = ({
 
   return (
     <div style={containerStyle}>
-      {/* 1. TOP ATHLETE HEADER */}
-      <header style={topBarStyle} className="glass-panel apple-card">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
+      {/* 1. TOP BRAND & SYSTEM UTILITIES BAR */}
+      <div style={brandTopBarStyle} className="glass-panel apple-card">
+        {/* Brand with Logo */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
           <img 
             src="/logo.png" 
             alt="PadelMatch Logo" 
-            style={{ width: '36px', height: '36px', borderRadius: '50%', objectFit: 'cover', border: '1.5px solid rgba(255, 255, 255, 0.25)', flexShrink: 0 }} 
+            style={{ 
+              width: '28px', 
+              height: '28px', 
+              borderRadius: '50%', 
+              objectFit: 'cover', 
+              border: '1.5px solid rgba(0, 230, 118, 0.45)',
+              boxShadow: '0 0 10px rgba(0, 230, 118, 0.25)',
+              flexShrink: 0 
+            }} 
           />
-          <div style={{ minWidth: 0 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-              <span style={{ fontWeight: 900, letterSpacing: '-0.02em', fontSize: '1.15rem', color: 'var(--text-main)' }}>
-                Hola, {user.name.split(' ')[0]} 👋
-              </span>
-              <span className="badge badge-team1" style={{ fontSize: '0.65rem', fontWeight: 900 }}>
-                {user.category} Cat
-              </span>
-              <span className="badge badge-gold" style={{ fontSize: '0.65rem', fontWeight: 900 }}>
-                ELO {player?.elo || user.elo}
-              </span>
-            </div>
-            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
-              {partners.length} Partners conectados • {groups.length} Grupos activos
-            </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+            <span style={{ fontWeight: 900, letterSpacing: '-0.03em', fontSize: '1.05rem', color: '#fff' }}>
+              PADEL<span style={{ color: 'var(--team1-primary)' }}>MATCH</span>
+            </span>
+            <span style={{
+              fontSize: '0.58rem',
+              fontWeight: 900,
+              letterSpacing: '0.04em',
+              padding: '1px 5px',
+              borderRadius: '4px',
+              background: 'rgba(0, 230, 118, 0.12)',
+              color: 'var(--team1-primary)',
+              border: '1px solid rgba(0, 230, 118, 0.25)'
+            }}>
+              LIVE
+            </span>
           </div>
         </div>
 
-        {/* Right Tools */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          {/* ELO Ranking & Community Button */}
-          {onOpenCommunity && (
+        {/* Right System Utilities */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          {/* Admin Control Panel Button (Only Authorized Admin) */}
+          {isAdmin && onOpenAdmin && (
             <button
               type="button"
-              onClick={onOpenCommunity}
-              style={iconHeaderBtnStyle}
-              title="Ranking Oficial ELO & Comunidad"
-              aria-label="Ranking Oficial ELO & Comunidad"
+              onClick={onOpenAdmin}
+              style={{
+                ...iconHeaderBtnStyle,
+                padding: '4px 8px',
+                background: 'rgba(255, 214, 0, 0.16)',
+                borderColor: 'rgba(255, 214, 0, 0.45)',
+                color: 'var(--gold-primary)'
+              }}
+              title="Panel de Administración Central"
+              aria-label="Panel Admin"
             >
-              <Trophy size={16} color="var(--gold-primary)" />
+              <ShieldCheck size={13} />
+              <span style={{ fontSize: '0.68rem', fontWeight: 900 }}>ADMIN</span>
+            </button>
+          )}
+
+          {/* Subscription Button */}
+          {onOpenSubscriptionModal && (
+            <button
+              type="button"
+              onClick={onOpenSubscriptionModal}
+              style={{
+                ...iconHeaderBtnStyle,
+                padding: '4px 8px',
+                background: isSubscribed ? 'rgba(0, 230, 118, 0.12)' : 'rgba(255, 214, 0, 0.12)',
+                borderColor: isSubscribed ? 'rgba(0, 230, 118, 0.3)' : 'rgba(255, 214, 0, 0.3)',
+                color: isSubscribed ? 'var(--team1-primary)' : 'var(--gold-primary)'
+              }}
+              title="Planes y Suscripción"
+              aria-label="Planes y Suscripción"
+            >
+              <Crown size={13} />
+              <span style={{ fontSize: '0.68rem', fontWeight: 900 }}>{isSubscribed ? 'PRO' : 'PLANES'}</span>
             </button>
           )}
 
@@ -194,40 +261,23 @@ export const HostDashboardView: React.FC<Props> = ({
           <button
             type="button"
             onClick={() => themeService.toggleTheme()}
-            style={iconHeaderBtnStyle}
+            style={{ ...iconHeaderBtnStyle, padding: '6px' }}
             title={theme === 'day' ? 'Modo Noche (Estadio Neón)' : 'Modo Día (Luz Natural / Alto Contraste)'}
             aria-label="Cambiar tema día/noche"
           >
-            {theme === 'day' ? <Sun size={16} color="var(--gold-primary)" /> : <Moon size={16} color="var(--team2-primary)" />}
+            {theme === 'day' ? <Sun size={15} color="var(--gold-primary)" /> : <Moon size={15} color="var(--team2-primary)" />}
           </button>
-
-          {/* Subscription Badge Button */}
-          {onOpenSubscriptionModal && (
-            <button
-              type="button"
-              onClick={onOpenSubscriptionModal}
-              style={{
-                ...iconHeaderBtnStyle,
-                background: isSubscribed ? 'rgba(0, 230, 118, 0.14)' : 'rgba(255, 214, 0, 0.14)',
-                borderColor: isSubscribed ? 'rgba(0, 230, 118, 0.35)' : 'rgba(255, 214, 0, 0.35)',
-                color: isSubscribed ? 'var(--team1-primary)' : 'var(--gold-primary)'
-              }}
-              title="Planes y Suscripción"
-            >
-              <Crown size={15} />
-              <span style={{ fontSize: '0.72rem', fontWeight: 900 }}>{isSubscribed ? 'PRO' : 'PLANES'}</span>
-            </button>
-          )}
 
           {/* Notifications Bell */}
           {onOpenNotifications && (
             <button 
-              onClick={onOpenNotifications} 
-              style={iconHeaderBtnStyle} 
-              title="Notificaciones & Convocatorias"
               type="button"
+              onClick={onOpenNotifications} 
+              style={{ ...iconHeaderBtnStyle, padding: '6px' }} 
+              title="Notificaciones & Convocatorias"
+              aria-label="Notificaciones"
             >
-              <Bell size={16} color="var(--gold-primary)" />
+              <Bell size={15} color="var(--gold-primary)" />
               {unreadNotifs > 0 && (
                 <span style={unreadBadgeCountStyle}>{unreadNotifs}</span>
               )}
@@ -235,11 +285,118 @@ export const HostDashboardView: React.FC<Props> = ({
           )}
 
           {/* Logout */}
-          <button onClick={onLogout} style={logoutBtnStyle} title="Cerrar sesión">
-            <LogOut size={15} />
+          <button type="button" onClick={onLogout} style={{ ...logoutBtnStyle, padding: '6px' }} title="Cerrar sesión" aria-label="Cerrar sesión">
+            <LogOut size={14} />
           </button>
         </div>
-      </header>
+      </div>
+
+      {/* 2. ATHLETE PROFILE CARD (FICHA RESUMIDA DEL JUGADOR) */}
+      <div style={athleteProfileCardStyle} className="glass-panel apple-card">
+        <div 
+          onClick={onOpenProfile}
+          style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: 0, cursor: onOpenProfile ? 'pointer' : 'default' }}
+          title={onOpenProfile ? 'Ver o editar mi ficha de jugador' : undefined}
+        >
+          {/* Avatar with ELO Tier Border */}
+          <div style={{
+            width: '44px',
+            height: '44px',
+            borderRadius: '50%',
+            border: `2px solid ${getEloTier(player?.elo || user.elo).color}`,
+            boxShadow: `0 0 12px ${getEloTier(player?.elo || user.elo).color}33`,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            overflow: 'hidden',
+            flexShrink: 0,
+            background: 'var(--bg-elevated)'
+          }}>
+            {user.avatar ? (
+              isImageAvatar(user.avatar) ? (
+                <img src={user.avatar} alt={user.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              ) : (
+                <span style={{ fontSize: '1.4rem', lineHeight: 1 }}>{user.avatar}</span>
+              )
+            ) : (
+              <span style={{ fontSize: '1.2rem', fontWeight: 900, color: 'var(--team1-primary)' }}>
+                {user.name.charAt(0).toUpperCase()}
+              </span>
+            )}
+          </div>
+
+          {/* Athlete Info */}
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+              <span style={{ fontWeight: 900, fontSize: '1.05rem', color: '#fff', letterSpacing: '-0.02em', lineHeight: 1.2 }}>
+                Hola, {user.name.split(' ')[0]} 👋
+              </span>
+              <span style={{
+                fontSize: '0.62rem',
+                fontWeight: 900,
+                padding: '2px 6px',
+                borderRadius: '4px',
+                background: `${getEloTier(player?.elo || user.elo).color}22`,
+                color: getEloTier(player?.elo || user.elo).color,
+                border: `1px solid ${getEloTier(player?.elo || user.elo).color}`
+              }}>
+                {getEloTier(player?.elo || user.elo).badge}
+              </span>
+              <span className="badge badge-gold" style={{ fontSize: '0.62rem', fontWeight: 900, padding: '2px 6px' }}>
+                ELO {player?.elo || user.elo}
+              </span>
+            </div>
+
+            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '3px', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+              <span>{user.category || '4ta'} Cat</span>
+              {user.city && <span>• 📍 {user.city}</span>}
+              <span>• {partners.length} {partners.length === 1 ? 'Partner' : 'Partners'}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Quick Access Buttons */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+          {onOpenCommunity && (
+            <button
+              type="button"
+              onClick={onOpenCommunity}
+              style={{
+                ...iconHeaderBtnStyle,
+                padding: '6px 9px',
+                fontSize: '0.72rem',
+                fontWeight: 800
+              }}
+              title="Ranking Oficial ELO & Comunidad"
+              aria-label="Ranking Oficial ELO"
+            >
+              <Trophy size={14} color="var(--gold-primary)" />
+              <span style={{ display: 'none' }} className="mobile-show-desktop">Ranking</span>
+            </button>
+          )}
+
+          {onOpenProfile && (
+            <button
+              type="button"
+              onClick={onOpenProfile}
+              style={{
+                ...iconHeaderBtnStyle,
+                background: 'rgba(0, 230, 118, 0.12)',
+                borderColor: 'rgba(0, 230, 118, 0.35)',
+                color: 'var(--team1-primary)',
+                padding: '6px 10px',
+                fontSize: '0.72rem',
+                fontWeight: 900
+              }}
+              title="Ver o Editar Mi Ficha de Jugador"
+              aria-label="Mi Perfil"
+            >
+              <User size={14} />
+              <span>Mi Ficha</span>
+            </button>
+          )}
+        </div>
+      </div>
 
       {/* 2. PENDING PARTNER REQUESTS BANNER (FRIEND REQUEST INBOX) */}
       {pendingRequests.length > 0 && (
@@ -290,24 +447,257 @@ export const HostDashboardView: React.FC<Props> = ({
               )}
             </div>
             <h2 style={{ fontSize: '1.25rem', fontWeight: 900, margin: 0, color: '#fff', letterSpacing: '-0.02em' }}>
-              ¿Listo para jugar hoy?
+              ¿Listo para jugar o convocar?
             </h2>
             <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: '4px 0 0', maxWidth: '440px' }}>
-              Inicia el marcador con árbitro por voz y código QR para tus rivales. Pulsa el botón central abajo o toca iniciar aquí.
+              Inicia el marcador en vivo si ya estás en cancha, o programa un partido e invita a tus amigos por WhatsApp.
             </p>
           </div>
 
-          <button 
-            type="button"
-            onClick={onStartMatch}
-            style={heroPlayBtnStyle}
-            aria-label="Configurar e Iniciar Partido"
-          >
-            <Play size={16} fill="#070a10" />
-            <span>Configurar Partido</span>
-          </button>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+            <button 
+              type="button"
+              onClick={onStartMatch}
+              style={heroPlayBtnStyle}
+              aria-label="Jugar Ahora (En Cancha)"
+            >
+              <Play size={16} fill="#070a10" />
+              <span>Jugar Ahora</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setIsScheduleModalOpen(true)}
+              style={heroScheduleBtnStyle}
+              aria-label="Programar Partido y Convocar"
+            >
+              <Calendar size={16} color="var(--gold-primary)" />
+              <span>Programar Partido</span>
+            </button>
+          </div>
         </div>
       </div>
+
+      {/* 3.1 PENDING MATCH INVITATIONS BANNER (QUICK RSVP INBOX) */}
+      {scheduledData.pendingInvitesToMe.length > 0 && (
+        <div style={scheduledInviteBannerStyle} className="glass-panel apple-card">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={scheduledInviteIconCircle}>
+              <Calendar size={18} color="var(--gold-primary)" />
+            </div>
+            <div>
+              <div style={{ fontSize: '0.86rem', fontWeight: 900, color: '#fff' }}>
+                ¡Invitación a Partido! 🎾
+              </div>
+              <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>
+                <strong>{scheduledData.pendingInvitesToMe[0].creatorName}</strong> te invitó a jugar en <strong>{scheduledData.pendingInvitesToMe[0].clubName}</strong> el <strong>{scheduledData.pendingInvitesToMe[0].matchDate}</strong> a las <strong>{scheduledData.pendingInvitesToMe[0].matchTime} hrs</strong>.
+              </div>
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              onClick={() => {
+                scheduleService.respondInvite(scheduledData.pendingInvitesToMe[0].id, {
+                  id: user.id,
+                  name: user.name,
+                  email: user.email,
+                  phone: user.phone,
+                  avatar: user.avatar,
+                  category: user.category
+                }, true);
+              }}
+              style={quickAcceptBtnStyle}
+            >
+              <Check size={13} strokeWidth={3} />
+              <span>Asistiré</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                scheduleService.respondInvite(scheduledData.pendingInvitesToMe[0].id, {
+                  id: user.id,
+                  name: user.name,
+                  email: user.email
+                }, false);
+              }}
+              style={quickDeclineBtnStyle}
+            >
+              <X size={13} />
+            </button>
+            <button
+              type="button"
+              onClick={() => setSelectedDetailMatch(scheduledData.pendingInvitesToMe[0])}
+              style={quickViewBtnStyle}
+            >
+              Ver
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 3.2 UPCOMING CONFIRMED MATCHES & OPEN CALLOUTS SECTION */}
+      {(scheduledData.confirmedUpcoming.length > 0 || scheduledData.myOpenCallouts.length > 0) && (
+        <div style={sectionWrapperStyle}>
+          <div style={sectionHeaderStyle}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Calendar size={16} color="var(--team1-primary)" />
+              <h3 style={sectionTitleStyle}>Mis Próximos Partidos & Convocatorias</h3>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsScheduleModalOpen(true)}
+              style={addPartnerTriggerBtnStyle}
+            >
+              <Plus size={13} />
+              <span>+ Programar Partido</span>
+            </button>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px' }}>
+            {/* Confirmed Matches (Ready to play!) */}
+            {scheduledData.confirmedUpcoming.map(match => (
+              <div key={match.id} style={confirmedMatchCardStyle} className="glass-panel apple-card glow-team1">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                  <div>
+                    <span style={confirmedBadgeStyle}>🟢 CONFIRMADO Y AGENDADO</span>
+                    <h4 style={{ margin: '4px 0 2px', fontSize: '1rem', fontWeight: 900, color: '#fff' }}>
+                      {match.clubName}
+                    </h4>
+                    <span style={{ fontSize: '0.74rem', color: 'var(--text-dim)', fontWeight: 800 }}>
+                      📅 {match.matchDate} • {match.matchTime} hrs {match.courtName ? `(${match.courtName})` : ''}
+                    </span>
+                  </div>
+                </div>
+
+                {/* 4 Avatars in Row */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: '8px 0 12px' }}>
+                  <div style={{ display: 'flex', marginLeft: '6px' }}>
+                    {match.slots.map((slot, idx) => (
+                      <div 
+                        key={slot.id || idx}
+                        style={{
+                          width: '32px',
+                          height: '32px',
+                          borderRadius: '50%',
+                          background: 'var(--bg-elevated)',
+                          border: '2px solid var(--team1-primary)',
+                          marginLeft: idx === 0 ? 0 : '-8px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '0.78rem',
+                          fontWeight: 900,
+                          color: '#fff',
+                          overflow: 'hidden',
+                          boxShadow: '0 2px 6px rgba(0,0,0,0.4)'
+                        }}
+                        title={slot.name}
+                      >
+                        {slot.avatar ? (
+                          isImageAvatar(slot.avatar) ? (
+                            <img src={slot.avatar} alt={slot.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          ) : (
+                            <span>{slot.avatar}</span>
+                          )
+                        ) : (
+                          slot.name.charAt(0).toUpperCase()
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  <span style={{ fontSize: '0.74rem', color: 'var(--team1-primary)', fontWeight: 800 }}>
+                    4 jugadores listos ✓
+                  </span>
+                </div>
+
+                {/* Card Action Buttons */}
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  {onLaunchScheduledMatch && (
+                    <button
+                      type="button"
+                      onClick={() => onLaunchScheduledMatch(match)}
+                      style={launchToCourtCardBtn}
+                    >
+                      <Play size={14} fill="#070a10" />
+                      <span>🎾 Entrar a Cancha</span>
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setSelectedDetailMatch(match)}
+                    style={viewCalloutDetailsBtn}
+                  >
+                    Detalles
+                  </button>
+                </div>
+              </div>
+            ))}
+
+            {/* My Open Callouts (Looking for Players) */}
+            {scheduledData.myOpenCallouts.map(callout => {
+              const confirmedCount = callout.slots.filter(s => s.status === 'confirmed').length;
+              const isFull = confirmedCount >= 4;
+
+              return (
+                <div key={callout.id} style={openCalloutCardStyle} className="glass-panel apple-card">
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                    <div>
+                      <span style={openCalloutBadgeStyle}>
+                        🟡 CONVOCATORIA ({confirmedCount}/4)
+                      </span>
+                      <h4 style={{ margin: '4px 0 2px', fontSize: '0.98rem', fontWeight: 900, color: 'var(--text-main)' }}>
+                        {callout.clubName}
+                      </h4>
+                      <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)', fontWeight: 800 }}>
+                        📅 {callout.matchDate} • {callout.matchTime} hrs
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Quorum Progress Indicator */}
+                  <div style={{ margin: '8px 0 12px' }}>
+                    <div style={{ display: 'flex', gap: '4px' }}>
+                      {callout.slots.map((s, idx) => (
+                        <div
+                          key={s.id || idx}
+                          style={{
+                            flex: 1,
+                            height: '6px',
+                            borderRadius: '3px',
+                            background: s.status === 'confirmed' ? 'var(--team1-primary)' : 'rgba(255, 255, 255, 0.1)'
+                          }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '6px' }}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const text = scheduleService.generateWhatsAppInviteText(callout, user.name);
+                        window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+                      }}
+                      style={shareWhatsAppCardBtn}
+                    >
+                      <Share2 size={13} />
+                      <span>WhatsApp</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedDetailMatch(callout)}
+                      style={isFull ? fullConfirmCalloutBtn : viewCalloutDetailsBtn}
+                    >
+                      {isFull ? '✅ Cerrar Partido (4/4)' : `Gestionar (${confirmedCount}/4)`}
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* 4. PARTNERS ROW (HORIZONTALLY SCROLLABLE STORIES/STATUSES) */}
       <div style={sectionWrapperStyle}>
@@ -320,23 +710,39 @@ export const HostDashboardView: React.FC<Props> = ({
             </span>
           </div>
 
-          <button
-            type="button"
-            onClick={() => setIsAddPartnerOpen(true)}
-            style={addPartnerTriggerBtnStyle}
-          >
-            <UserPlus size={13} />
-            <span>Conectar Partner</span>
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              onClick={() => {
+                setInviteFriendName('');
+                setIsInviteExternalOpen(true);
+              }}
+              style={inviteWhatsAppHeaderBtnStyle}
+              title="Invitar amigo externo por WhatsApp con link a registro"
+            >
+              <Share2 size={13} color="#25D366" />
+              <span>Invitar por WhatsApp</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setIsAddPartnerOpen(true)}
+              style={addPartnerTriggerBtnStyle}
+            >
+              <UserPlus size={13} />
+              <span>Conectar Partner</span>
+            </button>
+          </div>
         </div>
 
         <div style={partnersCarouselStyle}>
-          {/* Add Partner Card */}
+          {/* Add Partner Card (Internal Search) */}
           <div 
             onClick={() => setIsAddPartnerOpen(true)} 
             style={addPartnerBubbleStyle}
             role="button"
             tabIndex={0}
+            title="Buscar jugadores en la comunidad PadelMatch"
           >
             <div style={addPartnerIconCircle}>
               <UserPlus size={20} color="var(--team1-primary)" />
@@ -344,10 +750,35 @@ export const HostDashboardView: React.FC<Props> = ({
             <span style={partnerNameStyle}>+ Conectar</span>
           </div>
 
+          {/* Invite External Partner Card (WhatsApp) */}
+          <div 
+            onClick={() => {
+              setInviteFriendName('');
+              setIsInviteExternalOpen(true);
+            }} 
+            style={inviteWhatsAppBubbleStyle}
+            role="button"
+            tabIndex={0}
+            title="Invitar a un amigo externo a registrarse por WhatsApp"
+          >
+            <div style={inviteWhatsAppIconCircle}>
+              <Share2 size={18} color="#25D366" />
+            </div>
+            <span style={{ ...partnerNameStyle, color: '#25D366' }}>+ Invitar WA</span>
+          </div>
+
           {partners.map(p => (
             <div key={p.id} style={partnerBubbleStyle}>
               <div style={partnerAvatarCircle}>
-                {p.name.charAt(0).toUpperCase()}
+                {p.avatar ? (
+                  isImageAvatar(p.avatar) ? (
+                    <img src={p.avatar} alt={p.name} style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
+                  ) : (
+                    <span style={{ fontSize: '1.3rem', lineHeight: 1 }}>{p.avatar}</span>
+                  )
+                ) : (
+                  p.name.charAt(0).toUpperCase()
+                )}
                 <span style={partnerStatusDotStyle} className="pulsing-dot" />
               </div>
               <span style={partnerNameStyle}>{p.name.split(' ')[0]}</span>
@@ -370,8 +801,19 @@ export const HostDashboardView: React.FC<Props> = ({
           {/* Post Composer Card */}
           <div style={composerCardStyle} className="glass-panel apple-card">
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
-              <div style={userMiniAvatar}>
-                {user.name.charAt(0).toUpperCase()}
+              <div style={{
+                ...userMiniAvatar,
+                overflow: 'hidden'
+              }}>
+                {user.avatar ? (
+                  isImageAvatar(user.avatar) ? (
+                    <img src={user.avatar} alt={user.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  ) : (
+                    <span style={{ fontSize: '1rem', lineHeight: 1 }}>{user.avatar}</span>
+                  )
+                ) : (
+                  user.name.charAt(0).toUpperCase()
+                )}
               </div>
               <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--text-main)' }}>
                 Comparte una actualización con tus Partners
@@ -419,8 +861,19 @@ export const HostDashboardView: React.FC<Props> = ({
                 {/* Author Info */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <div style={authorAvatarCircle}>
-                      {post.authorName.charAt(0).toUpperCase()}
+                    <div style={{
+                      ...authorAvatarCircle,
+                      overflow: 'hidden'
+                    }}>
+                      {post.authorAvatar ? (
+                        isImageAvatar(post.authorAvatar) ? (
+                          <img src={post.authorAvatar} alt={post.authorName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        ) : (
+                          <span style={{ fontSize: '1.1rem', lineHeight: 1 }}>{post.authorAvatar}</span>
+                        )
+                      ) : (
+                        post.authorName.charAt(0).toUpperCase()
+                      )}
                     </div>
                     <div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -700,6 +1153,32 @@ export const HostDashboardView: React.FC<Props> = ({
               </div>
             )}
 
+            {/* Invite external friend card */}
+            <div style={inviteExternalCalloutStyle}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Share2 size={18} color="#25D366" style={{ flexShrink: 0 }} />
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: '0.82rem', fontWeight: 900, color: '#fff' }}>
+                    ¿Tu amigo(a) aún no usa PadelMatch?
+                  </div>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                    Envíale una invitación por WhatsApp con tu link de partner para que cree su cuenta y queden conectados automáticamente.
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setInviteFriendName(searchQuery.trim());
+                  setIsInviteExternalOpen(true);
+                }}
+                style={inviteWhatsAppModalBtnStyle}
+              >
+                <MessageSquare size={14} fill="#fff" />
+                <span>Invitar Amigo por WhatsApp</span>
+              </button>
+            </div>
+
             {/* Search Input */}
             <div style={{ position: 'relative', marginBottom: '14px' }}>
               <Search size={16} color="var(--text-muted)" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
@@ -722,8 +1201,19 @@ export const HostDashboardView: React.FC<Props> = ({
                 return (
                   <div key={p.id} style={playerResultRowStyle}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <div style={authorAvatarCircle}>
-                        {p.name.charAt(0).toUpperCase()}
+                      <div style={{
+                        ...authorAvatarCircle,
+                        overflow: 'hidden'
+                      }}>
+                        {p.avatar ? (
+                          isImageAvatar(p.avatar) ? (
+                            <img src={p.avatar} alt={p.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          ) : (
+                            <span style={{ fontSize: '1.1rem', lineHeight: 1 }}>{p.avatar}</span>
+                          )
+                        ) : (
+                          p.name.charAt(0).toUpperCase()
+                        )}
                       </div>
                       <div>
                         <div style={{ fontWeight: 800, fontSize: '0.85rem', color: 'var(--text-main)' }}>
@@ -758,14 +1248,62 @@ export const HostDashboardView: React.FC<Props> = ({
               })}
 
               {searchResults.length === 0 && (
-                <div style={{ textAlign: 'center', padding: '20px', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
-                  No se encontraron jugadores con ese nombre.
+                <div style={{ textAlign: 'center', padding: '18px 12px', color: 'var(--text-muted)', fontSize: '0.82rem' }}>
+                  <p style={{ margin: '0 0 10px' }}>
+                    {searchQuery.trim() 
+                      ? `No encontramos a "${searchQuery.trim()}" entre los jugadores registrados.` 
+                      : 'No se encontraron jugadores con ese nombre.'}
+                  </p>
+                  {searchQuery.trim() && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setInviteFriendName(searchQuery.trim());
+                        setIsInviteExternalOpen(true);
+                      }}
+                      style={inviteSpecificPlayerBtnStyle}
+                    >
+                      <Share2 size={13} color="#25D366" />
+                      <span>Invitar a "{searchQuery.trim()}" por WhatsApp</span>
+                    </button>
+                  )}
                 </div>
               )}
             </div>
           </div>
         </div>
       )}
+
+      {/* Schedule Match Modal */}
+      <ScheduleMatchModal
+        isOpen={isScheduleModalOpen}
+        onClose={() => setIsScheduleModalOpen(false)}
+        currentUser={user}
+        onMatchCreated={(newMatch) => {
+          setSelectedDetailMatch(newMatch);
+        }}
+      />
+
+      {/* Scheduled Match Detail & Management Modal */}
+      <ScheduledMatchDetailModal
+        isOpen={!!selectedDetailMatch}
+        match={selectedDetailMatch}
+        currentUser={user}
+        onClose={() => setSelectedDetailMatch(null)}
+        onLaunchMatch={(match) => {
+          if (onLaunchScheduledMatch) {
+            onLaunchScheduledMatch(match);
+          }
+        }}
+      />
+
+      {/* Invite External Partner WhatsApp Modal */}
+      <InviteExternalPartnerModal
+        isOpen={isInviteExternalOpen}
+        onClose={() => setIsInviteExternalOpen(false)}
+        currentUser={user}
+        initialFriendName={inviteFriendName}
+      />
     </div>
   );
 };
@@ -796,13 +1334,105 @@ const containerStyle: React.CSSProperties = {
   margin: '0 auto'
 };
 
-const topBarStyle: React.CSSProperties = {
+const brandTopBarStyle: React.CSSProperties = {
   display: 'flex',
   justifyContent: 'space-between',
   alignItems: 'center',
-  padding: '10px 14px',
+  padding: '8px 12px',
+  marginBottom: '10px',
+  borderRadius: '14px',
+  background: 'rgba(255, 255, 255, 0.03)',
+  border: '1px solid var(--border-subtle)'
+};
+
+const athleteProfileCardStyle: React.CSSProperties = {
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  padding: '12px 14px',
   marginBottom: '14px',
-  borderRadius: '16px'
+  borderRadius: '16px',
+  gap: '12px'
+};
+
+const inviteWhatsAppHeaderBtnStyle: React.CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '6px',
+  padding: '6px 12px',
+  borderRadius: '8px',
+  background: 'rgba(37, 211, 102, 0.12)',
+  border: '1px solid rgba(37, 211, 102, 0.35)',
+  color: '#25D366',
+  fontSize: '0.78rem',
+  fontWeight: 800,
+  cursor: 'pointer'
+};
+
+const inviteWhatsAppBubbleStyle: React.CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  gap: '6px',
+  padding: '8px 10px',
+  borderRadius: '12px',
+  border: '1px dashed rgba(37, 211, 102, 0.45)',
+  background: 'rgba(37, 211, 102, 0.05)',
+  cursor: 'pointer',
+  minWidth: '68px',
+  flexShrink: 0
+};
+
+const inviteWhatsAppIconCircle: React.CSSProperties = {
+  width: '42px',
+  height: '42px',
+  borderRadius: '50%',
+  background: 'rgba(37, 211, 102, 0.15)',
+  border: '1px solid rgba(37, 211, 102, 0.4)',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center'
+};
+
+const inviteExternalCalloutStyle: React.CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '10px',
+  padding: '12px 14px',
+  borderRadius: '14px',
+  background: 'linear-gradient(135deg, rgba(37, 211, 102, 0.1) 0%, rgba(0, 176, 255, 0.08) 100%)',
+  border: '1px solid rgba(37, 211, 102, 0.3)',
+  marginBottom: '14px'
+};
+
+const inviteWhatsAppModalBtnStyle: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: '8px',
+  padding: '9px 14px',
+  borderRadius: '10px',
+  background: 'linear-gradient(135deg, #25D366 0%, #128C7E 100%)',
+  color: '#fff',
+  fontSize: '0.82rem',
+  fontWeight: 900,
+  border: 'none',
+  cursor: 'pointer',
+  boxShadow: '0 2px 10px rgba(37, 211, 102, 0.3)'
+};
+
+const inviteSpecificPlayerBtnStyle: React.CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '8px',
+  padding: '8px 14px',
+  borderRadius: '10px',
+  background: 'rgba(37, 211, 102, 0.12)',
+  border: '1px solid #25D366',
+  color: '#25D366',
+  fontSize: '0.8rem',
+  fontWeight: 800,
+  cursor: 'pointer'
 };
 
 const iconHeaderBtnStyle: React.CSSProperties = {
@@ -1321,3 +1951,179 @@ const feedbackAlertStyle: React.CSSProperties = {
   fontWeight: 800,
   marginBottom: '10px'
 };
+
+const heroScheduleBtnStyle: React.CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '8px',
+  padding: '10px 18px',
+  background: 'rgba(255, 214, 0, 0.12)',
+  color: 'var(--gold-primary)',
+  border: '1.5px solid rgba(255, 214, 0, 0.35)',
+  borderRadius: '12px',
+  fontWeight: 900,
+  fontSize: '0.85rem',
+  cursor: 'pointer',
+  transition: 'all 0.2s ease',
+  boxShadow: '0 4px 14px rgba(255, 214, 0, 0.15)'
+};
+
+const scheduledInviteBannerStyle: React.CSSProperties = {
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  flexWrap: 'wrap',
+  gap: '12px',
+  padding: '14px 16px',
+  borderRadius: '16px',
+  background: 'linear-gradient(135deg, rgba(255, 214, 0, 0.14) 0%, rgba(14, 21, 36, 0.95) 100%)',
+  border: '1.5px solid rgba(255, 214, 0, 0.4)',
+  marginBottom: '16px',
+  boxShadow: '0 8px 24px rgba(255, 214, 0, 0.12)'
+};
+
+const scheduledInviteIconCircle: React.CSSProperties = {
+  width: '38px',
+  height: '38px',
+  borderRadius: '50%',
+  background: 'rgba(255, 214, 0, 0.2)',
+  border: '1px solid var(--gold-primary)',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  flexShrink: 0
+};
+
+const quickAcceptBtnStyle: React.CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '4px',
+  padding: '6px 12px',
+  background: 'var(--team1-gradient)',
+  color: '#070a10',
+  borderRadius: '8px',
+  fontWeight: 900,
+  fontSize: '0.75rem',
+  border: 'none',
+  cursor: 'pointer'
+};
+
+const quickDeclineBtnStyle: React.CSSProperties = {
+  padding: '6px 8px',
+  background: 'rgba(255, 82, 82, 0.15)',
+  color: '#ff5252',
+  borderRadius: '8px',
+  border: '1px solid rgba(255, 82, 82, 0.3)',
+  cursor: 'pointer',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center'
+};
+
+const quickViewBtnStyle: React.CSSProperties = {
+  padding: '6px 10px',
+  background: 'rgba(255, 255, 255, 0.08)',
+  color: 'var(--text-main)',
+  borderRadius: '8px',
+  border: '1px solid var(--border-medium)',
+  fontSize: '0.72rem',
+  fontWeight: 800,
+  cursor: 'pointer'
+};
+
+const confirmedMatchCardStyle: React.CSSProperties = {
+  padding: '16px',
+  borderRadius: '16px',
+  background: 'linear-gradient(135deg, rgba(0, 230, 118, 0.08) 0%, rgba(14, 21, 36, 0.95) 100%)',
+  border: '1.5px solid rgba(0, 230, 118, 0.35)',
+  display: 'flex',
+  flexDirection: 'column',
+  justifyContent: 'space-between'
+};
+
+const confirmedBadgeStyle: React.CSSProperties = {
+  fontSize: '0.62rem',
+  fontWeight: 900,
+  padding: '2px 6px',
+  borderRadius: '4px',
+  background: 'rgba(0, 230, 118, 0.2)',
+  color: 'var(--team1-primary)',
+  border: '1px solid var(--team1-primary)',
+  letterSpacing: '0.04em'
+};
+
+const launchToCourtCardBtn: React.CSSProperties = {
+  flex: 1,
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: '6px',
+  padding: '9px 12px',
+  background: 'var(--team1-gradient)',
+  color: '#070a10',
+  borderRadius: '10px',
+  fontWeight: 900,
+  fontSize: '0.8rem',
+  border: 'none',
+  cursor: 'pointer',
+  boxShadow: '0 4px 14px rgba(0, 230, 118, 0.35)'
+};
+
+const viewCalloutDetailsBtn: React.CSSProperties = {
+  padding: '9px 12px',
+  background: 'rgba(255, 255, 255, 0.06)',
+  color: 'var(--text-main)',
+  borderRadius: '10px',
+  border: '1px solid var(--border-medium)',
+  fontWeight: 800,
+  fontSize: '0.78rem',
+  cursor: 'pointer'
+};
+
+const openCalloutCardStyle: React.CSSProperties = {
+  padding: '16px',
+  borderRadius: '16px',
+  background: 'rgba(255, 255, 255, 0.03)',
+  border: '1.5px solid var(--border-subtle)',
+  display: 'flex',
+  flexDirection: 'column',
+  justifyContent: 'space-between'
+};
+
+const openCalloutBadgeStyle: React.CSSProperties = {
+  fontSize: '0.62rem',
+  fontWeight: 900,
+  padding: '2px 6px',
+  borderRadius: '4px',
+  background: 'rgba(255, 214, 0, 0.15)',
+  color: 'var(--gold-primary)',
+  border: '1px solid var(--gold-primary)',
+  letterSpacing: '0.04em'
+};
+
+const shareWhatsAppCardBtn: React.CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '5px',
+  padding: '9px 12px',
+  background: '#25D366',
+  color: '#ffffff',
+  borderRadius: '10px',
+  fontWeight: 800,
+  fontSize: '0.78rem',
+  border: 'none',
+  cursor: 'pointer'
+};
+
+const fullConfirmCalloutBtn: React.CSSProperties = {
+  flex: 1,
+  padding: '9px 12px',
+  background: 'var(--gold-gradient)',
+  color: '#070a10',
+  borderRadius: '10px',
+  fontWeight: 900,
+  fontSize: '0.8rem',
+  border: 'none',
+  cursor: 'pointer'
+};
+

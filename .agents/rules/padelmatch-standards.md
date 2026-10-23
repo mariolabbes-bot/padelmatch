@@ -33,15 +33,36 @@
   - Todo selector de club debe usar `ClubSelectCombobox` con buscador interno, filtro por ciudad y opción para agregar o usar un club no listado (`+ Usar / Agregar club`), guardándolo en Firestore para enriquecer la base comunitaria.
   - En grupos, permitir selección múltiple de clubes preferidos mediante etiquetas/chips removibles.
 
-## 5. Monetización y Comunidad
+## 5. Monetización, Comunidad y Referidos
 - **Invitados por QR:** Entrada 100% libre sin barreras de pago ni formularios obligatorios.
 - **Anfitrión (Host):** 3 partidos de cortesía gratuitos antes de solicitar suscripción.
 - **Reclamación de Historial (Guest History):** Toda cuenta registrada debe ejecutar `claimGuestHistory` para asociar retroactivamente estadísticas y victorias previas de partidos jugados como invitado.
+- **Atribución de Referidos:** Registrar invitaciones cursadas por WhatsApp (`referralService.ts`). Cuando un invitado se registra y actualiza a PRO, computar la conversión a favor del anfitrión para futuras campañas de incentivos y premiación.
 
-## 6. Guardarraíles de Git y Pre-Despliegue
+## 6. Programación de Partidos & Múltiplos de 4
+- **Convocatorias y Cupos:** Todo partido programado consta de 4 cupos obligatorios (Slot 0: Anfitrión, Slots 1-3: Invitados).
+- **Invitaciones Externas:** Compartir textos optimizados con URL directa para responder vía web o WhatsApp.
+- **Transición a la Cancha:** Al confirmarse los 4 cupos, cualquiera de los 4 participantes puede abrir el partido desde su panel e iniciar el marcador sincronizado (`matchSyncRoomId`).
+
+## 7. Panel de Administración y Seguridad
+- **Autorización Restringida:** El panel de administración (`admin` view) está limitado estrictamente a `mariolabbes@gmail.com` y correos validados en `authService.isAdmin()`.
+- **Acceso Discreto:** No mostrar botones de administración a usuarios regulares. Solo desplegar el acceso en la barra superior, el menú lateral y el perfil si el usuario cumple la autorización.
+- **Capacidades del Administrador:** Modificación directa de planes y categorías de usuarios, alta y verificación de clubes, moderación de grupos de la comunidad y auditoría de partidos.
+
+## 8. Arquitectura de Modales y Prevención de Bloqueos de Scroll
+- **Estructura Tripartita Obligatoria:**
+  1. **Header Fijo (`flexShrink: 0`):** Título, subtítulo y botón `(X)` siempre visibles en el tope.
+  2. **Cuerpo Scrollable (`flex: 1, minHeight: 0, overflowY: 'auto', overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch'`):** Permite desplazamiento completo sin recortar campos en pantallas móviles o teclados virtuales abiertos.
+  3. **Footer Sticky (`position: 'sticky', bottom: 0, flexShrink: 0, borderTop`):** Botones de acción siempre visibles.
+- **Backdrop y Contenedor:** El backdrop debe tener `overflowY: 'auto'` y el `modalBox` debe usar `margin: 'auto'` y `maxHeight: 'min(92vh, 880px)'` para evitar recortes en coordenadas negativas causados por `alignItems: 'center'`.
+
+## 9. Guardarraíles de Git y Pre-Despliegue
 - **Archivos Grandes:** NUNCA añadir al staging de Git archivos superiores a 50 MB (incluirlos siempre en `.gitignore`).
-- **Verificación Pre-Deploy:** Antes de cualquier push o despliegue a Firebase Hosting:
+- **Verificación Pre-Deploy:** Antes de cualquier push o despliegue a Firebase Hosting, deben pasar todas las suites de test y el build limpio:
   1. `npx tsx src/engine/testFlow.ts`
   2. `npx tsx src/engine/testMonetization.ts`
   3. `npx tsx src/engine/testGroups.ts`
-  4. `npm run build` (debe compilar con 0 errores TypeScript).
+  4. `npx tsx src/engine/testSchedule.ts`
+  5. `npx tsx src/engine/testReferrals.ts`
+  6. `npx tsx src/engine/testAdmin.ts`
+  7. `npm run build` (debe compilar con 0 errores TypeScript).

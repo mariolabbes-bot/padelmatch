@@ -473,6 +473,99 @@ class CommunityService {
     };
   }
 
+  public updatePlayer(updatedPlayer: CommunityPlayer) {
+    const idx = this.players.findIndex(p => p.id === updatedPlayer.id);
+    if (idx !== -1) {
+      this.players[idx] = updatedPlayer;
+    } else {
+      this.players.push(updatedPlayer);
+    }
+    this.savePlayers();
+    setDoc(doc(db, 'players', updatedPlayer.id), cleanForFirestore(updatedPlayer), { merge: true }).catch(console.warn);
+    this.notify();
+  }
+
+  public getUserDuoInsights(playerName: string): {
+    bestPartner: { name: string; winRate: number; matchesTogether: number; matchesWon: number } | null;
+    nemesis: { name: string; lossRate: number; matchesAgainst: number; matchesLost: number } | null;
+    nemesisDuo: { rivalNames: string; lossRate: number; matchesAgainst: number; matchesLost: number } | null;
+  } {
+    const norm = playerName.trim().toLowerCase();
+    const partnerStats: Record<string, { matches: number; wins: number }> = {};
+    const rivalPlayerStats: Record<string, { matches: number; losses: number }> = {};
+    const rivalDuoStats: Record<string, { matches: number; losses: number }> = {};
+
+    this.matches.forEach(m => {
+      const isTeam1 = m.team1.playerNames.some(p => p.toLowerCase() === norm);
+      const isTeam2 = m.team2.playerNames.some(p => p.toLowerCase() === norm);
+      if (!isTeam1 && !isTeam2) return;
+
+      const myTeam = isTeam1 ? m.team1 : m.team2;
+      const rivalTeam = isTeam1 ? m.team2 : m.team1;
+      const won = (m.winner === 'team1' && isTeam1) || (m.winner === 'team2' && isTeam2);
+
+      // Partner Stats
+      const partner = myTeam.playerNames.find(p => p.toLowerCase() !== norm);
+      if (partner) {
+        if (!partnerStats[partner]) partnerStats[partner] = { matches: 0, wins: 0 };
+        partnerStats[partner].matches++;
+        if (won) partnerStats[partner].wins++;
+      }
+
+      // Individual Rival Stats
+      rivalTeam.playerNames.forEach(rival => {
+        if (!rivalPlayerStats[rival]) rivalPlayerStats[rival] = { matches: 0, losses: 0 };
+        rivalPlayerStats[rival].matches++;
+        if (!won && m.winner !== 'none') rivalPlayerStats[rival].losses++;
+      });
+
+      // Duo Rival Stats
+      const duoKey = [...rivalTeam.playerNames].sort().join(' & ');
+      if (!rivalDuoStats[duoKey]) rivalDuoStats[duoKey] = { matches: 0, losses: 0 };
+      rivalDuoStats[duoKey].matches++;
+      if (!won && m.winner !== 'none') rivalDuoStats[duoKey].losses++;
+    });
+
+    // Best Partner (highest win rate, prioritized by matches won)
+    let bestPartner: { name: string; winRate: number; matchesTogether: number; matchesWon: number } | null = null;
+    let maxWins = -1;
+    let maxRate = -1;
+    Object.entries(partnerStats).forEach(([name, s]) => {
+      const rate = Math.round((s.wins / s.matches) * 100);
+      if (s.wins > maxWins || (s.wins === maxWins && rate > maxRate)) {
+        maxWins = s.wins;
+        maxRate = rate;
+        bestPartner = { name, winRate: rate, matchesTogether: s.matches, matchesWon: s.wins };
+      }
+    });
+
+    // Nemesis Individual
+    let nemesis: { name: string; lossRate: number; matchesAgainst: number; matchesLost: number } | null = null;
+    let maxLosses = 0;
+    Object.entries(rivalPlayerStats).forEach(([name, s]) => {
+      if (s.losses > maxLosses) {
+        maxLosses = s.losses;
+        nemesis = { name, lossRate: Math.round((s.losses / s.matches) * 100), matchesAgainst: s.matches, matchesLost: s.losses };
+      }
+    });
+
+    // Nemesis Duo
+    let nemesisDuo: { rivalNames: string; lossRate: number; matchesAgainst: number; matchesLost: number } | null = null;
+    let maxDuoLosses = 0;
+    Object.entries(rivalDuoStats).forEach(([duo, s]) => {
+      if (s.losses > maxDuoLosses) {
+        maxDuoLosses = s.losses;
+        nemesisDuo = { rivalNames: duo, lossRate: Math.round((s.losses / s.matches) * 100), matchesAgainst: s.matches, matchesLost: s.losses };
+      }
+    });
+
+    return {
+      bestPartner,
+      nemesis,
+      nemesisDuo
+    };
+  }
+
   private savePlayers() {
     if (typeof window === 'undefined' || !window.localStorage) return;
     try {
@@ -489,6 +582,24 @@ class CommunityService {
     } catch (e) {
       console.error('Error saving matches:', e);
     }
+  }
+
+  public adminDeleteMatch(matchId: string): boolean {
+    const idx = this.matches.findIndex(m => m.id === matchId);
+    if (idx < 0) return false;
+
+    this.matches.splice(idx, 1);
+    this.saveMatches();
+
+    try {
+      deleteDoc(doc(db, 'completed_matches', matchId)).catch(console.warn);
+      deleteDoc(doc(db, 'matches', matchId)).catch(console.warn);
+    } catch (e) {
+      console.warn('Could not delete match in Firestore:', e);
+    }
+
+    this.notify();
+    return true;
   }
 }
 

@@ -221,6 +221,65 @@ class PartnerService {
     }
   }
 
+  // --- External Partner WhatsApp Invitations ---
+
+  public generateWhatsAppPartnerInviteText(inviter: UserSession, customMessage?: string, friendName?: string): string {
+    const inviteUrl = `https://padelmatch.web.app#register?invite-partner=${inviter.id}&name=${encodeURIComponent(inviter.name)}`;
+    const greeting = friendName?.trim() ? `¡Hola ${friendName.trim()}! 🎾` : '¡Hola! 🎾';
+    const noteText = customMessage?.trim() ? `\n\n💬 *Mensaje de ${inviter.name}:*\n"${customMessage.trim()}"` : '';
+
+    return (
+      `${greeting}\n\n` +
+      `Te invito a sumarte a mi lista de partners en *PadelMatch*, la app oficial que uso para llevar el marcador inteligente con arbitraje por voz, estadísticas de partido y ranking ELO.\n` +
+      `${noteText}\n\n` +
+      `👉 *Regístrate gratis aquí para conectar automáticamente como partners:*\n${inviteUrl}\n\n` +
+      `¡Nos vemos en la pista! 🏆`
+    );
+  }
+
+  public autoConnectInvitedPartner(newUser: UserSession, inviterId: string, inviterName?: string): boolean {
+    if (!inviterId || inviterId === newUser.id) return false;
+
+    // Check if already connected or pending
+    const existing = this.connections.find(c => 
+      (c.requesterId === inviterId && c.targetId === newUser.id) ||
+      (c.targetId === inviterId && c.requesterId === newUser.id)
+    );
+
+    if (existing) {
+      existing.status = 'accepted';
+      this.saveConnections();
+      setDoc(doc(db, 'partner_connections', existing.id), cleanForFirestore(existing), { merge: true }).catch(console.warn);
+      return true;
+    }
+
+    // Create mutual accepted connection
+    const newConn: PartnerConnection = {
+      id: 'conn-' + Date.now().toString(36),
+      requesterId: inviterId,
+      requesterName: inviterName || 'Partner',
+      requesterCategory: '4ta',
+      requesterElo: 1400,
+      targetId: newUser.id,
+      targetName: newUser.name,
+      status: 'accepted',
+      createdAt: Date.now()
+    };
+
+    this.connections.unshift(newConn);
+    this.saveConnections();
+    setDoc(doc(db, 'partner_connections', newConn.id), cleanForFirestore(newConn)).catch(console.warn);
+
+    // Notify both users
+    notificationService.addNotification({
+      type: 'friend_invite',
+      title: '🤝 ¡Nuevo Partner Conectado!',
+      body: `Te has conectado como partner con ${inviterName || 'tu amigo'}. Ahora pueden ver sus estadísticas y programar partidos juntos.`
+    });
+
+    return true;
+  }
+
   // --- Posts & Feed ---
 
   public getFeedPosts(): PartnerPost[] {
@@ -233,6 +292,7 @@ class PartnerService {
       authorId: author.id,
       authorName: author.name,
       authorCategory: author.category,
+      authorAvatar: author.avatar,
       timestamp: Date.now(),
       content: content.trim(),
       clapsCount: 0,

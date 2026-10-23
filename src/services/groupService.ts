@@ -136,6 +136,7 @@ class GroupService {
       elo: data.creator.elo,
       role: 'admin',
       joinedAt: Date.now(),
+      avatar: (data.creator as any).avatar,
       matchesPlayedInGroup: 0
     };
 
@@ -148,6 +149,7 @@ class GroupService {
         elo: m.elo,
         role: 'member',
         joinedAt: Date.now(),
+        avatar: (m as any).avatar,
         matchesPlayedInGroup: 0
       }));
 
@@ -180,7 +182,7 @@ class GroupService {
     return newGroup;
   }
 
-  public joinGroup(groupId: string, player: { id: string; name: string; category: PlayerCategory; elo: number }) {
+  public joinGroup(groupId: string, player: { id: string; name: string; category: PlayerCategory; elo: number; avatar?: string }) {
     const group = this.getGroupById(groupId);
     if (!group) return;
 
@@ -192,6 +194,7 @@ class GroupService {
         elo: player.elo,
         role: 'member',
         joinedAt: Date.now(),
+        avatar: (player as any).avatar,
         matchesPlayedInGroup: 0
       });
       this.saveToStorage();
@@ -252,6 +255,31 @@ class GroupService {
 
     group.members = group.members.filter(m => m.playerId !== playerId);
     this.saveToStorage();
+  }
+
+  public updateGroup(
+    groupId: string, 
+    data: Partial<{
+      name: string;
+      description: string;
+      city: string;
+      clubPreferred: string;
+      categoryLevel: PlayerCategory | 'abierta';
+      avatar: string;
+    }>
+  ): { success: boolean; group?: PadelGroup; message: string } {
+    const group = this.getGroupById(groupId);
+    if (!group) return { success: false, message: 'Grupo no encontrado.' };
+
+    if (data.name !== undefined) group.name = data.name.trim();
+    if (data.description !== undefined) group.description = data.description.trim();
+    if (data.city !== undefined) group.city = data.city.trim();
+    if (data.clubPreferred !== undefined) group.clubPreferred = data.clubPreferred.trim();
+    if (data.categoryLevel !== undefined) group.categoryLevel = data.categoryLevel;
+    if (data.avatar !== undefined) group.avatar = data.avatar;
+
+    this.saveToStorage(true);
+    return { success: true, group, message: 'Grupo actualizado con éxito.' };
   }
 
   public createCallout(groupId: string, data: {
@@ -360,6 +388,22 @@ class GroupService {
       slotsNeededToComplete,
       recommendedPlayers
     };
+  }
+
+  public adminDeleteGroup(groupId: string): boolean {
+    const idx = this.groups.findIndex(g => g.id === groupId);
+    if (idx < 0) return false;
+
+    this.groups.splice(idx, 1);
+    this.saveToStorage();
+
+    try {
+      deleteDoc(doc(db, 'groups', groupId)).catch(console.warn);
+    } catch (e) {
+      console.warn('Could not delete group in Firestore:', e);
+    }
+
+    return true;
   }
 }
 

@@ -183,7 +183,9 @@ export type AppViewMode =
   | 'scoreboard' 
   | 'community' 
   | 'court_tv' 
-  | 'participant_join';
+  | 'participant_join'
+  | 'user_profile'
+  | 'admin';
 
 export interface AppNotification {
   id: string;
@@ -335,3 +337,42 @@ export interface PadelClub {
   createdAt?: number;
 }
 
+// ==========================================
+// MÓDULO PARTIDOS PROGRAMADOS Y CONVOCATORIAS
+// ==========================================
+
+export type ScheduledMatchStatus = 'open' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled';
+
+export interface ScheduledPlayerSlot {
+  id: string;
+  slotIndex: number; // 0 (Anfitrión), 1, 2, 3
+  playerId?: string;
+  name: string;
+  email?: string;
+  phone?: string;
+  avatar?: string;
+  category?: PlayerCategory;
+  isHost: boolean;
+  status: 'confirmed' | 'pending' | 'declined';
+  invitedVia: 'app_partner' | 'whatsapp' | 'manual';
+  confirmedAt?: number;
+}
+
+export interface ScheduledMatch {
+  id: string; // e.g. "SCH-ABC12"
+  creatorId: string;
+  creatorName: string;
+  creatorEmail: string;
+  creatorAvatar?: string;
+  clubName: string;
+  courtName?: string;
+  matchDate: string; // YYYY-MM-DD
+  matchTime: string; // HH:mm
+  slots: ScheduledPlayerSlot[]; // 4 slots
+  invitedPlayerIds: string[];
+  status: ScheduledMatchStatus;
+  notes?: string;
+  createdAt: number;
+  updatedAt: number;
+  matchSyncRoomId?: string;
+}

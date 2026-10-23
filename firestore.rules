@@ -49,5 +49,13 @@ service cloud.firestore {
     match /clubs/{clubId} {
       allow read, write: if true;
     }
+
+    match /scheduled_matches/{matchId} {
+      allow read, write: if true;
+    }
+
+    match /referrals/{referralId} {
+      allow read, write: if true;
+    }
   }
 }

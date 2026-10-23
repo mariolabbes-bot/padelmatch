@@ -2,11 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { authService } from '../services/authService';
 import type { UserSession } from '../services/authService';
 import { groupService } from '../services/groupService';
+import { partnerService } from '../services/partnerService';
 import { themeService, type AppTheme } from '../services/themeService';
 import type { CommunityPlayer, DominantHand } from '../types/padel';
 import { 
   Trophy, 
   User, 
+  UserPlus,
   Mail, 
   Lock, 
   ShieldCheck, 
@@ -56,6 +58,20 @@ export const AuthScreen: React.FC<Props> = ({ onAuthenticated }) => {
   const [invitedGroupName, setInvitedGroupName] = useState<string | null>(null);
   const [invitedGroupClub, setInvitedGroupClub] = useState<string | null>(null);
 
+  // Partner Invitation State from WhatsApp
+  const [partnerInviterId, setPartnerInviterId] = useState<string | null>(() => {
+    if (typeof sessionStorage !== 'undefined') {
+      return sessionStorage.getItem('padel_pending_partner_inviter');
+    }
+    return null;
+  });
+  const [partnerInviterName, setPartnerInviterName] = useState<string | null>(() => {
+    if (typeof sessionStorage !== 'undefined') {
+      return sessionStorage.getItem('padel_pending_partner_name');
+    }
+    return null;
+  });
+
   useEffect(() => {
     const handleUrlClaim = () => {
       if (typeof window === 'undefined') return;
@@ -98,6 +114,40 @@ export const AuthScreen: React.FC<Props> = ({ onAuthenticated }) => {
         if (grp) {
           setInvitedGroupName(grp.name);
           setInvitedGroupClub(grp.clubPreferred);
+        }
+      }
+
+      // 3. Check partner invitation from WhatsApp link (#register?invite-partner=... or ?invitedBy=...)
+      let foundPartnerInviter: string | null = null;
+      let foundPartnerName: string | null = null;
+
+      if (hash.includes('invite-partner=')) {
+        const m = hash.match(/invite-partner=([^&]+)/);
+        if (m && m[1]) foundPartnerInviter = decodeURIComponent(m[1]);
+        const mName = hash.match(/name=([^&]+)/);
+        if (mName && mName[1]) foundPartnerName = decodeURIComponent(mName[1]);
+      } else if (hash.includes('invitedBy=')) {
+        const m = hash.match(/invitedBy=([^&]+)/);
+        if (m && m[1]) foundPartnerInviter = decodeURIComponent(m[1]);
+        const mName = hash.match(/name=([^&]+)/);
+        if (mName && mName[1]) foundPartnerName = decodeURIComponent(mName[1]);
+      } else if (search.includes('invite-partner=')) {
+        const params = new URLSearchParams(search);
+        foundPartnerInviter = params.get('invite-partner');
+        foundPartnerName = params.get('name');
+      } else if (search.includes('invitedBy=')) {
+        const params = new URLSearchParams(search);
+        foundPartnerInviter = params.get('invitedBy');
+        foundPartnerName = params.get('name');
+      }
+
+      if (foundPartnerInviter) {
+        setMode('register');
+        setPartnerInviterId(foundPartnerInviter);
+        if (foundPartnerName) setPartnerInviterName(foundPartnerName);
+        if (typeof sessionStorage !== 'undefined') {
+          sessionStorage.setItem('padel_pending_partner_inviter', foundPartnerInviter);
+          if (foundPartnerName) sessionStorage.setItem('padel_pending_partner_name', foundPartnerName);
         }
       }
     };
@@ -183,6 +233,9 @@ export const AuthScreen: React.FC<Props> = ({ onAuthenticated }) => {
       return;
     }
 
+    const pendingInviter = partnerInviterId || (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('padel_pending_partner_inviter') : null);
+    const pendingInviterName = partnerInviterName || (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('padel_pending_partner_name') : null);
+
     const res = await authService.register({
       name: registerName,
       email: registerEmail,
@@ -191,7 +244,12 @@ export const AuthScreen: React.FC<Props> = ({ onAuthenticated }) => {
       dominantHand,
       city: registerCity.trim() || undefined,
       category,
-      favoritePosition
+      favoritePosition,
+      invitedBy: pendingInviter ? {
+        id: pendingInviter,
+        name: pendingInviterName || undefined,
+        source: 'whatsapp_partner'
+      } : undefined
     });
 
     if (res.success && res.user) {
@@ -200,6 +258,16 @@ export const AuthScreen: React.FC<Props> = ({ onAuthenticated }) => {
       if (registerPhone.trim()) {
         authService.claimGuestHistory(registerPhone.trim());
       }
+
+      // Auto-connect with partner inviter if came from WhatsApp invite link
+      if (pendingInviter) {
+        partnerService.autoConnectInvitedPartner(res.user, pendingInviter, pendingInviterName || undefined);
+        if (typeof sessionStorage !== 'undefined') {
+          sessionStorage.removeItem('padel_pending_partner_inviter');
+          sessionStorage.removeItem('padel_pending_partner_name');
+        }
+      }
+
       setSuccessMsg('¡Perfil registrado exitosamente! Hemos sincronizado tu historial de juego.');
       setTimeout(() => {
         onAuthenticated(res.user!);
@@ -539,6 +607,42 @@ export const AuthScreen: React.FC<Props> = ({ onAuthenticated }) => {
         ) : (
           /* Form: REGISTER */
           <form onSubmit={handleRegister} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            {/* WhatsApp Partner Invitation Banner */}
+            {partnerInviterId && (
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                background: 'linear-gradient(135deg, rgba(37, 211, 102, 0.15) 0%, rgba(0, 176, 255, 0.12) 100%)',
+                border: '1px solid #25D366',
+                borderRadius: '12px',
+                padding: '12px 14px',
+                boxShadow: '0 4px 15px rgba(37, 211, 102, 0.18)'
+              }}>
+                <div style={{
+                  width: '40px',
+                  height: '40px',
+                  borderRadius: '50%',
+                  background: 'linear-gradient(135deg, #25D366 0%, #128C7E 100%)',
+                  color: '#fff',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0
+                }}>
+                  <UserPlus size={20} />
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontWeight: 900, fontSize: '0.88rem', color: '#fff' }}>
+                    ¡Invitación de Partner de {partnerInviterName || 'un amigo'}! 🎾
+                  </div>
+                  <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', marginTop: '2px', lineHeight: 1.35 }}>
+                    Crea tu cuenta gratis para conectar automáticamente con <strong>{partnerInviterName || 'tu partner'}</strong>, ver sus estadísticas y convocar partidos en PadelMatch.
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Group WhatsApp Invitation Banner */}
             {invitedGroupId && (
               <div style={{

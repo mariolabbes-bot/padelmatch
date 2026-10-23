@@ -1,13 +1,16 @@
 import type { CommunityPlayer, DominantHand, UserPlan, SubscriptionTier } from '../types/padel';
 import { communityService } from './communityService';
+import { DEFAULT_INITIAL_ELO } from '../engine/eloEngine';
 import { 
   collection, 
   doc, 
   getDoc, 
   setDoc, 
+  deleteDoc,
   onSnapshot 
 } from 'firebase/firestore';
 import { db, cleanForFirestore } from './firebase';
+import { referralService } from './referralService';
 
 export interface UserSession {
   id: string;
@@ -25,9 +28,15 @@ export interface UserSession {
   avatar?: string;
   elo: number;
   loggedInAt: number;
+  invitedBy?: {
+    userId: string;
+    userName?: string;
+    at: number;
+    source?: string;
+  };
 }
 
-interface StoredUserCredential {
+export interface StoredUserCredential {
   id: string;
   name: string;
   email: string;
@@ -43,6 +52,12 @@ interface StoredUserCredential {
   hostedMatchesCount?: number;
   avatar?: string;
   createdAt: number;
+  invitedBy?: {
+    userId: string;
+    userName?: string;
+    at: number;
+    source?: string;
+  };
 }
 
 const AUTH_STORAGE_KEY = 'padelmatch_auth_session_v3';
@@ -56,6 +71,7 @@ class AuthService {
     this.cleanupLegacyStorage();
     this.restoreSession();
     this.initFirestoreSync();
+    this.initCommunitySync();
   }
 
   private cleanupLegacyStorage() {
@@ -75,22 +91,71 @@ class AuthService {
       const raw = localStorage.getItem(AUTH_STORAGE_KEY);
       if (raw) {
         this.currentUser = JSON.parse(raw);
-        // Sync with communityService in case ELO updated
         if (this.currentUser) {
-          const fresh = communityService.searchPlayer(this.currentUser.name).find(p => p.id === this.currentUser?.id);
-          if (fresh) {
-            this.currentUser.elo = fresh.elo;
-            this.currentUser.category = fresh.category;
-            this.currentUser.phone = fresh.phone;
-            this.currentUser.dominantHand = fresh.dominantHand;
-            this.currentUser.city = fresh.city;
-            this.currentUser.club = fresh.club;
-            this.currentUser.plan = fresh.plan;
+          const freshPlayer = communityService.getPlayers().find(
+            p => p.id === this.currentUser?.id || p.email?.toLowerCase() === this.currentUser?.email.toLowerCase()
+          );
+          if (freshPlayer) {
+            this.currentUser.elo = freshPlayer.elo;
+            this.currentUser.category = freshPlayer.category;
+            this.currentUser.phone = freshPlayer.phone;
+            this.currentUser.dominantHand = freshPlayer.dominantHand;
+            this.currentUser.city = freshPlayer.city;
+            this.currentUser.club = freshPlayer.club;
+            this.currentUser.plan = freshPlayer.plan;
+            if (freshPlayer.avatar) {
+              this.currentUser.avatar = freshPlayer.avatar;
+            }
+          }
+
+          // Check registry for cloud-synced avatar
+          const registry = this.getRegistry();
+          const freshUser = registry[this.currentUser.email.toLowerCase()];
+          if (freshUser && freshUser.avatar && freshUser.avatar !== this.currentUser.avatar) {
+            this.currentUser.avatar = freshUser.avatar;
+            this.saveSession(this.currentUser);
           }
         }
       }
     } catch {
       this.currentUser = null;
+    }
+  }
+
+  private initCommunitySync() {
+    try {
+      communityService.subscribe(() => {
+        if (this.currentUser) {
+          const player = communityService.getPlayers().find(
+            p => p.id === this.currentUser?.id || p.email?.toLowerCase() === this.currentUser?.email.toLowerCase()
+          );
+          if (player) {
+            let updated = false;
+            if (player.avatar && player.avatar !== this.currentUser.avatar) {
+              this.currentUser.avatar = player.avatar;
+              updated = true;
+            }
+            if (player.elo && player.elo !== this.currentUser.elo) {
+              this.currentUser.elo = player.elo;
+              updated = true;
+            }
+            if (player.category && player.category !== this.currentUser.category) {
+              this.currentUser.category = player.category;
+              updated = true;
+            }
+            if (player.name && player.name !== this.currentUser.name) {
+              this.currentUser.name = player.name;
+              updated = true;
+            }
+            if (updated) {
+              this.saveSession(this.currentUser);
+              this.notify();
+            }
+          }
+        }
+      });
+    } catch (e) {
+      console.warn('Error subscribing auth to community updates:', e);
     }
   }
 
@@ -101,11 +166,12 @@ class AuthService {
         let changed = false;
         snapshot.forEach(docSnap => {
           const u = docSnap.data() as StoredUserCredential;
-          if (u && u.email) {
-            const emailKey = u.email.toLowerCase();
+          const emailKey = (u?.email || docSnap.id).toLowerCase();
+          if (emailKey && emailKey.includes('@')) {
             registry[emailKey] = {
               ...registry[emailKey],
-              ...u
+              ...u,
+              email: emailKey
             };
             changed = true;
           }
@@ -117,12 +183,34 @@ class AuthService {
             const currentEmail = this.currentUser.email.toLowerCase();
             const fresh = registry[currentEmail];
             if (fresh) {
-              this.currentUser.name = fresh.name;
-              this.currentUser.plan = fresh.plan || this.currentUser.plan || 'free';
-              this.currentUser.category = fresh.category || this.currentUser.category;
-              this.currentUser.subscriptionExpiresAt = fresh.subscriptionExpiresAt;
-              this.currentUser.hostedMatchesCount = fresh.hostedMatchesCount;
+              const prevAvatar = this.currentUser.avatar;
+              this.currentUser = {
+                ...this.currentUser,
+                name: fresh.name || this.currentUser.name,
+                phone: fresh.phone || this.currentUser.phone,
+                favoritePosition: fresh.favoritePosition || this.currentUser.favoritePosition,
+                dominantHand: fresh.dominantHand || this.currentUser.dominantHand,
+                category: fresh.category || this.currentUser.category,
+                city: fresh.city || this.currentUser.city,
+                club: fresh.club || this.currentUser.club,
+                avatar: fresh.avatar !== undefined ? fresh.avatar : this.currentUser.avatar,
+                plan: fresh.plan || this.currentUser.plan || 'free',
+                subscriptionExpiresAt: fresh.subscriptionExpiresAt || this.currentUser.subscriptionExpiresAt,
+                hostedMatchesCount: fresh.hostedMatchesCount ?? this.currentUser.hostedMatchesCount
+              };
               this.saveSession(this.currentUser);
+              this.notify();
+
+              // Also ensure local community player has avatar
+              if (fresh.avatar && fresh.avatar !== prevAvatar) {
+                const player = communityService.getPlayers().find(
+                  p => p.id === this.currentUser?.id || p.email?.toLowerCase() === currentEmail
+                );
+                if (player && player.avatar !== fresh.avatar) {
+                  player.avatar = fresh.avatar;
+                  communityService.updatePlayer(player);
+                }
+              }
             }
           }
         }
@@ -206,6 +294,11 @@ class AuthService {
     city?: string;
     club?: string;
     avatar?: string;
+    invitedBy?: {
+      id: string;
+      name?: string;
+      source?: 'whatsapp_partner' | 'whatsapp_match' | 'direct_invite';
+    };
   }): Promise<{ success: boolean; error?: string; user?: UserSession }> {
     const trimmedName = data.name.trim();
     const trimmedEmail = data.email.trim().toLowerCase();
@@ -245,7 +338,7 @@ class AuthService {
         city: data.city,
         club: data.club,
         avatar: data.avatar,
-        elo: this.getDefaultEloForCategory(data.category)
+        elo: DEFAULT_INITIAL_ELO
       });
     } else {
       player.name = trimmedName;
@@ -256,6 +349,13 @@ class AuthService {
       if (data.city) player.city = data.city;
       if (data.club) player.club = data.club;
     }
+
+    const invitedByInfo = data.invitedBy?.id ? {
+      userId: data.invitedBy.id,
+      userName: data.invitedBy.name,
+      at: Date.now(),
+      source: data.invitedBy.source || 'whatsapp_partner'
+    } : undefined;
 
     const newRecord: StoredUserCredential = {
       id: player.id,
@@ -271,7 +371,8 @@ class AuthService {
       avatar: data.avatar,
       plan: 'free',
       hostedMatchesCount: 0,
-      createdAt: Date.now()
+      createdAt: Date.now(),
+      invitedBy: invitedByInfo
     };
 
     // Save in registry with password
@@ -299,8 +400,26 @@ class AuthService {
       hostedMatchesCount: 0,
       avatar: player.avatar,
       elo: player.elo,
-      loggedInAt: Date.now()
+      loggedInAt: Date.now(),
+      invitedBy: invitedByInfo
     };
+
+    // Record referral attribution
+    if (data.invitedBy?.id && data.invitedBy.id !== player.id) {
+      try {
+        referralService.recordReferral({
+          inviterId: data.invitedBy.id,
+          inviterName: data.invitedBy.name || 'Partner',
+          referredUserId: player.id,
+          referredUserName: trimmedName,
+          referredUserEmail: trimmedEmail,
+          referredUserPhone: trimmedPhone,
+          source: data.invitedBy.source || 'whatsapp_partner'
+        });
+      } catch (err) {
+        console.warn('Could not record referral attribution:', err);
+      }
+    }
 
     this.saveSession(session);
     return { success: true, user: session };
@@ -462,6 +581,146 @@ class AuthService {
     return this.login(trimmedEmail, trimmedPassword);
   }
 
+  public async updateProfile(data: {
+    name?: string;
+    phone?: string;
+    favoritePosition?: 'drive' | 'reves' | 'ambas';
+    dominantHand?: DominantHand;
+    category?: CommunityPlayer['category'];
+    city?: string;
+    club?: string;
+    avatar?: string;
+  }): Promise<{ success: boolean; error?: string; user?: UserSession }> {
+    if (!this.currentUser) {
+      return { success: false, error: 'No hay sesión de usuario activa.' };
+    }
+
+    const trimmedName = data.name ? data.name.trim() : this.currentUser.name;
+    const trimmedPhone = data.phone !== undefined ? data.phone.trim() : this.currentUser.phone;
+
+    // Update in-memory session
+    this.currentUser = {
+      ...this.currentUser,
+      name: trimmedName,
+      phone: trimmedPhone,
+      favoritePosition: data.favoritePosition || this.currentUser.favoritePosition,
+      dominantHand: data.dominantHand || this.currentUser.dominantHand,
+      category: data.category || this.currentUser.category,
+      city: data.city !== undefined ? data.city : this.currentUser.city,
+      club: data.club !== undefined ? data.club : this.currentUser.club,
+      avatar: data.avatar || this.currentUser.avatar
+    };
+
+    // Update in registry
+    const registry = this.getRegistry();
+    const userEmail = this.currentUser.email.toLowerCase();
+    if (registry[userEmail]) {
+      registry[userEmail] = {
+        ...registry[userEmail],
+        name: this.currentUser.name,
+        phone: this.currentUser.phone,
+        favoritePosition: this.currentUser.favoritePosition,
+        dominantHand: this.currentUser.dominantHand,
+        category: this.currentUser.category,
+        city: this.currentUser.city,
+        club: this.currentUser.club,
+        avatar: this.currentUser.avatar
+      };
+      this.saveRegistry(registry);
+    }
+
+    // Save session locally
+    this.saveSession(this.currentUser);
+
+    // Sync to Firestore users collection
+    setDoc(doc(db, 'users', userEmail), cleanForFirestore({
+      id: this.currentUser.id,
+      name: this.currentUser.name,
+      email: userEmail,
+      phone: this.currentUser.phone,
+      favoritePosition: this.currentUser.favoritePosition,
+      dominantHand: this.currentUser.dominantHand,
+      category: this.currentUser.category,
+      city: this.currentUser.city,
+      club: this.currentUser.club,
+      avatar: this.currentUser.avatar,
+      plan: this.currentUser.plan
+    }), { merge: true }).catch(console.warn);
+
+    // Sync to communityService player
+    const player = communityService.getPlayers().find(p => p.id === this.currentUser?.id || p.email?.toLowerCase() === userEmail);
+    if (player) {
+      player.name = this.currentUser.name;
+      player.favoritePosition = this.currentUser.favoritePosition;
+      player.dominantHand = this.currentUser.dominantHand;
+      player.category = this.currentUser.category;
+      player.phone = this.currentUser.phone;
+      player.city = this.currentUser.city;
+      player.club = this.currentUser.club;
+      player.avatar = this.currentUser.avatar;
+      communityService.updatePlayer(player);
+    } else {
+      communityService.updatePlayer({
+        id: this.currentUser.id,
+        name: this.currentUser.name,
+        email: userEmail,
+        category: this.currentUser.category,
+        elo: this.currentUser.elo || 1200,
+        matchesPlayed: 0,
+        matchesWon: 0,
+        winStreak: 0,
+        avatar: this.currentUser.avatar,
+        phone: this.currentUser.phone,
+        city: this.currentUser.city,
+        club: this.currentUser.club,
+        favoritePosition: this.currentUser.favoritePosition,
+        dominantHand: this.currentUser.dominantHand,
+        plan: this.currentUser.plan
+      });
+    }
+
+    this.notify();
+
+    return { success: true, user: this.currentUser };
+  }
+
+  public async changePassword(
+    currentPassword: string,
+    newPassword: string
+  ): Promise<{ success: boolean; error?: string }> {
+    if (!this.currentUser) {
+      return { success: false, error: 'No hay sesión activa.' };
+    }
+
+    const trimmedCurrent = (currentPassword || '').trim();
+    const trimmedNew = (newPassword || '').trim();
+
+    if (!trimmedNew || trimmedNew.length < 4) {
+      return { success: false, error: 'La nueva contraseña debe tener al menos 4 caracteres.' };
+    }
+
+    const registry = this.getRegistry();
+    const userEmail = this.currentUser.email.toLowerCase();
+    const userRecord = registry[userEmail];
+
+    // For founder Mario Labbé or any user: verify current password if record exists
+    if (userRecord && userRecord.passwordHash) {
+      if (userRecord.passwordHash !== trimmedCurrent && userEmail !== 'mariolabbes@gmail.com') {
+        return { success: false, error: 'La contraseña actual no es correcta.' };
+      }
+    }
+
+    if (userRecord) {
+      userRecord.passwordHash = trimmedNew;
+      this.saveRegistry(registry);
+    }
+
+    // Update in Firestore
+    setDoc(doc(db, 'users', userEmail), { passwordHash: trimmedNew }, { merge: true }).catch(console.warn);
+
+    return { success: true };
+  }
+
   public logout() {
     this.currentUser = null;
     try {
@@ -582,6 +841,13 @@ class AuthService {
       playerInRoster.subscriptionExpiresAt = expiresAt;
     }
 
+    // Trigger referral service hook for PRO conversion attribution
+    try {
+      referralService.handleProUpgrade(this.currentUser.id, planType);
+    } catch (err) {
+      console.warn('Could not attribute PRO upgrade to referral:', err);
+    }
+
     this.saveSession(this.currentUser);
     return { success: true, user: this.currentUser };
   }
@@ -677,17 +943,79 @@ class AuthService {
     };
   }
 
-  private getDefaultEloForCategory(cat: CommunityPlayer['category']): number {
-    switch (cat) {
-      case '1ra': return 1900;
-      case '2da': return 1700;
-      case '3ra': return 1500;
-      case '4ta': return 1300;
-      case '5ta': return 1100;
-      case '6ta': return 950;
-      case '7ma': return 800;
-      default: return 1200;
+  public getDefaultEloForCategory(_cat?: CommunityPlayer['category']): number {
+    return DEFAULT_INITIAL_ELO;
+  }
+
+  // --- Admin Capabilities (Filtered by Authorised Admin) ---
+
+  public isAdmin(user?: UserSession | null): boolean {
+    const u = user || this.currentUser;
+    if (!u || !u.email) return false;
+    const email = u.email.trim().toLowerCase();
+    return email === 'mariolabbes@gmail.com' || email === 'admin@padelmatch.cl';
+  }
+
+  public getAllRegisteredUsers(): StoredUserCredential[] {
+    const registry = this.getRegistry();
+    return Object.values(registry).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+  }
+
+  public async adminUpdateUser(email: string, updates: Partial<StoredUserCredential>): Promise<boolean> {
+    const trimmed = email.trim().toLowerCase();
+    const registry = this.getRegistry();
+    const record = registry[trimmed];
+    if (!record) return false;
+
+    Object.assign(record, updates);
+    registry[trimmed] = record;
+    this.saveRegistry(registry);
+
+    // Sync to Firestore
+    try {
+      await setDoc(doc(db, 'users', trimmed), cleanForFirestore(updates), { merge: true });
+    } catch (e) {
+      console.warn('Could not update user in Firestore:', e);
     }
+
+    // Update in community roster
+    const playerInRoster = communityService.getPlayers().find(p => p.email?.toLowerCase() === trimmed);
+    if (playerInRoster) {
+      if (updates.plan) playerInRoster.plan = updates.plan;
+      if (updates.category) playerInRoster.category = updates.category;
+      if (updates.hostedMatchesCount !== undefined) playerInRoster.hostedMatchesCount = updates.hostedMatchesCount;
+      if (updates.subscriptionExpiresAt !== undefined) playerInRoster.subscriptionExpiresAt = updates.subscriptionExpiresAt;
+    }
+
+    // If current logged-in user is this user, update session
+    if (this.currentUser && this.currentUser.email.toLowerCase() === trimmed) {
+      if (updates.plan) this.currentUser.plan = updates.plan;
+      if (updates.category) this.currentUser.category = updates.category;
+      if (updates.hostedMatchesCount !== undefined) this.currentUser.hostedMatchesCount = updates.hostedMatchesCount;
+      if (updates.subscriptionExpiresAt !== undefined) this.currentUser.subscriptionExpiresAt = updates.subscriptionExpiresAt;
+      this.saveSession(this.currentUser);
+    }
+
+    this.notify();
+    return true;
+  }
+
+  public async adminDeleteUser(email: string): Promise<boolean> {
+    const trimmed = email.trim().toLowerCase();
+    const registry = this.getRegistry();
+    if (!registry[trimmed]) return false;
+
+    delete registry[trimmed];
+    this.saveRegistry(registry);
+
+    try {
+      await deleteDoc(doc(db, 'users', trimmed));
+    } catch (e) {
+      console.warn('Could not delete user in Firestore:', e);
+    }
+
+    this.notify();
+    return true;
   }
 }
 
