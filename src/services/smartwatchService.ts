@@ -280,9 +280,18 @@ class SmartwatchService {
     }
   }
 
+  private readonly DEBOUNCE_MS = 500; // Protection against Apple Watch duplicate events (nexttrack + seekforward) and crown scrub bursts
+
   private triggerCommand(command: 'team1' | 'team2' | 'undo' | 'repeat') {
+    const now = Date.now();
+    // Debounce guard: Drop duplicate commands arriving within 500ms
+    if (this.lastCommandTime && now - this.lastCommandTime < this.DEBOUNCE_MS) {
+      console.warn(`[SmartwatchService] Command '${command}' debounced (${now - this.lastCommandTime}ms since last event)`);
+      return;
+    }
+
     this.lastCommand = command;
-    this.lastCommandTime = Date.now();
+    this.lastCommandTime = now;
 
     // Haptic feedback on phone
     if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {

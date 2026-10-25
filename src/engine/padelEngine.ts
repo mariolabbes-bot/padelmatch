@@ -1,17 +1,17 @@
 import type { MatchRules, MatchScoreState, Team, PointScore } from '../types/padel';
 
-export function createInitialMatchState(rules: MatchRules): MatchScoreState {
-  const isSuperTie = rules.format === 'single_set' && rules.thirdSetRule === 'super_tiebreak';
-  
+export function createInitialMatchState(_rules?: MatchRules): MatchScoreState {
+  // A match always begins with game 1 (0-0), even for single_set (which is a 1-set match of games).
+  // Super Tie-break is strictly a deciding set rule (3rd set in best_of_3 or 5th set in best_of_5).
   return {
     sets: [{ team1: 0, team2: 0 }],
     currentSetIndex: 0,
     currentGame: {
-      team1: isSuperTie ? 0 : '0',
-      team2: isSuperTie ? 0 : '0'
+      team1: '0',
+      team2: '0'
     },
     isTieBreak: false,
-    isSuperTieBreak: isSuperTie,
+    isSuperTieBreak: false,
     servingTeam: 'team1',
     servingPlayer: 1,
     sideChangeNeeded: false,

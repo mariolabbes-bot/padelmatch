@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import type { 
   MatchRules, 
   MatchScoreState, 
@@ -260,6 +260,7 @@ export function App() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isSmartwatchActive, setIsSmartwatchActive] = useState(false);
   const [matchElapsedSeconds, setMatchElapsedSeconds] = useState(0);
+  const lastScoreTimeRef = useRef<number>(0);
 
   useEffect(() => {
     let timer: any = null;
@@ -496,6 +497,13 @@ export function App() {
       ttsService.speak('Partido en pausa. Reanuda para continuar.', ttsSettings);
       return;
     }
+
+    // Debounce guard (450ms) prevents burst/duplicate events from smartwatches, hardware remotes, or double-clicks
+    const now = Date.now();
+    if (now - lastScoreTimeRef.current < 450) {
+      return;
+    }
+    lastScoreTimeRef.current = now;
 
     // If resting when user taps score, clear rest and proceed with point
     if (state.isResting) {
