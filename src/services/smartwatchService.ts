@@ -15,6 +15,8 @@
  *    the active audio session.
  */
 
+import { ttsService } from './ttsService';
+
 export interface SmartwatchState {
   isActive: boolean;
   isAudioPlaying: boolean;
@@ -39,6 +41,26 @@ class SmartwatchService {
 
   constructor() {
     this.initAudioElement();
+    this.setupTTSSync();
+  }
+
+  private setupTTSSync() {
+    if (typeof window === 'undefined') return;
+    try {
+      ttsService.subscribeSpeakingState(isSpeaking => {
+        // When speech finishes, if background audio was paused by iOS system ducking, resume it immediately
+        if (!isSpeaking && this.isActive && this.audioElement && this.audioElement.paused) {
+          setTimeout(() => {
+            if (this.isActive && this.audioElement && this.audioElement.paused) {
+              this.audioElement.play().catch(() => {});
+              this.forceKeepPlayingState();
+            }
+          }, 80);
+        }
+      });
+    } catch (e) {
+      console.warn('SmartwatchService: TTS sync setup error', e);
+    }
   }
 
   private initAudioElement() {
@@ -248,15 +270,19 @@ class SmartwatchService {
         this.forceKeepPlayingState();
       });
 
-      // 5. Pause Button [⏸] -> Undo last point (and immediately resume playback)
+      // 5. Pause Button [⏸] / OS Audio Interruption -> Maintain playback (NEVER trigger undo!)
       navigator.mediaSession.setActionHandler('pause', () => {
-        this.triggerCommand('undo');
-        // Resume silent loop immediately so iOS never releases audio session
+        // CRITICAL BUGFIX: In iOS Safari and Android/WearOS, system audio ducking
+        // (triggered whenever TTS speaks the score) automatically dispatches 'pause'.
+        // Mapping 'pause' to 'undo' caused every scored point to be immediately undone.
+        // We now safely resume background playback so the watch connection stays alive.
         if (this.isActive && this.audioElement) {
           setTimeout(() => {
-            this.audioElement?.play().catch(() => {});
-            this.forceKeepPlayingState();
-          }, 80);
+            if (this.isActive && this.audioElement && this.audioElement.paused) {
+              this.audioElement.play().catch(() => {});
+              this.forceKeepPlayingState();
+            }
+          }, 120);
         }
       });
 
@@ -269,7 +295,7 @@ class SmartwatchService {
         }
       });
 
-      // 7. Stop Button
+      // 7. Stop Button -> Repeat score announcement
       navigator.mediaSession.setActionHandler('stop', () => {
         this.triggerCommand('repeat');
         this.forceKeepPlayingState();
