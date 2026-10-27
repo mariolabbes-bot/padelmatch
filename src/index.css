@@ -61,84 +61,96 @@
   --safe-right: max(12px, env(safe-area-inset-right, 12px));
 }
 
-/* Day Mode (Modo Día / Luz Natural / Alto Contraste Anti-Reflejo Solar) */
+/* Day Mode (Modo Luz Natural / Social Luminoso & Esmerilado) */
 [data-theme='day'] {
-  --bg-deep: #edf2f7;
-  --bg-card: #ffffff;
-  --bg-card-hover: #f8fafc;
+  --bg-deep: #f8fafc;
+  --bg-card: rgba(255, 255, 255, 0.88);
+  --bg-card-hover: #ffffff;
   --bg-elevated: #e2e8f0;
-  --bg-glass: rgba(255, 255, 255, 0.94);
+  --bg-glass: rgba(255, 255, 255, 0.82);
 
-  --border-subtle: rgba(15, 23, 42, 0.12);
-  --border-medium: rgba(15, 23, 42, 0.22);
+  --border-subtle: rgba(15, 23, 42, 0.08);
+  --border-medium: rgba(15, 23, 42, 0.16);
   --border-focus: #059669;
 
-  /* Team 1 Accent (Emerald Verde Deportivo visible bajo sol directo) */
+  /* Team 1 Accent (Emerald Verde Deportivo) */
   --team1-primary: #059669;
   --team1-gradient: linear-gradient(135deg, #059669 0%, #0284c7 100%);
-  --team1-glow: rgba(5, 150, 105, 0.25);
+  --team1-glow: rgba(5, 150, 105, 0.2);
   --team1-dark: #ecfdf5;
 
-  /* Team 2 Accent (Azul Zafiro Deportivo Profundo) */
+  /* Team 2 Accent (Azul Cancha Deportivo) */
   --team2-primary: #0284c7;
   --team2-gradient: linear-gradient(135deg, #0284c7 0%, #4f46e5 100%);
-  --team2-glow: rgba(2, 132, 199, 0.25);
+  --team2-glow: rgba(2, 132, 199, 0.2);
   --team2-dark: #f0f9ff;
 
   /* Special Game State Colors */
   --gold-primary: #b45309;
-  --gold-glow: rgba(180, 83, 9, 0.25);
+  --gold-glow: rgba(180, 83, 9, 0.2);
   --danger-primary: #e11d48;
-  --danger-glow: rgba(225, 29, 72, 0.25);
+  --danger-glow: rgba(225, 29, 72, 0.2);
 
-  /* Text & Surfaces: Máxima legibilidad a distancia en cancha al aire libre */
+  /* Text & Surfaces */
   --text-main: #0f172a;
   --text-muted: #475569;
-  --text-dim: #64748b;
+  --text-dim: #94a3b8;
 
-  /* Shadows para modo claro */
-  --shadow-sm: 0 2px 8px rgba(15, 23, 42, 0.08);
-  --shadow-lg: 0 10px 30px -5px rgba(15, 23, 42, 0.14);
-  --shadow-glow-t1: 0 0 20px rgba(5, 150, 105, 0.2);
-  --shadow-glow-t2: 0 0 20px rgba(2, 132, 199, 0.2);
-  --shadow-glow-gold: 0 0 20px rgba(180, 83, 9, 0.2);
+  /* Shadows para modo claro translúcido */
+  --shadow-sm: 0 2px 8px rgba(15, 23, 42, 0.05);
+  --shadow-lg: 0 10px 30px -5px rgba(15, 23, 42, 0.08);
+  --shadow-glow-t1: 0 0 20px rgba(5, 150, 105, 0.15);
+  --shadow-glow-t2: 0 0 20px rgba(2, 132, 199, 0.15);
+  --shadow-glow-gold: 0 0 20px rgba(180, 83, 9, 0.15);
+}
+
+[data-theme='day'] body {
+  background: radial-gradient(circle at 10% 15%, rgba(5, 150, 105, 0.05) 0%, transparent 40%),
+              radial-gradient(circle at 90% 85%, rgba(2, 132, 199, 0.05) 0%, transparent 40%),
+              #f8fafc;
 }
 
 [data-theme='day'] .glass-panel {
   background: var(--bg-glass);
-  box-shadow: 0 4px 25px rgba(15, 23, 42, 0.08);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.05);
   border: 1px solid var(--border-subtle);
 }
 
 [data-theme='day'] .badge-gold {
-  background: rgba(180, 83, 9, 0.12);
+  background: rgba(180, 83, 9, 0.1);
   color: var(--gold-primary);
-  border: 1px solid rgba(180, 83, 9, 0.35);
+  border: 1px solid rgba(180, 83, 9, 0.3);
   box-shadow: none;
 }
 
 [data-theme='day'] .badge-team1 {
-  background: rgba(5, 150, 105, 0.12);
+  background: rgba(5, 150, 105, 0.1);
   color: var(--team1-primary);
-  border: 1px solid rgba(5, 150, 105, 0.35);
+  border: 1px solid rgba(5, 150, 105, 0.3);
 }
 
 [data-theme='day'] .badge-team2 {
-  background: rgba(2, 132, 199, 0.12);
+  background: rgba(2, 132, 199, 0.1);
   color: var(--team2-primary);
-  border: 1px solid rgba(2, 132, 199, 0.35);
+  border: 1px solid rgba(2, 132, 199, 0.3);
 }
 
 [data-theme='day'] .apple-card {
-  background: #ffffff;
-  border: 1px solid rgba(15, 23, 42, 0.14);
-  box-shadow: 0 10px 30px -10px rgba(15, 23, 42, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  background: var(--bg-card);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border-subtle);
+  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.9);
 }
 
 [data-theme='day'] header.glass-panel,
 [data-theme='day'] footer.glass-panel {
-  background: rgba(255, 255, 255, 0.96);
-  border-color: rgba(15, 23, 42, 0.14);
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-color: rgba(15, 23, 42, 0.08);
 }
 
 

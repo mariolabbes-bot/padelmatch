@@ -14,17 +14,14 @@ import { ScheduledMatchDetailModal } from './ScheduledMatchDetailModal';
 import { InviteExternalPartnerModal } from './InviteExternalPartnerModal';
 import { PrivacySettingsModal } from './PrivacySettingsModal';
 import { PartnerChatModal } from './PartnerChatModal';
+import { MobilePlayerMenuDrawer } from './MobilePlayerMenuDrawer';
 import { directChatService } from '../services/directChatService';
 import type { ScheduledMatch } from '../types/padel';
 import { 
   Trophy, 
-  LogOut, 
   ChevronRight, 
   Flame,
-  Sun,
-  Moon,
   Bell,
-  Crown,
   Users,
   UserPlus,
   MessageSquare,
@@ -40,7 +37,6 @@ import {
   Calendar,
   Plus,
   Share2,
-  ShieldCheck,
   Trash2
 } from 'lucide-react';
 
@@ -64,6 +60,7 @@ interface Props {
 export const HostDashboardView: React.FC<Props> = ({
   user,
   onOpenCommunity,
+  onOpenBluetoothModal,
   onOpenNotifications,
   onOpenSubscriptionModal,
   onNavigateToGroups,
@@ -106,6 +103,7 @@ export const HostDashboardView: React.FC<Props> = ({
   const [selectedChatPartner, setSelectedChatPartner] = useState<CommunityPlayer | null>(null);
   const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState(false);
   const [totalUnreadChat, setTotalUnreadChat] = useState(() => directChatService.getTotalUnreadCount(user.id));
+  const [isMenuDrawerOpen, setIsMenuDrawerOpen] = useState(false);
 
   useEffect(() => {
     return themeService.subscribe(setTheme);
@@ -197,150 +195,119 @@ export const HostDashboardView: React.FC<Props> = ({
 
   return (
     <div style={containerStyle}>
-      {/* 1. TOP BRAND & SYSTEM UTILITIES BAR */}
-      <div style={brandTopBarStyle} className="glass-panel apple-card">
+      {/* 1. TOP BRAND & SYSTEM UTILITIES BAR (DISEÑO MÓVIL SOCIAL LIMPIO) */}
+      <header style={brandTopBarStyle} className="glass-panel apple-card">
         {/* Brand with Logo */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, flexShrink: 0 }}>
           <img 
             src="/logo.png" 
             alt="PadelMatch Logo" 
             style={{ 
-              width: '28px', 
-              height: '28px', 
+              width: '32px', 
+              height: '32px', 
               borderRadius: '50%', 
               objectFit: 'cover', 
-              border: '1.5px solid rgba(0, 230, 118, 0.45)',
-              boxShadow: '0 0 10px rgba(0, 230, 118, 0.25)',
+              border: '2px solid var(--team1-primary)',
+              boxShadow: '0 2px 8px var(--team1-glow)',
               flexShrink: 0 
             }} 
           />
-          <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-            <span style={{ fontWeight: 900, letterSpacing: '-0.03em', fontSize: '1.05rem', color: '#fff' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ fontWeight: 900, letterSpacing: '-0.03em', fontSize: '1.08rem', color: 'var(--text-main)' }}>
               PADEL<span style={{ color: 'var(--team1-primary)' }}>MATCH</span>
             </span>
             <span style={{
               fontSize: '0.58rem',
               fontWeight: 900,
               letterSpacing: '0.04em',
-              padding: '1px 5px',
-              borderRadius: '4px',
-              background: 'rgba(0, 230, 118, 0.12)',
+              padding: '2px 5px',
+              borderRadius: '5px',
+              background: 'rgba(5, 150, 105, 0.1)',
               color: 'var(--team1-primary)',
-              border: '1px solid rgba(0, 230, 118, 0.25)'
+              border: '1px solid rgba(5, 150, 105, 0.25)'
             }}>
               LIVE
             </span>
           </div>
         </div>
 
-        {/* Right System Utilities */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          {/* Admin Control Panel Button (Only Authorized Admin) */}
-          {isAdmin && onOpenAdmin && (
-            <button
-              type="button"
-              onClick={onOpenAdmin}
-              style={{
-                ...iconHeaderBtnStyle,
-                padding: '4px 8px',
-                background: 'rgba(255, 214, 0, 0.16)',
-                borderColor: 'rgba(255, 214, 0, 0.45)',
-                color: 'var(--gold-primary)'
-              }}
-              title="Panel de Administración Central"
-              aria-label="Panel Admin"
-            >
-              <ShieldCheck size={13} />
-              <span style={{ fontSize: '0.68rem', fontWeight: 900 }}>ADMIN</span>
-            </button>
-          )}
-
-          {/* Subscription Button */}
-          {onOpenSubscriptionModal && (
-            <button
-              type="button"
-              onClick={onOpenSubscriptionModal}
-              style={{
-                ...iconHeaderBtnStyle,
-                padding: '4px 8px',
-                background: isSubscribed ? 'rgba(0, 230, 118, 0.12)' : 'rgba(255, 214, 0, 0.12)',
-                borderColor: isSubscribed ? 'rgba(0, 230, 118, 0.3)' : 'rgba(255, 214, 0, 0.3)',
-                color: isSubscribed ? 'var(--team1-primary)' : 'var(--gold-primary)'
-              }}
-              title="Planes y Suscripción"
-              aria-label="Planes y Suscripción"
-            >
-              <Crown size={13} />
-              <span style={{ fontSize: '0.68rem', fontWeight: 900 }}>{isSubscribed ? 'PRO' : 'PLANES'}</span>
-            </button>
-          )}
-
-          {/* Privacy Settings Button */}
+        {/* Right Touch Triggers (Exactamente los 3 esenciales del estándar social móvil) */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+          {/* 1. Mensajería Directa / Chat */}
           <button
             type="button"
-            onClick={() => setIsPrivacyModalOpen(true)}
-            style={{ ...iconHeaderBtnStyle, padding: '6px' }}
-            title="Centro de Privacidad y Control de Datos"
-            aria-label="Privacidad"
+            onClick={() => {
+              if (partners.length > 0) {
+                setSelectedChatPartner(partners[0]);
+              } else if (onOpenCommunity) {
+                onOpenCommunity();
+              }
+            }}
+            style={{ ...iconHeaderBtnStyle, padding: '7px 9px' }}
+            title="Mensajes Directos In-App"
+            aria-label="Mensajes Directos"
           >
-            <ShieldCheck size={15} color="var(--gold-primary)" />
+            <MessageSquare size={17} color="var(--team1-primary)" />
+            {totalUnreadChat > 0 && (
+              <span style={unreadBadgeCountStyle}>{totalUnreadChat}</span>
+            )}
           </button>
 
-          {/* Unread Direct Chat Badge */}
-          {totalUnreadChat > 0 && (
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '4px',
-                padding: '4px 8px',
-                borderRadius: '8px',
-                background: 'rgba(0, 229, 255, 0.15)',
-                border: '1px solid rgba(0, 229, 255, 0.4)',
-                color: '#00e5ff',
-                fontSize: '0.68rem',
-                fontWeight: 900
-              }}
-              title={`${totalUnreadChat} mensaje(s) directo(s) no leído(s)`}
-            >
-              <MessageSquare size={11} />
-              <span>{totalUnreadChat}</span>
-            </div>
-          )}
-
-          {/* Day / Night Theme Switcher */}
-          <button
-            type="button"
-            onClick={() => themeService.toggleTheme()}
-            style={{ ...iconHeaderBtnStyle, padding: '6px' }}
-            title={theme === 'day' ? 'Modo Noche (Estadio Neón)' : 'Modo Día (Luz Natural / Alto Contraste)'}
-            aria-label="Cambiar tema día/noche"
-          >
-            {theme === 'day' ? <Sun size={15} color="var(--gold-primary)" /> : <Moon size={15} color="var(--team2-primary)" />}
-          </button>
-
-          {/* Notifications Bell */}
+          {/* 2. Campana de Notificaciones */}
           {onOpenNotifications && (
             <button 
               type="button"
               onClick={onOpenNotifications} 
-              style={{ ...iconHeaderBtnStyle, padding: '6px' }} 
+              style={{ ...iconHeaderBtnStyle, padding: '7px 9px' }} 
               title="Notificaciones & Convocatorias"
               aria-label="Notificaciones"
             >
-              <Bell size={15} color="var(--gold-primary)" />
+              <Bell size={17} color="var(--gold-primary)" />
               {unreadNotifs > 0 && (
                 <span style={unreadBadgeCountStyle}>{unreadNotifs}</span>
               )}
             </button>
           )}
 
-          {/* Logout */}
-          <button type="button" onClick={onLogout} style={{ ...logoutBtnStyle, padding: '6px' }} title="Cerrar sesión" aria-label="Cerrar sesión">
-            <LogOut size={14} />
+          {/* 3. Menú Rápido del Jugador (Abre Bottom Sheet con Ajustes, Tema, Privacidad, Admin y Salir) */}
+          <button
+            type="button"
+            onClick={() => setIsMenuDrawerOpen(true)}
+            style={{
+              ...iconHeaderBtnStyle,
+              padding: '3px',
+              borderRadius: '50%',
+              borderColor: getEloTier(player?.elo || user.elo).color,
+              borderWidth: '2px'
+            }}
+            title="Abrir Menú de Jugador & Ajustes"
+            aria-label="Menú del Jugador"
+          >
+            <div style={{
+              width: '30px',
+              height: '30px',
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: 'rgba(0, 0, 0, 0.1)',
+              overflow: 'hidden'
+            }}>
+              {user.avatar ? (
+                isImageAvatar(user.avatar) ? (
+                  <img src={user.avatar} alt={user.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                ) : (
+                  <span style={{ fontSize: '1.1rem', lineHeight: 1 }}>{user.avatar}</span>
+                )
+              ) : (
+                <span style={{ fontSize: '0.85rem', fontWeight: 900, color: 'var(--text-main)' }}>
+                  {user.name.charAt(0).toUpperCase()}
+                </span>
+              )}
+            </div>
           </button>
         </div>
-      </div>
+      </header>
 
       {/* 2. ATHLETE PROFILE CARD (FICHA RESUMIDA DEL JUGADOR) */}
       <div style={athleteProfileCardStyle} className="glass-panel apple-card">
@@ -1468,6 +1435,25 @@ export const HostDashboardView: React.FC<Props> = ({
         onClose={() => setIsPrivacyModalOpen(false)}
         currentUser={user}
       />
+
+      {/* Mobile Player Menu Drawer (Action Sheet de Ajustes, Tema, Privacidad, Admin) */}
+      <MobilePlayerMenuDrawer
+        isOpen={isMenuDrawerOpen}
+        onClose={() => setIsMenuDrawerOpen(false)}
+        currentUser={user}
+        isAdmin={isAdmin}
+        isSubscribed={isSubscribed}
+        theme={theme}
+        onToggleTheme={() => themeService.toggleTheme()}
+        onOpenProfile={() => {
+          if (onOpenProfile) onOpenProfile();
+        }}
+        onOpenPrivacy={() => setIsPrivacyModalOpen(true)}
+        onOpenSubscription={onOpenSubscriptionModal}
+        onOpenBluetoothModal={onOpenBluetoothModal}
+        onOpenAdmin={onOpenAdmin}
+        onLogout={onLogout}
+      />
     </div>
   );
 };
@@ -1491,7 +1477,7 @@ const containerStyle: React.CSSProperties = {
   paddingBottom: 'calc(var(--safe-bottom) + 80px)', // space for bottom nav
   paddingLeft: 'var(--safe-left)',
   paddingRight: 'var(--safe-right)',
-  background: 'radial-gradient(ellipse at 50% 15%, #0d1527 0%, var(--bg-deep) 75%)',
+  background: 'var(--bg-deep)',
   color: 'var(--text-main)',
   boxSizing: 'border-box',
   maxWidth: '960px',
@@ -1502,11 +1488,12 @@ const brandTopBarStyle: React.CSSProperties = {
   display: 'flex',
   justifyContent: 'space-between',
   alignItems: 'center',
-  padding: '8px 12px',
-  marginBottom: '10px',
-  borderRadius: '14px',
-  background: 'rgba(255, 255, 255, 0.03)',
-  border: '1px solid var(--border-subtle)'
+  padding: '10px 14px',
+  marginBottom: '12px',
+  borderRadius: '16px',
+  background: 'var(--bg-glass)',
+  border: '1px solid var(--border-subtle)',
+  boxShadow: 'var(--shadow-sm)'
 };
 
 const athleteProfileCardStyle: React.CSSProperties = {
@@ -1627,18 +1614,6 @@ const unreadBadgeCountStyle: React.CSSProperties = {
   alignItems: 'center',
   justifyContent: 'center',
   boxShadow: '0 0 8px rgba(255, 61, 113, 0.6)'
-};
-
-const logoutBtnStyle: React.CSSProperties = {
-  padding: '7px 9px',
-  borderRadius: '8px',
-  background: 'rgba(255, 61, 113, 0.1)',
-  border: '1px solid rgba(255, 61, 113, 0.3)',
-  color: 'var(--danger-primary)',
-  cursor: 'pointer',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center'
 };
 
 const partnerRequestBannerStyle: React.CSSProperties = {

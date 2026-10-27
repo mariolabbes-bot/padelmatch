@@ -1652,8 +1652,8 @@ export const UserProfileView: React.FC<Props> = ({
 
 const containerStyle: React.CSSProperties = {
   minHeight: '100vh',
-  background: 'var(--bg-main, #070a10)',
-  color: 'var(--text-main, #fff)',
+  background: 'var(--bg-deep)',
+  color: 'var(--text-main)',
   paddingBottom: '90px'
 };
 
@@ -1662,7 +1662,7 @@ const headerBarStyle: React.CSSProperties = {
   justifyContent: 'space-between',
   alignItems: 'center',
   padding: '12px 20px',
-  borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+  borderBottom: '1px solid var(--border-subtle)',
   position: 'sticky',
   top: 0,
   zIndex: 40
@@ -1672,8 +1672,8 @@ const backBtnStyle: React.CSSProperties = {
   width: '36px',
   height: '36px',
   borderRadius: '50%',
-  border: '1px solid rgba(255, 255, 255, 0.15)',
-  background: 'rgba(255, 255, 255, 0.05)',
+  border: '1px solid var(--border-subtle)',
+  background: 'rgba(120, 120, 120, 0.08)',
   color: 'var(--text-main)',
   display: 'flex',
   alignItems: 'center',

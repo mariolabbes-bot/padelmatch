@@ -3,7 +3,7 @@ export type AppTheme = 'day' | 'night';
 const THEME_STORAGE_KEY = 'padelmatch_theme_mode';
 
 class ThemeService {
-  private currentTheme: AppTheme = 'night';
+  private currentTheme: AppTheme = 'day';
   private listeners: Set<(theme: AppTheme) => void> = new Set();
 
   constructor() {
@@ -18,11 +18,11 @@ class ThemeService {
       if (saved === 'day' || saved === 'night') {
         this.currentTheme = saved;
       } else {
-        // Default to night, but respect daylight hours if desired
-        this.currentTheme = 'night';
+        // Default to day (Social Luminoso y Translúcido)
+        this.currentTheme = 'day';
       }
     } catch {
-      this.currentTheme = 'night';
+      this.currentTheme = 'day';
     }
 
     this.applyToDOM(this.currentTheme);
