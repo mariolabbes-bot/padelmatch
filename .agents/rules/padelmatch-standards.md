@@ -7,10 +7,15 @@
 - **Modo Horizontal (Landscape) y Pantalla Completa:** Soporte de rotación con botón de pantalla completa y solicitud de bloqueo horizontal (`screen.orientation.lock('landscape')`).
 - **Control Táctil In-Game:** La tarjeta completa del equipo funciona como zona táctil de puntuación con animación `scorePop` y vibración háptica (`navigator.vibrate(35)`).
 
-## 2. Estética Atlética de Alta Gama y Temas
+## 2. Estética Atlética de Alta Gama, Tarjetas Sólidas y Alto Contraste
 - **Alto Contraste y Dualidad Día/Noche:**
-  - `[data-theme='day']`: Fondo titanio/blanco puro con dígitos en alto contraste anti-reflejo para sol directo.
+  - `[data-theme='day']`: Fondo gris pizarra suave (`#f1f5f9`), tarjetas en blanco sólido (`var(--bg-card)` = `#ffffff`), paneles secundarios (`var(--bg-elevated)` = `#f8fafc`) y textos en alto contraste anti-reflejo (`var(--text-main)` = `#0f172a`).
   - `[data-theme='night']`: Fondo carbón profundo (`#070a10`) con resplandor neón verde pádel (`#00E676`) y azul zafiro (`#00B0FF`).
+- **Diseño Sólido y Glassmorphism Minimalista (Reglas Estrictas):**
+  - **Cero Degradados Sucios en Fondo Claro:** Prohibido el uso de degradados oscuros o radiales en contenedores principales y tarjetas en modo claro. Los fondos deben ser limpios y uniformes.
+  - **Inputs y Selects Nítidos:** Todos los campos de entrada deben tener fondo blanco sólido (`var(--bg-input, #ffffff)`), borde nítido de `1.5px solid var(--border-medium)` y texto de contraste total `var(--text-main)`. Queda prohibido el uso de `rgba(0, 0, 0, 0.35)` sobre fondos claros.
+  - **Prohibición de `color: '#fff'` Residual:** Nunca hardcodear texto blanco en modales, inputs o tarjetas sin verificar el contraste contra el fondo blanco del modo día. Usar siempre `var(--text-main)` y `var(--text-muted)`.
+  - **Jerarquía con Franjas Deportivas:** Destacar tarjetas y paneles importantes mediante bordes de acento sólido (`borderLeft: 4px solid var(--team1-primary)` o `var(--gold-primary)`), en lugar de cajas con degradados densos que degradan la legibilidad.
 - **Componentes:**
   - Controles segmentados estilo iOS (`[ Iniciar Sesión | Crear Perfil ]`).
   - Tarjetas con clase `.apple-card` y micro-bordes translúcidos.
@@ -60,9 +65,25 @@
 - **Archivos Grandes:** NUNCA añadir al staging de Git archivos superiores a 50 MB (incluirlos siempre en `.gitignore`).
 - **Verificación Pre-Deploy:** Antes de cualquier push o despliegue a Firebase Hosting, deben pasar todas las suites de test y el build limpio:
   1. `npx tsx src/engine/testFlow.ts`
-  2. `npx tsx src/engine/testMonetization.ts`
-  3. `npx tsx src/engine/testGroups.ts`
-  4. `npx tsx src/engine/testSchedule.ts`
-  5. `npx tsx src/engine/testReferrals.ts`
-  6. `npx tsx src/engine/testAdmin.ts`
-  7. `npm run build` (debe compilar con 0 errores TypeScript).
+  2. `npx tsx src/engine/testSocial.ts` (Red social atlética, mensajería y privacidad)
+  3. `npx tsx src/engine/testMonetization.ts`
+  4. `npx tsx src/engine/testGroups.ts`
+  5. `npx tsx src/engine/testSchedule.ts`
+  6. `npx tsx src/engine/testReferrals.ts`
+  7. `npx tsx src/engine/testAdmin.ts`
+  8. `npm run build` (debe compilar con 0 errores TypeScript).
+
+## 10. Red Social Atlética, Privacidad y Mensajería In-App
+- **Mensajería Directa In-App (Anti-Caos WhatsApp):**
+  - Mantener la comunicación entre partners dentro de la plataforma para preservar el foco deportivo y evitar la mezcla de temas ajenos a la cancha.
+  - Los canales de mensajería directa se identifican de manera determinista e idempotente mediante `getChatId(userA, userB)`.
+- **Gobernanza de Privacidad:**
+  - El usuario tiene control estricto de su información mediante tres niveles: `public`, `partners` y `private` para su perfil, estadísticas y partidos.
+- **Muro Atlético:**
+  - Publicaciones centradas en eventos de clubes, actividades de partners y partidos completados, con soporte de reacciones deportivas nativas (`👏 Chócala`, `🔥 Puntazo`).
+
+## 11. Periféricos Bluetooth y Smartwatches (Apple Watch & Galaxy Watch)
+- **Debounce y Prevención de Eventos Fantasma:**
+  - Todo evento de teclado o tecla multimedia proveniente de controles Bluetooth o smartwatches debe tener un filtro de rebote (debouncing de mínimo 350ms).
+- **Separación de Lógica de Marcador:**
+  - La acción de incremento de puntos para Pareja 1 o Pareja 2 no debe desencadenar reducciones de puntaje ni reseteos accidentales de set.
