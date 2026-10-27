@@ -121,7 +121,7 @@ export const BluetoothCalibrationModal: React.FC<Props> = ({
                   }}
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontWeight: 700, fontSize: '0.9rem', color: isSelected ? 'var(--team1-primary)' : '#fff' }}>
+                    <span style={{ fontWeight: 700, fontSize: '0.9rem', color: isSelected ? 'var(--team1-primary)' : 'var(--text-main)' }}>
                       {item.name}
                     </span>
                     {isSelected && <Check size={16} color="var(--team1-primary)" />}
@@ -307,11 +307,11 @@ const modalStyle: React.CSSProperties = {
   maxWidth: '560px',
   maxHeight: '90vh',
   overflowY: 'auto',
-  background: '#0d1424',
-  border: '1px solid rgba(255, 255, 255, 0.12)',
+  background: 'var(--bg-card)',
+  border: '1.5px solid var(--border-medium)',
   borderRadius: '20px',
   padding: '24px',
-  boxShadow: '0 20px 50px rgba(0, 0, 0, 0.8)',
+  boxShadow: '0 20px 50px rgba(0, 0, 0, 0.25)',
   animation: 'slideDown 0.25s ease-out'
 };
 
@@ -342,8 +342,10 @@ const closeBtnStyle: React.CSSProperties = {
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  background: 'rgba(255, 255, 255, 0.05)',
-  color: 'var(--text-muted)'
+  background: 'var(--bg-elevated)',
+  border: '1px solid var(--border-subtle)',
+  color: 'var(--text-muted)',
+  cursor: 'pointer'
 };
 
 const sectionTitleStyle: React.CSSProperties = {
@@ -381,10 +383,10 @@ const testBenchCard: React.CSSProperties = {
 const keyDetectedBox: React.CSSProperties = {
   marginTop: '10px',
   padding: '8px 12px',
-  background: '#070a12',
+  background: 'var(--bg-elevated)',
   borderRadius: '8px',
   textAlign: 'center',
-  border: '1px dashed rgba(255, 255, 255, 0.15)'
+  border: '1px dashed var(--border-medium)'
 };
 
 const mappingRowStyle: React.CSSProperties = {
@@ -410,12 +412,12 @@ const keyChipStyle: React.CSSProperties = {
   alignItems: 'center',
   gap: '4px',
   padding: '2px 8px',
-  background: '#131b2e',
-  border: '1px solid rgba(255, 255, 255, 0.1)',
+  background: 'var(--bg-elevated)',
+  border: '1px solid var(--border-subtle)',
   borderRadius: '6px',
   fontSize: '0.75rem',
   fontFamily: 'var(--font-mono)',
-  color: '#e2e8f0'
+  color: 'var(--text-main)'
 };
 
 const removeChipBtn: React.CSSProperties = {
@@ -454,10 +456,12 @@ const footerStyle: React.CSSProperties = {
 const secondaryBtnStyle: React.CSSProperties = {
   padding: '10px 18px',
   borderRadius: '10px',
-  background: 'rgba(255, 255, 255, 0.06)',
-  color: '#cbd5e1',
+  background: 'var(--bg-elevated)',
+  color: 'var(--text-main)',
+  border: '1px solid var(--border-subtle)',
   fontWeight: 600,
-  fontSize: '0.9rem'
+  fontSize: '0.9rem',
+  cursor: 'pointer'
 };
 
 const primaryBtnStyle: React.CSSProperties = {

@@ -70,7 +70,7 @@ export const QrShareModal: React.FC<Props> = ({
             <span className="badge badge-team2" style={{ marginBottom: '6px' }}>
               {courtName}
             </span>
-            <div style={{ fontWeight: 800, fontSize: '1rem', color: '#fff' }}>
+            <div style={{ fontWeight: 800, fontSize: '1rem', color: 'var(--text-main)' }}>
               {team1Name} <span style={{ color: 'var(--gold-primary)' }}>vs</span> {team2Name}
             </div>
             <div style={{ fontSize: '0.78rem', color: 'var(--text-dim)', marginTop: '4px' }}>
@@ -143,11 +143,11 @@ const overlayStyle: React.CSSProperties = {
 const modalStyle: React.CSSProperties = {
   width: '100%',
   maxWidth: '460px',
-  background: '#0d1424',
-  border: '1px solid rgba(255, 255, 255, 0.12)',
+  background: 'var(--bg-card)',
+  border: '1.5px solid var(--border-medium)',
   borderRadius: '20px',
   padding: '24px',
-  boxShadow: '0 20px 50px rgba(0, 0, 0, 0.8)',
+  boxShadow: '0 20px 50px rgba(0, 0, 0, 0.25)',
   animation: 'slideDown 0.25s ease-out'
 };
 
@@ -178,8 +178,10 @@ const closeBtnStyle: React.CSSProperties = {
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  background: 'rgba(255, 255, 255, 0.05)',
-  color: 'var(--text-muted)'
+  background: 'var(--bg-elevated)',
+  border: '1px solid var(--border-subtle)',
+  color: 'var(--text-muted)',
+  cursor: 'pointer'
 };
 
 const qrContainerStyle: React.CSSProperties = {
@@ -187,7 +189,7 @@ const qrContainerStyle: React.CSSProperties = {
   flexDirection: 'column',
   alignItems: 'center',
   padding: '20px',
-  background: 'rgba(0, 0, 0, 0.3)',
+  background: 'var(--bg-elevated)',
   borderRadius: '16px',
   border: '1px solid var(--border-subtle)',
   marginBottom: '18px'
@@ -226,8 +228,8 @@ const copyRowStyle: React.CSSProperties = {
 const linkInputStyle: React.CSSProperties = {
   flex: 1,
   padding: '10px 12px',
-  background: 'var(--bg-elevated)',
-  border: '1px solid var(--border-subtle)',
+  background: 'var(--bg-input, #ffffff)',
+  border: '1.5px solid var(--border-medium)',
   borderRadius: '8px',
   color: 'var(--text-muted)',
   fontSize: '0.82rem',

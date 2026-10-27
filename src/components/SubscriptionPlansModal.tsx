@@ -129,7 +129,7 @@ export const SubscriptionPlansModal: React.FC<Props> = ({
                 PadelMatch Pro Host
               </span>
             </div>
-            <h2 style={{ fontSize: '1.45rem', fontWeight: 900, color: '#fff', margin: 0 }}>
+            <h2 style={{ fontSize: '1.45rem', fontWeight: 900, color: 'var(--text-main)', margin: 0 }}>
               Suscripción Simple de Jugador
             </h2>
             <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginTop: '4px' }}>
@@ -146,7 +146,7 @@ export const SubscriptionPlansModal: React.FC<Props> = ({
         {remainingFree !== Infinity && (
           <div style={courtesyAlertBox}>
             <Flame size={16} color="var(--gold-primary)" />
-            <span style={{ fontSize: '0.8rem', color: '#e2e8f0' }}>
+            <span style={{ fontSize: '0.8rem', color: 'var(--text-main)' }}>
               {remainingFree > 0 ? (
                 <>Te quedan <strong>{remainingFree} de 3 partidos de cortesía gratuitos</strong> como Host.</>
               ) : (
@@ -161,7 +161,7 @@ export const SubscriptionPlansModal: React.FC<Props> = ({
             <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'rgba(0, 230, 118, 0.15)', border: '2px solid var(--team1-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
               <ShieldCheck size={36} color="var(--team1-primary)" />
             </div>
-            <h3 style={{ fontSize: '1.4rem', fontWeight: 900, color: '#fff', marginBottom: '8px' }}>
+            <h3 style={{ fontSize: '1.4rem', fontWeight: 900, color: 'var(--text-main)', marginBottom: '8px' }}>
               ¡Felicitaciones! Ya eres {successPlanName}
             </h3>
             <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', maxWidth: '400px', margin: '0 auto 24px' }}>
@@ -208,7 +208,7 @@ export const SubscriptionPlansModal: React.FC<Props> = ({
                     )}
 
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginTop: plan.badge ? '6px' : '0' }}>
-                      <h3 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#fff', margin: 0 }}>
+                      <h3 style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>
                         {plan.title}
                       </h3>
                       <input 
@@ -340,15 +340,15 @@ const modalCardStyle: React.CSSProperties = {
   maxWidth: '660px',
   maxHeight: '92vh',
   overflowY: 'auto',
-  background: 'linear-gradient(180deg, #10192e 0%, #070a10 100%)',
+  background: 'var(--bg-card)',
   border: '1.5px solid var(--border-medium)',
   borderRadius: '24px',
   padding: 'clamp(18px, 4vw, 28px)',
-  boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.12)'
+  boxShadow: '0 20px 50px rgba(0, 0, 0, 0.25)'
 };
 
 const closeBtnStyle: React.CSSProperties = {
-  background: 'rgba(255, 255, 255, 0.06)',
+  background: 'var(--bg-elevated)',
   border: '1px solid var(--border-subtle)',
   borderRadius: '10px',
   color: 'var(--text-muted)',
@@ -402,7 +402,7 @@ const badgeStyle: React.CSSProperties = {
 };
 
 const featuresCardStyle: React.CSSProperties = {
-  background: 'rgba(0, 0, 0, 0.35)',
+  background: 'var(--bg-elevated)',
   border: '1.5px solid var(--border-subtle)',
   borderRadius: '16px',
   padding: '16px 18px'
@@ -413,7 +413,7 @@ const featuresGridStyle: React.CSSProperties = {
   gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
   gap: '10px',
   fontSize: '0.82rem',
-  color: '#e2e8f0',
+  color: 'var(--text-main)',
   marginBottom: '12px'
 };
 

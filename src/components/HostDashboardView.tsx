@@ -346,7 +346,7 @@ export const HostDashboardView: React.FC<Props> = ({
           {/* Athlete Info */}
           <div style={{ minWidth: 0, flex: 1 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-              <span style={{ fontWeight: 900, fontSize: '1.05rem', color: '#fff', letterSpacing: '-0.02em', lineHeight: 1.2 }}>
+              <span style={{ fontWeight: 900, fontSize: '1.05rem', color: 'var(--text-main)', letterSpacing: '-0.02em', lineHeight: 1.2 }}>
                 Hola, {user.name.split(' ')[0]} 👋
               </span>
               <span style={{
@@ -424,7 +424,7 @@ export const HostDashboardView: React.FC<Props> = ({
               <UserPlus size={18} color="var(--team1-primary)" />
             </div>
             <div>
-              <div style={{ fontSize: '0.82rem', fontWeight: 900, color: '#fff' }}>
+              <div style={{ fontSize: '0.82rem', fontWeight: 900, color: 'var(--text-main)' }}>
                 Nueva Solicitud de Partner
               </div>
               <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
@@ -451,7 +451,7 @@ export const HostDashboardView: React.FC<Props> = ({
       )}
 
       {/* 3. HERO IN-COURT LAUNCH CARD (INVITATION TO PLAY IN COURT) */}
-      <div style={inCourtHeroCardStyle} className="glass-panel apple-card glow-team1">
+      <div style={inCourtHeroCardStyle} className="glass-panel apple-card">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
@@ -464,7 +464,7 @@ export const HostDashboardView: React.FC<Props> = ({
                 </span>
               )}
             </div>
-            <h2 style={{ fontSize: '1.25rem', fontWeight: 900, margin: 0, color: '#fff', letterSpacing: '-0.02em' }}>
+            <h2 style={{ fontSize: '1.25rem', fontWeight: 900, margin: 0, color: 'var(--text-main)', letterSpacing: '-0.02em' }}>
               ¿Listo para jugar o convocar?
             </h2>
             <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: '4px 0 0', maxWidth: '440px' }}>
@@ -479,7 +479,7 @@ export const HostDashboardView: React.FC<Props> = ({
               style={heroPlayBtnStyle}
               aria-label="Jugar Ahora (En Cancha)"
             >
-              <Play size={16} fill="#070a10" />
+              <Play size={16} fill="#ffffff" strokeWidth={0} />
               <span>Jugar Ahora</span>
             </button>
 
@@ -504,7 +504,7 @@ export const HostDashboardView: React.FC<Props> = ({
               <Calendar size={18} color="var(--gold-primary)" />
             </div>
             <div>
-              <div style={{ fontSize: '0.86rem', fontWeight: 900, color: '#fff' }}>
+              <div style={{ fontSize: '0.86rem', fontWeight: 900, color: 'var(--text-main)' }}>
                 ¡Invitación a Partido! 🎾
               </div>
               <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>
@@ -575,11 +575,11 @@ export const HostDashboardView: React.FC<Props> = ({
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px' }}>
             {/* Confirmed Matches (Ready to play!) */}
             {scheduledData.confirmedUpcoming.map(match => (
-              <div key={match.id} style={confirmedMatchCardStyle} className="glass-panel apple-card glow-team1">
+              <div key={match.id} style={confirmedMatchCardStyle} className="glass-panel apple-card">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
                   <div>
                     <span style={confirmedBadgeStyle}>🟢 CONFIRMADO Y AGENDADO</span>
-                    <h4 style={{ margin: '4px 0 2px', fontSize: '1rem', fontWeight: 900, color: '#fff' }}>
+                    <h4 style={{ margin: '4px 0 2px', fontSize: '1rem', fontWeight: 900, color: 'var(--text-main)' }}>
                       {match.clubName}
                     </h4>
                     <span style={{ fontSize: '0.74rem', color: 'var(--text-dim)', fontWeight: 800 }}>
@@ -606,9 +606,9 @@ export const HostDashboardView: React.FC<Props> = ({
                           justifyContent: 'center',
                           fontSize: '0.78rem',
                           fontWeight: 900,
-                          color: '#fff',
+                          color: 'var(--text-main)',
                           overflow: 'hidden',
-                          boxShadow: '0 2px 6px rgba(0,0,0,0.4)'
+                          boxShadow: '0 2px 6px rgba(0,0,0,0.2)'
                         }}
                         title={slot.name}
                       >
@@ -637,7 +637,7 @@ export const HostDashboardView: React.FC<Props> = ({
                       onClick={() => onLaunchScheduledMatch(match)}
                       style={launchToCourtCardBtn}
                     >
-                      <Play size={14} fill="#070a10" />
+                      <Play size={14} fill="#ffffff" strokeWidth={0} />
                       <span>🎾 Entrar a Cancha</span>
                     </button>
                   )}
@@ -683,7 +683,7 @@ export const HostDashboardView: React.FC<Props> = ({
                             flex: 1,
                             height: '6px',
                             borderRadius: '3px',
-                            background: s.status === 'confirmed' ? 'var(--team1-primary)' : 'rgba(255, 255, 255, 0.1)'
+                            background: s.status === 'confirmed' ? 'var(--team1-primary)' : 'var(--border-medium)'
                           }}
                         />
                       ))}
@@ -945,7 +945,7 @@ export const HostDashboardView: React.FC<Props> = ({
                         {post.matchSnippet.courtName}
                       </span>
                     </div>
-                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.92rem', fontWeight: 900, color: '#fff' }}>
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.92rem', fontWeight: 900, color: 'var(--text-main)' }}>
                       {post.matchSnippet.scoreSets}
                     </div>
                   </div>
@@ -1121,7 +1121,7 @@ export const HostDashboardView: React.FC<Props> = ({
                           <div style={{ fontSize: '0.78rem', fontWeight: 900, color: 'var(--gold-primary)' }}>
                             {callout.groupName}
                           </div>
-                          <div style={{ fontSize: '0.74rem', color: '#fff', marginTop: '2px' }}>
+                          <div style={{ fontSize: '0.74rem', color: 'var(--text-main)', marginTop: '2px' }}>
                             📅 {callout.matchDate} a las {callout.matchTime} hrs
                           </div>
                           <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>
@@ -1173,7 +1173,7 @@ export const HostDashboardView: React.FC<Props> = ({
                       )}
                     </div>
 
-                    <h5 style={{ fontSize: '0.88rem', fontWeight: 800, color: '#fff', margin: '4px 0 2px' }}>
+                    <h5 style={{ fontSize: '0.88rem', fontWeight: 800, color: 'var(--text-main)', margin: '4px 0 2px' }}>
                       {camp.title}
                     </h5>
                     <p style={{ fontSize: '0.74rem', color: 'var(--text-muted)', margin: '0 0 8px' }}>
@@ -1239,7 +1239,7 @@ export const HostDashboardView: React.FC<Props> = ({
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <UserPlus size={20} color="var(--team1-primary)" />
-                <h3 style={{ fontSize: '1.15rem', fontWeight: 900, color: '#fff', margin: 0 }}>
+                <h3 style={{ fontSize: '1.15rem', fontWeight: 900, color: 'var(--text-main)', margin: 0 }}>
                   Conectar Nuevo Partner
                 </h3>
               </div>
@@ -1264,7 +1264,7 @@ export const HostDashboardView: React.FC<Props> = ({
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Share2 size={18} color="#25D366" style={{ flexShrink: 0 }} />
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: '0.82rem', fontWeight: 900, color: '#fff' }}>
+                  <div style={{ fontSize: '0.82rem', fontWeight: 900, color: 'var(--text-main)' }}>
                     ¿Tu amigo(a) aún no usa PadelMatch?
                   </div>
                   <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
@@ -1551,8 +1551,9 @@ const inviteExternalCalloutStyle: React.CSSProperties = {
   gap: '10px',
   padding: '12px 14px',
   borderRadius: '14px',
-  background: 'linear-gradient(135deg, rgba(37, 211, 102, 0.1) 0%, rgba(0, 176, 255, 0.08) 100%)',
-  border: '1px solid rgba(37, 211, 102, 0.3)',
+  background: 'var(--bg-elevated)',
+  border: '1px solid var(--border-subtle)',
+  borderLeft: '4px solid #25D366',
   marginBottom: '14px'
 };
 
@@ -1563,13 +1564,13 @@ const inviteWhatsAppModalBtnStyle: React.CSSProperties = {
   gap: '8px',
   padding: '9px 14px',
   borderRadius: '10px',
-  background: 'linear-gradient(135deg, #25D366 0%, #128C7E 100%)',
-  color: '#fff',
+  background: '#25D366',
+  color: '#ffffff',
   fontSize: '0.82rem',
   fontWeight: 900,
   border: 'none',
   cursor: 'pointer',
-  boxShadow: '0 2px 10px rgba(37, 211, 102, 0.3)'
+  boxShadow: '0 2px 8px rgba(37, 211, 102, 0.25)'
 };
 
 const inviteSpecificPlayerBtnStyle: React.CSSProperties = {
@@ -1580,7 +1581,7 @@ const inviteSpecificPlayerBtnStyle: React.CSSProperties = {
   borderRadius: '10px',
   background: 'rgba(37, 211, 102, 0.12)',
   border: '1px solid #25D366',
-  color: '#25D366',
+  color: '#16a34a',
   fontSize: '0.8rem',
   fontWeight: 800,
   cursor: 'pointer'
@@ -1592,9 +1593,10 @@ const iconHeaderBtnStyle: React.CSSProperties = {
   gap: '5px',
   padding: '6px 10px',
   borderRadius: '8px',
-  background: 'rgba(255, 255, 255, 0.05)',
-  border: '1px solid var(--border-subtle)',
+  background: 'var(--bg-elevated)',
+  border: '1px solid var(--border-medium)',
   color: 'var(--text-main)',
+  boxShadow: 'var(--shadow-sm)',
   cursor: 'pointer',
   position: 'relative'
 };
@@ -1613,25 +1615,27 @@ const unreadBadgeCountStyle: React.CSSProperties = {
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  boxShadow: '0 0 8px rgba(255, 61, 113, 0.6)'
+  boxShadow: '0 0 8px rgba(225, 29, 72, 0.5)'
 };
 
 const partnerRequestBannerStyle: React.CSSProperties = {
   display: 'flex',
   justifyContent: 'space-between',
   alignItems: 'center',
-  padding: '10px 14px',
+  padding: '12px 16px',
   marginBottom: '14px',
-  background: 'linear-gradient(90deg, rgba(0, 230, 118, 0.12) 0%, rgba(14, 21, 36, 0.95) 100%)',
-  border: '1.5px solid var(--team1-primary)',
+  background: 'var(--bg-card)',
+  border: '1px solid var(--border-subtle)',
+  borderLeft: '4px solid var(--team1-primary)',
+  boxShadow: 'var(--shadow-sm)',
   borderRadius: '14px',
   animation: 'fadeIn 0.2s ease-out'
 };
 
 const partnerRequestIconStyle: React.CSSProperties = {
-  padding: '6px',
-  borderRadius: '8px',
-  background: 'rgba(0, 230, 118, 0.2)',
+  padding: '8px',
+  borderRadius: '10px',
+  background: 'rgba(5, 150, 105, 0.12)',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center'
@@ -1641,19 +1645,21 @@ const acceptPartnerBtnStyle: React.CSSProperties = {
   display: 'inline-flex',
   alignItems: 'center',
   gap: '4px',
-  padding: '6px 12px',
+  padding: '7px 14px',
   background: 'var(--team1-primary)',
-  color: '#070a10',
+  color: '#ffffff',
   borderRadius: '8px',
   fontWeight: 900,
   fontSize: '0.78rem',
-  cursor: 'pointer'
+  cursor: 'pointer',
+  border: 'none',
+  boxShadow: '0 2px 6px var(--team1-glow)'
 };
 
 const rejectPartnerBtnStyle: React.CSSProperties = {
-  padding: '6px 9px',
-  background: 'rgba(255, 255, 255, 0.08)',
-  border: '1px solid var(--border-subtle)',
+  padding: '7px 10px',
+  background: 'var(--bg-elevated)',
+  border: '1px solid var(--border-medium)',
   color: 'var(--text-muted)',
   borderRadius: '8px',
   cursor: 'pointer'
@@ -1663,8 +1669,10 @@ const inCourtHeroCardStyle: React.CSSProperties = {
   padding: 'clamp(14px, 3vw, 20px)',
   marginBottom: '16px',
   borderRadius: '18px',
-  background: 'linear-gradient(135deg, rgba(0, 230, 118, 0.08) 0%, rgba(14, 21, 36, 0.95) 100%)',
-  border: '1.5px solid rgba(0, 230, 118, 0.35)'
+  background: 'var(--bg-card)',
+  border: '1px solid var(--border-subtle)',
+  borderLeft: '4px solid var(--team1-primary)',
+  boxShadow: 'var(--shadow-sm)'
 };
 
 const heroPlayBtnStyle: React.CSSProperties = {
@@ -1672,15 +1680,16 @@ const heroPlayBtnStyle: React.CSSProperties = {
   alignItems: 'center',
   gap: '6px',
   padding: '10px 18px',
-  background: 'var(--team1-gradient)',
-  color: '#070a10',
+  background: 'var(--team1-primary)',
+  color: '#ffffff',
   borderRadius: '12px',
   fontWeight: 900,
   fontSize: '0.88rem',
   cursor: 'pointer',
-  boxShadow: '0 3px 15px var(--team1-glow)',
+  boxShadow: '0 3px 12px var(--team1-glow)',
   letterSpacing: '0.02em',
-  whiteSpace: 'nowrap'
+  whiteSpace: 'nowrap',
+  border: 'none'
 };
 
 const sectionWrapperStyle: React.CSSProperties = {
@@ -1707,10 +1716,10 @@ const addPartnerTriggerBtnStyle: React.CSSProperties = {
   display: 'inline-flex',
   alignItems: 'center',
   gap: '4px',
-  padding: '4px 10px',
+  padding: '5px 12px',
   borderRadius: 'var(--radius-full)',
-  background: 'rgba(0, 230, 118, 0.1)',
-  border: '1px solid rgba(0, 230, 118, 0.3)',
+  background: 'rgba(5, 150, 105, 0.08)',
+  border: '1px solid rgba(5, 150, 105, 0.25)',
   color: 'var(--team1-primary)',
   fontSize: '0.72rem',
   fontWeight: 800,
@@ -1738,16 +1747,16 @@ const partnerAvatarCircle: React.CSSProperties = {
   width: '50px',
   height: '50px',
   borderRadius: '50%',
-  background: 'linear-gradient(135deg, rgba(0, 230, 118, 0.2) 0%, rgba(0, 176, 255, 0.2) 100%)',
-  border: '2px solid rgba(0, 230, 118, 0.4)',
+  background: 'var(--bg-elevated)',
+  border: '2px solid var(--team1-primary)',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
   fontWeight: 900,
   fontSize: '1.1rem',
-  color: '#fff',
+  color: 'var(--text-main)',
   position: 'relative',
-  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)'
+  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)'
 };
 
 const partnerStatusDotStyle: React.CSSProperties = {
@@ -1758,15 +1767,15 @@ const partnerStatusDotStyle: React.CSSProperties = {
   height: '10px',
   borderRadius: '50%',
   background: 'var(--team1-primary)',
-  border: '2px solid #070a10'
+  border: '2px solid var(--bg-card)'
 };
 
 const chatUnreadBadgeStyle: React.CSSProperties = {
   position: 'absolute',
   top: '-3px',
   right: '-3px',
-  background: '#00E676',
-  color: '#070a10',
+  background: 'var(--danger-primary)',
+  color: '#ffffff',
   fontSize: '0.62rem',
   fontWeight: 900,
   minWidth: '16px',
@@ -1776,7 +1785,7 @@ const chatUnreadBadgeStyle: React.CSSProperties = {
   alignItems: 'center',
   justifyContent: 'center',
   padding: '0 3px',
-  boxShadow: '0 2px 6px rgba(0, 230, 118, 0.5)'
+  boxShadow: '0 2px 6px rgba(225, 29, 72, 0.4)'
 };
 
 const addPartnerBubbleStyle: React.CSSProperties = {
@@ -1792,8 +1801,8 @@ const addPartnerIconCircle: React.CSSProperties = {
   width: '50px',
   height: '50px',
   borderRadius: '50%',
-  border: '2px dashed rgba(0, 230, 118, 0.4)',
-  background: 'rgba(0, 230, 118, 0.05)',
+  border: '2px dashed var(--team1-primary)',
+  background: 'var(--bg-elevated)',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center'
@@ -1823,16 +1832,19 @@ const contentGridStyle: React.CSSProperties = {
 };
 
 const composerCardStyle: React.CSSProperties = {
-  padding: '14px',
-  borderRadius: '16px'
+  padding: '16px',
+  borderRadius: '16px',
+  background: 'var(--bg-card)',
+  border: '1px solid var(--border-subtle)',
+  boxShadow: 'var(--shadow-sm)'
 };
 
 const userMiniAvatar: React.CSSProperties = {
   width: '28px',
   height: '28px',
   borderRadius: '50%',
-  background: 'var(--team1-gradient)',
-  color: '#070a10',
+  background: 'var(--team1-primary)',
+  color: '#ffffff',
   fontWeight: 900,
   fontSize: '0.8rem',
   display: 'flex',
@@ -1843,8 +1855,8 @@ const userMiniAvatar: React.CSSProperties = {
 const postTextareaStyle: React.CSSProperties = {
   width: '100%',
   padding: '10px 12px',
-  background: 'rgba(0, 0, 0, 0.35)',
-  border: '1px solid var(--border-medium)',
+  background: 'var(--bg-input, #ffffff)',
+  border: '1.5px solid var(--border-medium)',
   borderRadius: '12px',
   color: 'var(--text-main)',
   fontSize: '0.85rem',
@@ -1859,16 +1871,21 @@ const postSubmitBtnStyle: React.CSSProperties = {
   alignItems: 'center',
   gap: '5px',
   padding: '6px 14px',
-  background: 'var(--team1-gradient)',
-  color: '#070a10',
+  background: 'var(--team1-primary)',
+  color: '#ffffff',
   borderRadius: '8px',
   fontWeight: 900,
-  fontSize: '0.78rem'
+  fontSize: '0.78rem',
+  border: 'none',
+  boxShadow: '0 2px 6px var(--team1-glow)'
 };
 
 const postCardStyle: React.CSSProperties = {
-  padding: '14px',
-  borderRadius: '16px'
+  padding: '16px',
+  borderRadius: '16px',
+  background: 'var(--bg-card)',
+  border: '1px solid var(--border-subtle)',
+  boxShadow: 'var(--shadow-sm)'
 };
 
 const authorAvatarCircle: React.CSSProperties = {
@@ -1886,44 +1903,45 @@ const authorAvatarCircle: React.CSSProperties = {
 };
 
 const matchSnippetBoxStyle: React.CSSProperties = {
-  padding: '8px 12px',
-  background: 'rgba(0, 0, 0, 0.45)',
-  border: '1px solid rgba(0, 230, 118, 0.3)',
+  padding: '10px 14px',
+  background: 'var(--bg-elevated)',
+  border: '1px solid var(--border-subtle)',
+  borderLeft: '4px solid var(--team1-primary)',
   borderRadius: '10px',
   marginBottom: '8px'
 };
 
 const postContentTextStyle: React.CSSProperties = {
-  fontSize: '0.84rem',
-  color: '#e2e8f0',
+  fontSize: '0.88rem',
+  color: 'var(--text-main)',
   margin: '0 0 10px',
-  lineHeight: 1.45
+  lineHeight: 1.5
 };
 
 const postActionsRowStyle: React.CSSProperties = {
   display: 'flex',
   gap: '8px',
   borderTop: '1px solid var(--border-subtle)',
-  paddingTop: '8px'
+  paddingTop: '10px'
 };
 
 const postActionBtnStyle: React.CSSProperties = {
   display: 'inline-flex',
   alignItems: 'center',
   gap: '5px',
-  padding: '5px 10px',
+  padding: '6px 10px',
   borderRadius: '8px',
   fontSize: '0.74rem',
   fontWeight: 800,
   cursor: 'pointer',
   border: '1px solid var(--border-subtle)',
-  background: 'rgba(255, 255, 255, 0.04)',
+  background: 'var(--bg-elevated)',
   color: 'var(--text-muted)'
 };
 
 const commentsThreadStyle: React.CSSProperties = {
   marginTop: '10px',
-  paddingTop: '8px',
+  paddingTop: '10px',
   borderTop: '1px solid var(--border-subtle)',
   display: 'flex',
   flexDirection: 'column',
@@ -1931,36 +1949,41 @@ const commentsThreadStyle: React.CSSProperties = {
 };
 
 const commentItemStyle: React.CSSProperties = {
-  padding: '6px 10px',
-  background: 'rgba(0, 0, 0, 0.3)',
+  padding: '8px 12px',
+  background: 'var(--bg-elevated)',
+  border: '1px solid var(--border-subtle)',
   borderRadius: '8px'
 };
 
 const commentInputStyle: React.CSSProperties = {
   flex: 1,
-  padding: '7px 10px',
-  background: 'rgba(0, 0, 0, 0.35)',
-  border: '1px solid var(--border-subtle)',
+  padding: '8px 12px',
+  background: 'var(--bg-input, #ffffff)',
+  border: '1.5px solid var(--border-medium)',
   borderRadius: '8px',
   color: 'var(--text-main)',
-  fontSize: '0.78rem',
+  fontSize: '0.8rem',
   outline: 'none'
 };
 
 const commentSendBtnStyle: React.CSSProperties = {
-  padding: '7px 10px',
+  padding: '8px 12px',
   background: 'var(--team1-primary)',
-  color: '#070a10',
+  color: '#ffffff',
   borderRadius: '8px',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  cursor: 'pointer'
+  cursor: 'pointer',
+  border: 'none'
 };
 
 const sidebarCardStyle: React.CSSProperties = {
-  padding: '14px',
-  borderRadius: '16px'
+  padding: '16px',
+  borderRadius: '16px',
+  background: 'var(--bg-card)',
+  border: '1px solid var(--border-subtle)',
+  boxShadow: 'var(--shadow-sm)'
 };
 
 const sidebarTitleStyle: React.CSSProperties = {
@@ -1981,9 +2004,10 @@ const linkSmallBtnStyle: React.CSSProperties = {
 };
 
 const calloutUrgentBoxStyle: React.CSSProperties = {
-  padding: '10px',
-  background: 'rgba(255, 214, 0, 0.08)',
-  border: '1px solid rgba(255, 214, 0, 0.3)',
+  padding: '12px',
+  background: 'var(--bg-elevated)',
+  border: '1px solid var(--gold-primary)',
+  borderLeft: '4px solid var(--gold-primary)',
   borderRadius: '12px'
 };
 
@@ -1993,20 +2017,22 @@ const joinCalloutBtnStyle: React.CSSProperties = {
   alignItems: 'center',
   justifyContent: 'center',
   gap: '4px',
-  padding: '7px',
+  padding: '8px',
   background: 'var(--gold-primary)',
-  color: '#070a10',
+  color: '#ffffff',
   borderRadius: '8px',
   fontWeight: 900,
   fontSize: '0.75rem',
   marginTop: '8px',
-  cursor: 'pointer'
+  cursor: 'pointer',
+  border: 'none'
 };
 
 const campaignCardStyle: React.CSSProperties = {
-  padding: '10px',
-  background: 'rgba(0, 176, 255, 0.06)',
-  border: '1px solid rgba(0, 176, 255, 0.25)',
+  padding: '12px',
+  background: 'var(--bg-elevated)',
+  border: '1px solid var(--border-subtle)',
+  borderLeft: '4px solid var(--team2-primary)',
   borderRadius: '12px'
 };
 
@@ -2014,15 +2040,15 @@ const whatsappContactBtnStyle: React.CSSProperties = {
   display: 'inline-flex',
   alignItems: 'center',
   gap: '4px',
-  fontSize: '0.7rem',
+  fontSize: '0.72rem',
   fontWeight: 800,
   color: 'var(--team2-primary)',
   textDecoration: 'none'
 };
 
 const newsItemStyle: React.CSSProperties = {
-  padding: '8px 10px',
-  background: 'rgba(255, 255, 255, 0.03)',
+  padding: '10px 12px',
+  background: 'var(--bg-elevated)',
   borderRadius: '10px',
   border: '1px solid var(--border-subtle)'
 };
@@ -2030,9 +2056,9 @@ const newsItemStyle: React.CSSProperties = {
 const modalOverlayStyle: React.CSSProperties = {
   position: 'fixed',
   inset: 0,
-  background: 'rgba(5, 8, 15, 0.85)',
-  backdropFilter: 'blur(16px)',
-  WebkitBackdropFilter: 'blur(16px)',
+  background: 'rgba(15, 23, 42, 0.65)',
+  backdropFilter: 'blur(12px)',
+  WebkitBackdropFilter: 'blur(12px)',
   zIndex: 1100,
   display: 'flex',
   alignItems: 'center',
@@ -2045,13 +2071,15 @@ const searchModalCardStyle: React.CSSProperties = {
   maxWidth: '480px',
   padding: '20px',
   borderRadius: '20px',
-  background: 'var(--bg-card)'
+  background: 'var(--bg-card)',
+  border: '1px solid var(--border-subtle)',
+  boxShadow: 'var(--shadow-lg)'
 };
 
 const closeModalBtnStyle: React.CSSProperties = {
   padding: '6px',
   borderRadius: '8px',
-  background: 'rgba(255, 255, 255, 0.06)',
+  background: 'var(--bg-elevated)',
   border: '1px solid var(--border-subtle)',
   color: 'var(--text-muted)',
   cursor: 'pointer',
@@ -2063,7 +2091,7 @@ const closeModalBtnStyle: React.CSSProperties = {
 const searchInputStyle: React.CSSProperties = {
   width: '100%',
   padding: '11px 12px 11px 36px',
-  background: 'rgba(0, 0, 0, 0.4)',
+  background: 'var(--bg-input, #ffffff)',
   border: '1.5px solid var(--border-medium)',
   borderRadius: '12px',
   color: 'var(--text-main)',
@@ -2077,7 +2105,7 @@ const playerResultRowStyle: React.CSSProperties = {
   justifyContent: 'space-between',
   alignItems: 'center',
   padding: '10px 12px',
-  background: 'rgba(255, 255, 255, 0.03)',
+  background: 'var(--bg-elevated)',
   border: '1px solid var(--border-subtle)',
   borderRadius: '10px'
 };
@@ -2087,12 +2115,13 @@ const connectBtnStyle: React.CSSProperties = {
   alignItems: 'center',
   gap: '4px',
   padding: '6px 12px',
-  background: 'var(--team1-gradient)',
-  color: '#070a10',
+  background: 'var(--team1-primary)',
+  color: '#ffffff',
   borderRadius: '8px',
   fontWeight: 900,
   fontSize: '0.74rem',
-  cursor: 'pointer'
+  cursor: 'pointer',
+  border: 'none'
 };
 
 const feedbackAlertStyle: React.CSSProperties = {
@@ -2100,7 +2129,7 @@ const feedbackAlertStyle: React.CSSProperties = {
   alignItems: 'center',
   gap: '6px',
   padding: '8px 12px',
-  background: 'rgba(0, 230, 118, 0.15)',
+  background: 'rgba(5, 150, 105, 0.12)',
   border: '1px solid var(--team1-primary)',
   borderRadius: '8px',
   color: 'var(--team1-primary)',
@@ -2114,15 +2143,15 @@ const heroScheduleBtnStyle: React.CSSProperties = {
   alignItems: 'center',
   gap: '8px',
   padding: '10px 18px',
-  background: 'rgba(255, 214, 0, 0.12)',
-  color: 'var(--gold-primary)',
-  border: '1.5px solid rgba(255, 214, 0, 0.35)',
+  background: 'var(--bg-elevated)',
+  color: 'var(--text-main)',
+  border: '1.5px solid var(--border-medium)',
   borderRadius: '12px',
   fontWeight: 900,
   fontSize: '0.85rem',
   cursor: 'pointer',
   transition: 'all 0.2s ease',
-  boxShadow: '0 4px 14px rgba(255, 214, 0, 0.15)'
+  boxShadow: 'var(--shadow-sm)'
 };
 
 const scheduledInviteBannerStyle: React.CSSProperties = {
@@ -2133,17 +2162,18 @@ const scheduledInviteBannerStyle: React.CSSProperties = {
   gap: '12px',
   padding: '14px 16px',
   borderRadius: '16px',
-  background: 'linear-gradient(135deg, rgba(255, 214, 0, 0.14) 0%, rgba(14, 21, 36, 0.95) 100%)',
-  border: '1.5px solid rgba(255, 214, 0, 0.4)',
+  background: 'var(--bg-card)',
+  border: '1px solid var(--border-subtle)',
+  borderLeft: '4px solid var(--gold-primary)',
   marginBottom: '16px',
-  boxShadow: '0 8px 24px rgba(255, 214, 0, 0.12)'
+  boxShadow: 'var(--shadow-sm)'
 };
 
 const scheduledInviteIconCircle: React.CSSProperties = {
   width: '38px',
   height: '38px',
   borderRadius: '50%',
-  background: 'rgba(255, 214, 0, 0.2)',
+  background: 'rgba(180, 83, 9, 0.1)',
   border: '1px solid var(--gold-primary)',
   display: 'flex',
   alignItems: 'center',
@@ -2156,8 +2186,8 @@ const quickAcceptBtnStyle: React.CSSProperties = {
   alignItems: 'center',
   gap: '4px',
   padding: '6px 12px',
-  background: 'var(--team1-gradient)',
-  color: '#070a10',
+  background: 'var(--team1-primary)',
+  color: '#ffffff',
   borderRadius: '8px',
   fontWeight: 900,
   fontSize: '0.75rem',
@@ -2167,10 +2197,10 @@ const quickAcceptBtnStyle: React.CSSProperties = {
 
 const quickDeclineBtnStyle: React.CSSProperties = {
   padding: '6px 8px',
-  background: 'rgba(255, 82, 82, 0.15)',
-  color: '#ff5252',
+  background: 'rgba(239, 68, 68, 0.1)',
+  color: '#ef4444',
   borderRadius: '8px',
-  border: '1px solid rgba(255, 82, 82, 0.3)',
+  border: '1px solid rgba(239, 68, 68, 0.25)',
   cursor: 'pointer',
   display: 'flex',
   alignItems: 'center',
@@ -2179,7 +2209,7 @@ const quickDeclineBtnStyle: React.CSSProperties = {
 
 const quickViewBtnStyle: React.CSSProperties = {
   padding: '6px 10px',
-  background: 'rgba(255, 255, 255, 0.08)',
+  background: 'var(--bg-elevated)',
   color: 'var(--text-main)',
   borderRadius: '8px',
   border: '1px solid var(--border-medium)',
@@ -2191,8 +2221,10 @@ const quickViewBtnStyle: React.CSSProperties = {
 const confirmedMatchCardStyle: React.CSSProperties = {
   padding: '16px',
   borderRadius: '16px',
-  background: 'linear-gradient(135deg, rgba(0, 230, 118, 0.08) 0%, rgba(14, 21, 36, 0.95) 100%)',
-  border: '1.5px solid rgba(0, 230, 118, 0.35)',
+  background: 'var(--bg-card)',
+  border: '1px solid var(--border-subtle)',
+  borderLeft: '4px solid var(--team1-primary)',
+  boxShadow: 'var(--shadow-sm)',
   display: 'flex',
   flexDirection: 'column',
   justifyContent: 'space-between'
@@ -2203,7 +2235,7 @@ const confirmedBadgeStyle: React.CSSProperties = {
   fontWeight: 900,
   padding: '2px 6px',
   borderRadius: '4px',
-  background: 'rgba(0, 230, 118, 0.2)',
+  background: 'rgba(5, 150, 105, 0.12)',
   color: 'var(--team1-primary)',
   border: '1px solid var(--team1-primary)',
   letterSpacing: '0.04em'
@@ -2216,19 +2248,19 @@ const launchToCourtCardBtn: React.CSSProperties = {
   justifyContent: 'center',
   gap: '6px',
   padding: '9px 12px',
-  background: 'var(--team1-gradient)',
-  color: '#070a10',
+  background: 'var(--team1-primary)',
+  color: '#ffffff',
   borderRadius: '10px',
   fontWeight: 900,
   fontSize: '0.8rem',
   border: 'none',
   cursor: 'pointer',
-  boxShadow: '0 4px 14px rgba(0, 230, 118, 0.35)'
+  boxShadow: '0 3px 10px var(--team1-glow)'
 };
 
 const viewCalloutDetailsBtn: React.CSSProperties = {
   padding: '9px 12px',
-  background: 'rgba(255, 255, 255, 0.06)',
+  background: 'var(--bg-elevated)',
   color: 'var(--text-main)',
   borderRadius: '10px',
   border: '1px solid var(--border-medium)',
@@ -2240,8 +2272,10 @@ const viewCalloutDetailsBtn: React.CSSProperties = {
 const openCalloutCardStyle: React.CSSProperties = {
   padding: '16px',
   borderRadius: '16px',
-  background: 'rgba(255, 255, 255, 0.03)',
-  border: '1.5px solid var(--border-subtle)',
+  background: 'var(--bg-card)',
+  border: '1px solid var(--border-subtle)',
+  borderLeft: '4px solid var(--gold-primary)',
+  boxShadow: 'var(--shadow-sm)',
   display: 'flex',
   flexDirection: 'column',
   justifyContent: 'space-between'
@@ -2252,7 +2286,7 @@ const openCalloutBadgeStyle: React.CSSProperties = {
   fontWeight: 900,
   padding: '2px 6px',
   borderRadius: '4px',
-  background: 'rgba(255, 214, 0, 0.15)',
+  background: 'rgba(180, 83, 9, 0.1)',
   color: 'var(--gold-primary)',
   border: '1px solid var(--gold-primary)',
   letterSpacing: '0.04em'
@@ -2275,12 +2309,13 @@ const shareWhatsAppCardBtn: React.CSSProperties = {
 const fullConfirmCalloutBtn: React.CSSProperties = {
   flex: 1,
   padding: '9px 12px',
-  background: 'var(--gold-gradient)',
-  color: '#070a10',
+  background: 'var(--gold-primary)',
+  color: '#ffffff',
   borderRadius: '10px',
   fontWeight: 900,
   fontSize: '0.8rem',
   border: 'none',
   cursor: 'pointer'
 };
+
 

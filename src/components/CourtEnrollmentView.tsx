@@ -100,7 +100,7 @@ export const CourtEnrollmentView: React.FC<Props> = ({
             <span className="badge badge-gold">Módulo B • Autoinscripción en Cancha</span>
             <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{courtName}</span>
           </div>
-          <h1 style={{ fontSize: '1.4rem', fontWeight: 900, marginTop: '4px', color: '#fff' }}>
+          <h1 style={{ fontSize: '1.4rem', fontWeight: 900, marginTop: '4px', color: 'var(--text-main)' }}>
             Alineación en Cancha & Reconocimiento de Historial
           </h1>
           <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
@@ -243,7 +243,7 @@ export const CourtEnrollmentView: React.FC<Props> = ({
         <div style={h2hCardStyle} className="glass-panel">
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px' }}>
             <Swords size={20} color="var(--gold-primary)" />
-            <h3 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#fff' }}>
+            <h3 style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-main)' }}>
               Historial Cruzado Directo (H2H)
             </h3>
           </div>
@@ -282,7 +282,7 @@ export const CourtEnrollmentView: React.FC<Props> = ({
           <div style={{ marginBottom: '18px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '4px' }}>
               <span>Probabilidad Estimada (ELO)</span>
-              <span style={{ fontWeight: 700, color: '#fff' }}>
+              <span style={{ fontWeight: 700, color: 'var(--text-main)' }}>
                 {h2h.team1Wins >= h2h.team2Wins ? '52% vs 48%' : '47% vs 53%'}
               </span>
             </div>
@@ -309,7 +309,7 @@ export const CourtEnrollmentView: React.FC<Props> = ({
                         {r.winner === 'team1' ? teams.team1.name : teams.team2.name}
                       </span>
                     </div>
-                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.8rem', color: '#fff', fontWeight: 700 }}>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.8rem', color: 'var(--text-main)', fontWeight: 700 }}>
                       {r.score}
                     </span>
                   </div>
@@ -329,7 +329,7 @@ export const CourtEnrollmentView: React.FC<Props> = ({
         <div style={modalOverlayStyle}>
           <div style={pickerModalStyle} className="glass-panel">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#fff' }}>
+              <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-main)' }}>
                 Asignar Jugador • {selectedSlot.teamId === 'team1' ? teams.team1.name : teams.team2.name} ({selectedSlot.slot === 'player1' ? 'Drive' : 'Revés'})
               </h3>
               <button onClick={() => setSelectedSlot(null)} style={closeBtnStyle}>
@@ -365,7 +365,7 @@ export const CourtEnrollmentView: React.FC<Props> = ({
                           {renderCourtAvatar(cp.avatar, 'var(--team1-primary)')}
                         </div>
                         <div>
-                          <div style={{ fontWeight: 700, fontSize: '0.88rem', color: '#fff' }}>{cp.name}</div>
+                          <div style={{ fontWeight: 700, fontSize: '0.88rem', color: 'var(--text-main)' }}>{cp.name}</div>
                           <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>
                             {cp.category} Cat • {cp.matchesPlayed} PJ ({Math.round((cp.matchesWon / (cp.matchesPlayed || 1)) * 100)}% Win)
                           </div>
@@ -462,7 +462,8 @@ const headerStyle: React.CSSProperties = {
   alignItems: 'center',
   padding: '16px 20px',
   borderRadius: '20px',
-  border: '1px solid var(--border-subtle)'
+  background: 'var(--bg-card)',
+  border: '1.5px solid var(--border-subtle)'
 };
 
 const startMatchBtnStyle: React.CSSProperties = {
@@ -665,7 +666,8 @@ const centerCourtLine: React.CSSProperties = {
 const h2hCardStyle: React.CSSProperties = {
   padding: '20px',
   borderRadius: '24px',
-  border: '1px solid var(--border-subtle)',
+  background: 'var(--bg-card)',
+  border: '1.5px solid var(--border-subtle)',
   display: 'flex',
   flexDirection: 'column'
 };
@@ -729,11 +731,11 @@ const modalOverlayStyle: React.CSSProperties = {
 const pickerModalStyle: React.CSSProperties = {
   width: '100%',
   maxWidth: '460px',
-  background: '#0d1424',
-  border: '1px solid rgba(255, 255, 255, 0.12)',
+  background: 'var(--bg-card)',
+  border: '1.5px solid var(--border-medium)',
   borderRadius: '20px',
   padding: '20px',
-  boxShadow: '0 20px 50px rgba(0,0,0,0.8)'
+  boxShadow: '0 20px 50px rgba(0,0,0,0.25)'
 };
 
 const closeBtnStyle: React.CSSProperties = {
@@ -752,9 +754,9 @@ const searchRowStyle: React.CSSProperties = {
   alignItems: 'center',
   gap: '8px',
   padding: '10px 14px',
-  background: 'var(--bg-elevated)',
+  background: 'var(--bg-input, #ffffff)',
   borderRadius: '12px',
-  border: '1px solid var(--border-subtle)',
+  border: '1.5px solid var(--border-medium)',
   marginBottom: '12px'
 };
 
@@ -763,7 +765,7 @@ const searchInputStyle: React.CSSProperties = {
   background: 'transparent',
   border: 'none',
   outline: 'none',
-  color: '#fff',
+  color: 'var(--text-main)',
   fontSize: '0.9rem',
   fontFamily: 'inherit'
 };
@@ -774,8 +776,8 @@ const playerResultItemStyle: React.CSSProperties = {
   alignItems: 'center',
   padding: '10px 12px',
   borderRadius: '10px',
-  background: 'rgba(255, 255, 255, 0.03)',
-  border: '1px solid var(--border-subtle)',
+  background: 'var(--bg-elevated)',
+  border: '1.5px solid var(--border-subtle)',
   marginBottom: '6px',
   cursor: 'pointer',
   transition: 'background 0.2s'
@@ -811,17 +813,17 @@ const inputLabelStyle: React.CSSProperties = {
   display: 'block',
   fontSize: '0.78rem',
   fontWeight: 700,
-  color: '#cbd5e1',
+  color: 'var(--text-muted)',
   marginBottom: '4px'
 };
 
 const modalInputStyle: React.CSSProperties = {
   width: '100%',
   padding: '10px 12px',
-  background: 'var(--bg-elevated)',
-  border: '1px solid var(--border-subtle)',
+  background: 'var(--bg-input, #ffffff)',
+  border: '1.5px solid var(--border-medium)',
   borderRadius: '8px',
-  color: '#fff',
+  color: 'var(--text-main)',
   fontSize: '0.88rem',
   fontFamily: 'inherit',
   outline: 'none'
@@ -830,8 +832,9 @@ const modalInputStyle: React.CSSProperties = {
 const cancelBtnStyle: React.CSSProperties = {
   padding: '8px 16px',
   borderRadius: '8px',
-  background: 'rgba(255, 255, 255, 0.06)',
-  color: '#cbd5e1',
+  background: 'var(--bg-elevated)',
+  border: '1.5px solid var(--border-subtle)',
+  color: 'var(--text-main)',
   fontWeight: 600,
   fontSize: '0.85rem'
 };

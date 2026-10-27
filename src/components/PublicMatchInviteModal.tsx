@@ -121,7 +121,7 @@ export const PublicMatchInviteModal: React.FC<Props> = ({
         {!match ? (
           <div style={{ textAlign: 'center', padding: '32px 16px' }}>
             <AlertCircle size={36} color="var(--gold-primary)" style={{ marginBottom: '12px' }} />
-            <h3 style={{ fontSize: '1.2rem', color: '#fff', marginBottom: '8px' }}>
+            <h3 style={{ fontSize: '1.2rem', color: 'var(--text-main)', marginBottom: '8px' }}>
               Convocatoria no encontrada
             </h3>
             <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
@@ -160,7 +160,7 @@ export const PublicMatchInviteModal: React.FC<Props> = ({
                 <Calendar size={18} color="var(--team1-primary)" />
                 <div>
                   <div style={{ fontSize: '0.68rem', color: 'var(--text-dim)', fontWeight: 800 }}>FECHA</div>
-                  <div style={{ fontSize: '0.9rem', fontWeight: 900, color: '#fff' }}>
+                  <div style={{ fontSize: '0.9rem', fontWeight: 900, color: 'var(--text-main)' }}>
                     {formatReadableDate(match.matchDate)}
                   </div>
                 </div>
@@ -195,7 +195,7 @@ export const PublicMatchInviteModal: React.FC<Props> = ({
                       flex: 1,
                       padding: '6px',
                       borderRadius: '8px',
-                      background: s.status === 'confirmed' ? 'rgba(0, 230, 118, 0.2)' : 'rgba(255, 255, 255, 0.05)',
+                      background: s.status === 'confirmed' ? 'rgba(0, 230, 118, 0.15)' : 'var(--bg-elevated)',
                       border: s.status === 'confirmed' ? '1px solid var(--team1-primary)' : '1px dashed var(--border-subtle)',
                       textAlign: 'center',
                       fontSize: '0.72rem',
@@ -255,7 +255,7 @@ export const PublicMatchInviteModal: React.FC<Props> = ({
                 {currentUser ? (
                   <div>
                     <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: '8px', textAlign: 'center' }}>
-                      Has iniciado sesión como <strong style={{ color: '#fff' }}>{currentUser.name}</strong> ({currentUser.category} Cat).
+                      Has iniciado sesión como <strong style={{ color: 'var(--text-main)' }}>{currentUser.name}</strong> ({currentUser.category} Cat).
                     </div>
                     <button
                       type="submit"
@@ -322,11 +322,11 @@ const overlayStyle: React.CSSProperties = {
 const modalCardStyle: React.CSSProperties = {
   width: '100%',
   maxWidth: '480px',
-  background: 'var(--bg-elevated)',
+  background: 'var(--bg-card)',
   border: '1.5px solid var(--border-medium)',
   borderRadius: '24px',
   padding: '28px 24px',
-  boxShadow: '0 24px 60px rgba(0, 0, 0, 0.85)',
+  boxShadow: '0 20px 50px rgba(0, 0, 0, 0.25)',
   position: 'relative'
 };
 
@@ -334,8 +334,8 @@ const closeBtnStyle: React.CSSProperties = {
   position: 'absolute',
   top: '16px',
   right: '16px',
-  background: 'rgba(255, 255, 255, 0.05)',
-  border: 'none',
+  background: 'var(--bg-elevated)',
+  border: '1px solid var(--border-subtle)',
   color: 'var(--text-muted)',
   width: '32px',
   height: '32px',
@@ -357,7 +357,7 @@ const organizerAvatarCircle: React.CSSProperties = {
   justifyContent: 'center',
   fontSize: '1.5rem',
   fontWeight: 900,
-  color: '#fff',
+  color: 'var(--text-main)',
   margin: '0 auto 10px',
   overflow: 'hidden'
 };
@@ -367,7 +367,7 @@ const metaCardStyle: React.CSSProperties = {
   gridTemplateColumns: '1fr 1fr',
   gap: '12px',
   padding: '12px 14px',
-  background: 'rgba(0, 0, 0, 0.35)',
+  background: 'var(--bg-elevated)',
   border: '1px solid var(--border-subtle)',
   borderRadius: '14px',
   marginBottom: '14px'
@@ -375,7 +375,7 @@ const metaCardStyle: React.CSSProperties = {
 
 const quorumProgressBox: React.CSSProperties = {
   padding: '12px 14px',
-  background: 'rgba(255, 255, 255, 0.02)',
+  background: 'var(--bg-elevated)',
   border: '1px solid var(--border-subtle)',
   borderRadius: '14px',
   marginBottom: '18px'
@@ -392,7 +392,7 @@ const labelStyle: React.CSSProperties = {
 const inputStyle: React.CSSProperties = {
   width: '100%',
   padding: '10px 12px',
-  background: 'rgba(0, 0, 0, 0.4)',
+  background: 'var(--bg-input, #ffffff)',
   border: '1.5px solid var(--border-medium)',
   borderRadius: '12px',
   color: 'var(--text-main)',
@@ -428,8 +428,8 @@ const successConfirmedBox: React.CSSProperties = {
 
 const doneBtnStyle: React.CSSProperties = {
   padding: '10px 20px',
-  background: 'rgba(255, 255, 255, 0.1)',
-  color: '#fff',
+  background: 'var(--bg-elevated)',
+  color: 'var(--text-main)',
   border: '1px solid var(--border-medium)',
   borderRadius: '12px',
   fontWeight: 800,

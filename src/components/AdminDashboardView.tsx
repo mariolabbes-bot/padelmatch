@@ -128,7 +128,7 @@ export const AdminDashboardView: React.FC<Props> = ({
           <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'rgba(255, 82, 82, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', border: '1.5px solid #ff5252' }}>
             <Lock size={32} color="#ff5252" />
           </div>
-          <h2 style={{ fontSize: '1.4rem', fontWeight: 900, color: '#fff', marginBottom: '8px' }}>
+          <h2 style={{ fontSize: '1.4rem', fontWeight: 900, color: 'var(--text-main)', marginBottom: '8px' }}>
             Acceso Restringido
           </h2>
           <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)', lineHeight: 1.5, marginBottom: '24px' }}>
@@ -295,7 +295,7 @@ export const AdminDashboardView: React.FC<Props> = ({
                 • Mario Labbé
               </span>
             </div>
-            <h1 style={{ margin: '4px 0 0', fontSize: '1.25rem', fontWeight: 900, color: '#fff', letterSpacing: '-0.02em' }}>
+            <h1 style={{ margin: '4px 0 0', fontSize: '1.25rem', fontWeight: 900, color: 'var(--text-main)', letterSpacing: '-0.02em' }}>
               Panel de Control Central
             </h1>
           </div>
@@ -459,7 +459,7 @@ export const AdminDashboardView: React.FC<Props> = ({
           <div style={panelCardStyle} className="glass-panel apple-card">
             <div style={panelHeaderStyle}>
               <div>
-                <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: '#fff' }}>
+                <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-main)' }}>
                   Últimos Partidos Jugados ({matches.length})
                 </h3>
                 <p style={{ margin: '4px 0 0', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
@@ -547,7 +547,7 @@ export const AdminDashboardView: React.FC<Props> = ({
           <div style={panelCardStyle} className="glass-panel apple-card">
             <div style={panelHeaderStyle}>
               <div>
-                <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: '#fff' }}>
+                <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-main)' }}>
                   Convocatorias & Partidos Programados ({scheduledMatches.length})
                 </h3>
                 <p style={{ margin: '4px 0 0', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
@@ -600,7 +600,7 @@ export const AdminDashboardView: React.FC<Props> = ({
         <div style={panelCardStyle} className="glass-panel apple-card">
           <div style={panelHeaderStyle}>
             <div>
-              <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: '#fff' }}>
+              <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-main)' }}>
                 Directorio de Usuarios ({filteredUsers.length} de {users.length})
               </h3>
               <p style={{ margin: '4px 0 0', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
@@ -672,7 +672,7 @@ export const AdminDashboardView: React.FC<Props> = ({
                     </div>
                     <div style={{ minWidth: 0, flex: 1 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                        <span style={{ fontWeight: 800, color: '#fff', fontSize: '0.9rem' }}>
+                        <span style={{ fontWeight: 800, color: 'var(--text-main)', fontSize: '0.9rem' }}>
                           {u.name}
                         </span>
                         <span style={{
@@ -733,7 +733,7 @@ export const AdminDashboardView: React.FC<Props> = ({
         <div style={panelCardStyle} className="glass-panel apple-card">
           <div style={panelHeaderStyle}>
             <div>
-              <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: '#fff' }}>
+              <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-main)' }}>
                 Clubes & Canchas ({filteredClubs.length})
               </h3>
               <p style={{ margin: '4px 0 0', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
@@ -780,7 +780,7 @@ export const AdminDashboardView: React.FC<Props> = ({
               <div key={c.id} style={clubCardStyle} className="glass-panel">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
                   <div>
-                    <div style={{ fontWeight: 800, color: '#fff', fontSize: '0.95rem' }}>
+                    <div style={{ fontWeight: 800, color: 'var(--text-main)', fontSize: '0.95rem' }}>
                       {c.name}
                     </div>
                     <div style={{ fontSize: '0.74rem', color: 'var(--text-dim)', marginTop: '2px' }}>
@@ -834,7 +834,7 @@ export const AdminDashboardView: React.FC<Props> = ({
         <div style={panelCardStyle} className="glass-panel apple-card">
           <div style={panelHeaderStyle}>
             <div>
-              <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: '#fff' }}>
+              <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-main)' }}>
                 Grupos de Pádel ({filteredGroups.length})
               </h3>
               <p style={{ margin: '4px 0 0', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
@@ -863,7 +863,7 @@ export const AdminDashboardView: React.FC<Props> = ({
                 <div key={g.id} style={groupItemCardStyle}>
                   <div style={{ flex: 1 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ fontWeight: 800, color: '#fff', fontSize: '0.92rem' }}>
+                      <span style={{ fontWeight: 800, color: 'var(--text-main)', fontSize: '0.92rem' }}>
                         {g.name}
                       </span>
                       <span style={{ fontSize: '0.7rem', color: 'var(--team1-primary)', fontWeight: 800 }}>
@@ -871,7 +871,7 @@ export const AdminDashboardView: React.FC<Props> = ({
                       </span>
                     </div>
                     <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)', marginTop: '2px' }}>
-                      Admin: <strong style={{ color: '#fff' }}>{adminMember}</strong> {g.clubPreferred ? `• 🏟️ ${g.clubPreferred}` : ''}
+                      Admin: <strong style={{ color: 'var(--text-main)' }}>{adminMember}</strong> {g.clubPreferred ? `• 🏟️ ${g.clubPreferred}` : ''}
                     </div>
                     {g.callouts && g.callouts.length > 0 && (
                       <div style={{ fontSize: '0.7rem', color: 'var(--gold-primary)', marginTop: '4px' }}>
@@ -906,7 +906,7 @@ export const AdminDashboardView: React.FC<Props> = ({
         <div style={panelCardStyle} className="glass-panel apple-card">
           <div style={panelHeaderStyle}>
             <div>
-              <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: '#fff' }}>
+              <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-main)' }}>
                 Auditoría de Invitaciones & Referidos ({referrals.length})
               </h3>
               <p style={{ margin: '4px 0 0', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
@@ -920,7 +920,7 @@ export const AdminDashboardView: React.FC<Props> = ({
               <div key={r.id} style={referralItemStyle}>
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ fontWeight: 800, color: '#fff', fontSize: '0.88rem' }}>
+                    <span style={{ fontWeight: 800, color: 'var(--text-main)', fontSize: '0.88rem' }}>
                       {r.referredUserName}
                     </span>
                     <span style={{
@@ -958,7 +958,7 @@ export const AdminDashboardView: React.FC<Props> = ({
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Crown size={18} color="var(--gold-primary)" />
-                <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: '#fff' }}>
+                <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-main)' }}>
                   Gestionar Usuario: {editingUser.name}
                 </h3>
               </div>
@@ -1058,7 +1058,7 @@ export const AdminDashboardView: React.FC<Props> = ({
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Building2 size={18} color="var(--gold-primary)" />
-                <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: '#fff' }}>
+                <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-main)' }}>
                   Agregar Nuevo Club Oficial
                 </h3>
               </div>
@@ -1163,7 +1163,7 @@ export const AdminDashboardView: React.FC<Props> = ({
                   onChange={e => setNewClubVerified(e.target.checked)}
                   style={{ width: '16px', height: '16px', cursor: 'pointer' }}
                 />
-                <label htmlFor="clubVerifiedCheck" style={{ fontSize: '0.82rem', color: '#fff', cursor: 'pointer', fontWeight: 700 }}>
+                <label htmlFor="clubVerifiedCheck" style={{ fontSize: '0.82rem', color: 'var(--text-main)', cursor: 'pointer', fontWeight: 700 }}>
                   Marcar como Club Oficial Verificado
                 </label>
               </div>
@@ -1254,8 +1254,8 @@ const metricsBarGrid: React.CSSProperties = {
 const metricCardStyle: React.CSSProperties = {
   padding: '12px 14px',
   borderRadius: '14px',
-  background: 'rgba(255, 255, 255, 0.03)',
-  border: '1px solid var(--border-subtle)'
+  background: 'var(--bg-elevated)',
+  border: '1.5px solid var(--border-subtle)'
 };
 
 const metricLabelStyle: React.CSSProperties = {
@@ -1269,7 +1269,7 @@ const metricLabelStyle: React.CSSProperties = {
 const metricValueStyle: React.CSSProperties = {
   fontSize: '1.45rem',
   fontWeight: 900,
-  color: '#fff',
+  color: 'var(--text-main)',
   fontFamily: 'var(--font-mono)'
 };
 
@@ -1297,7 +1297,9 @@ const tabBtnStyle: React.CSSProperties = {
 
 const panelCardStyle: React.CSSProperties = {
   padding: '16px',
-  borderRadius: '16px'
+  borderRadius: '16px',
+  background: 'var(--bg-card)',
+  border: '1.5px solid var(--border-subtle)'
 };
 
 const panelHeaderStyle: React.CSSProperties = {
@@ -1324,8 +1326,8 @@ const searchInputWrapper: React.CSSProperties = {
   gap: '8px',
   padding: '6px 12px',
   borderRadius: '10px',
-  background: 'rgba(0, 0, 0, 0.3)',
-  border: '1px solid var(--border-subtle)',
+  background: 'var(--bg-input, #ffffff)',
+  border: '1.5px solid var(--border-medium)',
   flex: 1,
   minWidth: '220px'
 };
@@ -1334,7 +1336,7 @@ const searchInputStyle: React.CSSProperties = {
   background: 'none',
   border: 'none',
   outline: 'none',
-  color: '#fff',
+  color: 'var(--text-main)',
   fontSize: '0.82rem',
   width: '100%'
 };
@@ -1342,9 +1344,9 @@ const searchInputStyle: React.CSSProperties = {
 const filterSelectStyle: React.CSSProperties = {
   padding: '6px 10px',
   borderRadius: '8px',
-  background: 'rgba(0, 0, 0, 0.3)',
-  border: '1px solid var(--border-subtle)',
-  color: '#fff',
+  background: 'var(--bg-input, #ffffff)',
+  border: '1.5px solid var(--border-medium)',
+  color: 'var(--text-main)',
   fontSize: '0.78rem',
   outline: 'none'
 };
@@ -1355,8 +1357,8 @@ const userItemCardStyle: React.CSSProperties = {
   alignItems: 'center',
   padding: '10px 14px',
   borderRadius: '12px',
-  background: 'rgba(255, 255, 255, 0.02)',
-  border: '1px solid var(--border-subtle)',
+  background: 'var(--bg-card)',
+  border: '1.5px solid var(--border-subtle)',
   gap: '12px',
   flexWrap: 'wrap'
 };
@@ -1487,13 +1489,15 @@ const accessDeniedCardStyle: React.CSSProperties = {
   maxWidth: '440px',
   padding: '32px 24px',
   textAlign: 'center',
-  borderRadius: '20px'
+  borderRadius: '20px',
+  background: 'var(--bg-card)',
+  border: '1.5px solid var(--border-subtle)'
 };
 
 const modalOverlayStyle: React.CSSProperties = {
   position: 'fixed',
   inset: 0,
-  background: 'rgba(0, 0, 0, 0.85)',
+  background: 'rgba(0, 0, 0, 0.65)',
   backdropFilter: 'blur(8px)',
   display: 'flex',
   alignItems: 'center',
@@ -1506,7 +1510,10 @@ const modalCardStyle: React.CSSProperties = {
   width: '100%',
   maxWidth: '460px',
   padding: '20px',
-  borderRadius: '16px'
+  borderRadius: '16px',
+  background: 'var(--bg-card)',
+  border: '1.5px solid var(--border-medium)',
+  boxShadow: '0 20px 45px rgba(0, 0, 0, 0.25)'
 };
 
 const closeBtnStyle: React.CSSProperties = {
@@ -1529,9 +1536,9 @@ const modalInputStyle: React.CSSProperties = {
   width: '100%',
   padding: '8px 12px',
   borderRadius: '8px',
-  background: 'rgba(0, 0, 0, 0.35)',
-  border: '1px solid var(--border-subtle)',
-  color: '#fff',
+  background: 'var(--bg-input, #ffffff)',
+  border: '1.5px solid var(--border-medium)',
+  color: 'var(--text-main)',
   fontSize: '0.85rem',
   outline: 'none',
   boxSizing: 'border-box'
@@ -1541,9 +1548,9 @@ const modalSelectStyle: React.CSSProperties = {
   width: '100%',
   padding: '8px 12px',
   borderRadius: '8px',
-  background: 'rgba(0, 0, 0, 0.35)',
-  border: '1px solid var(--border-subtle)',
-  color: '#fff',
+  background: 'var(--bg-input, #ffffff)',
+  border: '1.5px solid var(--border-medium)',
+  color: 'var(--text-main)',
   fontSize: '0.85rem',
   outline: 'none',
   boxSizing: 'border-box'
@@ -1553,9 +1560,9 @@ const modalCancelBtn: React.CSSProperties = {
   flex: 1,
   padding: '9px',
   borderRadius: '8px',
-  background: 'rgba(255, 255, 255, 0.05)',
-  border: '1px solid var(--border-subtle)',
-  color: 'var(--text-muted)',
+  background: 'var(--bg-elevated)',
+  border: '1.5px solid var(--border-subtle)',
+  color: 'var(--text-main)',
   fontWeight: 800,
   fontSize: '0.82rem',
   cursor: 'pointer'

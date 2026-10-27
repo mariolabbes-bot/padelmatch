@@ -74,7 +74,7 @@ export const FinishMatchEarlyModal: React.FC<Props> = ({
               <Clock size={20} color="var(--gold-primary)" />
             </div>
             <div>
-              <h2 style={{ fontSize: '1.2rem', fontWeight: 900, color: '#fff' }}>
+              <h2 style={{ fontSize: '1.2rem', fontWeight: 900, color: 'var(--text-main)' }}>
                 Finalizar Partido Inconcluso
               </h2>
               <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
@@ -123,7 +123,7 @@ export const FinishMatchEarlyModal: React.FC<Props> = ({
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <Clock size={18} color="var(--gold-primary)" />
               <div>
-                <div style={{ fontWeight: 800, fontSize: '0.9rem', color: '#fff' }}>
+                <div style={{ fontWeight: 800, fontSize: '0.9rem', color: 'var(--text-main)' }}>
                   Tiempo de Cancha Cumplido (Inconcluso)
                 </div>
                 <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
@@ -146,7 +146,7 @@ export const FinishMatchEarlyModal: React.FC<Props> = ({
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <Flag size={18} color="var(--team1-primary)" />
               <div>
-                <div style={{ fontWeight: 800, fontSize: '0.9rem', color: '#fff' }}>
+                <div style={{ fontWeight: 800, fontSize: '0.9rem', color: 'var(--text-main)' }}>
                   Declarar Ganador al Líder Actual
                 </div>
                 <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
@@ -169,7 +169,7 @@ export const FinishMatchEarlyModal: React.FC<Props> = ({
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <ShieldAlert size={18} color="var(--danger-primary)" />
               <div>
-                <div style={{ fontWeight: 800, fontSize: '0.9rem', color: '#fff' }}>
+                <div style={{ fontWeight: 800, fontSize: '0.9rem', color: 'var(--text-main)' }}>
                   Retiro o Lesión de {teams.team1.name}
                 </div>
                 <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
@@ -192,7 +192,7 @@ export const FinishMatchEarlyModal: React.FC<Props> = ({
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <ShieldAlert size={18} color="var(--danger-primary)" />
               <div>
-                <div style={{ fontWeight: 800, fontSize: '0.9rem', color: '#fff' }}>
+                <div style={{ fontWeight: 800, fontSize: '0.9rem', color: 'var(--text-main)' }}>
                   Retiro o Lesión de {teams.team2.name}
                 </div>
                 <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
@@ -277,9 +277,10 @@ const setChipStyle: React.CSSProperties = {
   fontWeight: 800,
   fontSize: '0.85rem',
   padding: '2px 8px',
-  background: 'rgba(0, 0, 0, 0.4)',
+  background: 'var(--bg-card)',
+  border: '1px solid var(--border-subtle)',
   borderRadius: '6px',
-  color: '#fff'
+  color: 'var(--text-main)'
 };
 
 const optionCardStyle: React.CSSProperties = {

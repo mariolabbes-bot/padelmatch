@@ -41,7 +41,7 @@ export const FloatingActiveMatchWidget: React.FC<Props> = ({
         >
           <div style={liveBadgeStyle}>
             <span style={pulsingDotStyle} />
-            <span style={{ fontSize: '0.65rem', fontWeight: 900, color: '#fff', letterSpacing: '0.04em' }}>
+            <span style={{ fontSize: '0.65rem', fontWeight: 900, color: '#ef4444', letterSpacing: '0.04em' }}>
               EN JUEGO
             </span>
           </div>
@@ -55,7 +55,7 @@ export const FloatingActiveMatchWidget: React.FC<Props> = ({
             
             {!isMinimized && (
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '1px' }}>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.85rem', fontWeight: 900, color: '#fff' }}>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.85rem', fontWeight: 900, color: 'var(--text-main)' }}>
                   Sets: {setsScore}
                 </span>
                 <span style={{ fontSize: '0.72rem', color: 'var(--gold-primary)', fontWeight: 800 }}>
@@ -121,11 +121,11 @@ const containerStyle: React.CSSProperties = {
   zIndex: 900,
   padding: '8px 12px',
   borderRadius: '16px',
-  background: 'rgba(10, 16, 28, 0.94)',
+  background: 'var(--bg-card)',
   backdropFilter: 'blur(20px)',
   WebkitBackdropFilter: 'blur(20px)',
-  border: '1.5px solid rgba(0, 230, 118, 0.45)',
-  boxShadow: '0 8px 32px rgba(0, 0, 0, 0.6), 0 0 20px rgba(0, 230, 118, 0.2)'
+  border: '1.5px solid var(--team1-primary)',
+  boxShadow: '0 8px 30px rgba(0, 0, 0, 0.15), 0 0 20px rgba(0, 230, 118, 0.15)'
 };
 
 const innerStyle: React.CSSProperties = {
@@ -185,7 +185,7 @@ const toggleMinimizeBtnStyle: React.CSSProperties = {
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  background: 'rgba(255, 255, 255, 0.05)',
+  background: 'var(--bg-elevated)',
   border: '1px solid var(--border-subtle)',
   color: 'var(--text-muted)',
   borderRadius: '8px',

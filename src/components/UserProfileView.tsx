@@ -410,7 +410,7 @@ export const UserProfileView: React.FC<Props> = ({
                     <span style={{ fontSize: '2.4rem', lineHeight: 1 }}>{avatar}</span>
                   )
                 ) : (
-                  <span style={{ fontSize: '1.8rem', fontWeight: 900, color: '#fff' }}>
+                  <span style={{ fontSize: '1.8rem', fontWeight: 900, color: 'var(--text-main)' }}>
                     {currentUser.name.charAt(0).toUpperCase()}
                   </span>
                 )}
@@ -909,7 +909,7 @@ export const UserProfileView: React.FC<Props> = ({
                           )}
                         </div>
                       <div>
-                        <div style={{ fontSize: '1.2rem', fontWeight: 900, color: '#fff' }}>
+                        <div style={{ fontSize: '1.2rem', fontWeight: 900, color: 'var(--text-main)' }}>
                           {insights.bestPartner.name}
                         </div>
                         <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
@@ -996,7 +996,7 @@ export const UserProfileView: React.FC<Props> = ({
                           )}
                         </div>
                       <div>
-                        <div style={{ fontSize: '1.15rem', fontWeight: 900, color: '#fff' }}>
+                        <div style={{ fontSize: '1.15rem', fontWeight: 900, color: 'var(--text-main)' }}>
                           {insights.nemesisDuo?.rivalNames || insights.nemesis?.name}
                         </div>
                         <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
@@ -1312,11 +1312,12 @@ export const UserProfileView: React.FC<Props> = ({
                           alignItems: 'center',
                           justifyContent: 'space-between',
                           padding: '8px 12px',
-                          background: 'rgba(0,0,0,0.25)',
+                          background: 'var(--bg-elevated)',
+                          border: '1px solid var(--border-subtle)',
                           borderRadius: '8px',
                           fontSize: '0.78rem'
                         }}>
-                          <span style={{ color: '#fff', fontWeight: 700 }}>
+                          <span style={{ color: 'var(--text-main)', fontWeight: 700 }}>
                             #{idx + 1} {top.inviterName}
                           </span>
                           <span style={{ color: 'var(--text-dim)' }}>
@@ -1401,7 +1402,7 @@ export const UserProfileView: React.FC<Props> = ({
                       <ShieldCheck size={22} color="var(--team1-primary)" />
                     </div>
                     <div>
-                      <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#fff' }}>
+                      <div style={{ fontSize: '0.9rem', fontWeight: 800, color: 'var(--text-main)' }}>
                         Centro de Configuración de Privacidad
                       </div>
                       <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', marginTop: '2px' }}>
@@ -1732,7 +1733,7 @@ const avatarWrapperStyle: React.CSSProperties = {
   height: '76px',
   borderRadius: '50%',
   border: '3px solid var(--gold-primary)',
-  background: 'rgba(255, 255, 255, 0.05)',
+  background: 'var(--bg-elevated)',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
@@ -2098,9 +2099,9 @@ const confirmModalStyle: React.CSSProperties = {
   width: '100%',
   maxWidth: '480px',
   borderRadius: '18px',
-  border: '1px solid rgba(0, 230, 118, 0.3)',
-  background: 'linear-gradient(180deg, rgba(17, 27, 46, 0.96), rgba(10, 16, 28, 0.98))',
-  boxShadow: '0 24px 50px rgba(0, 0, 0, 0.6), 0 0 24px rgba(0, 230, 118, 0.15)',
+  border: '1px solid var(--border-subtle)',
+  background: 'var(--bg-card)',
+  boxShadow: 'var(--shadow-lg)',
   overflow: 'hidden',
   display: 'flex',
   flexDirection: 'column'
@@ -2111,7 +2112,7 @@ const modalHeaderStyle: React.CSSProperties = {
   alignItems: 'center',
   justifyContent: 'space-between',
   padding: '18px 20px',
-  borderBottom: '1px solid rgba(255, 255, 255, 0.08)'
+  borderBottom: '1px solid var(--border-subtle)'
 };
 
 const modalIconCircle: React.CSSProperties = {

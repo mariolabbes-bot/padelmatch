@@ -210,11 +210,13 @@ export const PartnerChatModal: React.FC<Props> = ({
                       <div style={{
                         ...messageBubbleStyle,
                         background: isMe 
-                          ? 'linear-gradient(135deg, #00E676 0%, #00C853 100%)' 
-                          : 'rgba(255, 255, 255, 0.08)',
-                        color: isMe ? '#050a10' : 'var(--text-main)',
+                          ? 'var(--team1-primary)' 
+                          : 'var(--bg-elevated)',
+                        color: isMe ? '#ffffff' : 'var(--text-main)',
+                        border: isMe ? 'none' : '1px solid var(--border-subtle)',
                         borderBottomRightRadius: isMe ? '4px' : '18px',
-                        borderBottomLeftRadius: isMe ? '18px' : '4px'
+                        borderBottomLeftRadius: isMe ? '18px' : '4px',
+                        boxShadow: 'var(--shadow-sm)'
                       }}>
                         {/* Text Content */}
                         <div style={{ fontSize: '0.85rem', lineHeight: 1.45, wordBreak: 'break-word', fontWeight: isMe ? 600 : 500 }}>
@@ -229,14 +231,14 @@ export const PartnerChatModal: React.FC<Props> = ({
                           gap: '4px',
                           marginTop: '4px',
                           fontSize: '0.62rem',
-                          color: isMe ? 'rgba(5, 10, 16, 0.75)' : 'var(--text-dim)'
+                          color: isMe ? 'rgba(255, 255, 255, 0.85)' : 'var(--text-dim)'
                         }}>
                           <span>{formatMessageTime(msg.timestamp)}</span>
                           {isMe && (
                             msg.read ? (
-                              <CheckCheck size={12} color="#050a10" />
+                              <CheckCheck size={12} color="#ffffff" />
                             ) : (
-                              <Check size={12} color="rgba(5, 10, 16, 0.6)" />
+                              <Check size={12} color="rgba(255, 255, 255, 0.7)" />
                             )
                           )}
                         </div>
@@ -303,9 +305,9 @@ const modalBoxStyle: React.CSSProperties = {
   display: 'flex',
   flexDirection: 'column',
   borderRadius: '24px',
-  border: '1px solid rgba(255, 255, 255, 0.12)',
-  background: 'linear-gradient(180deg, rgba(20, 26, 38, 0.98) 0%, rgba(10, 14, 22, 0.99) 100%)',
-  boxShadow: '0 25px 60px rgba(0, 0, 0, 0.7)',
+  border: '1px solid var(--border-subtle)',
+  background: 'var(--bg-card)',
+  boxShadow: 'var(--shadow-lg)',
   overflow: 'hidden'
 };
 
@@ -314,8 +316,10 @@ const headerStyle: React.CSSProperties = {
   justifyContent: 'space-between',
   alignItems: 'center',
   padding: '16px 20px',
-  borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
-  background: 'rgba(15, 20, 32, 0.95)',
+  borderBottom: '1px solid var(--border-subtle)',
+  background: 'var(--bg-glass)',
+  backdropFilter: 'blur(12px)',
+  WebkitBackdropFilter: 'blur(12px)',
   flexShrink: 0
 };
 
@@ -400,8 +404,8 @@ const bodyScrollableStyle: React.CSSProperties = {
 };
 
 const chatIntroCardStyle: React.CSSProperties = {
-  background: 'rgba(255, 255, 255, 0.03)',
-  border: '1px solid rgba(255, 255, 255, 0.06)',
+  background: 'var(--bg-elevated)',
+  border: '1px solid var(--border-subtle)',
   borderRadius: '14px',
   padding: '10px 14px',
   marginBottom: '6px'
@@ -443,14 +447,14 @@ const footerFormStyle: React.CSSProperties = {
   alignItems: 'center',
   gap: '8px',
   padding: '12px 16px',
-  borderTop: '1px solid rgba(255, 255, 255, 0.08)',
-  background: 'rgba(12, 16, 26, 0.98)'
+  borderTop: '1px solid var(--border-subtle)',
+  background: 'var(--bg-card)'
 };
 
 const chatInputStyle: React.CSSProperties = {
   flex: 1,
-  background: 'rgba(255, 255, 255, 0.06)',
-  border: '1px solid rgba(255, 255, 255, 0.12)',
+  background: 'var(--bg-input, #ffffff)',
+  border: '1.5px solid var(--border-medium)',
   borderRadius: '20px',
   padding: '10px 16px',
   fontSize: '0.85rem',
@@ -464,7 +468,7 @@ const sendBtnStyle: React.CSSProperties = {
   borderRadius: '50%',
   border: 'none',
   background: 'var(--team1-primary)',
-  color: '#070a10',
+  color: '#ffffff',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',

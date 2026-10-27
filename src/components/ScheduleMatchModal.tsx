@@ -188,7 +188,7 @@ export const ScheduleMatchModal: React.FC<Props> = ({
               <Check size={36} strokeWidth={3} />
             </div>
 
-            <h4 style={{ fontSize: '1.3rem', fontWeight: 900, color: '#fff', margin: '0 0 6px' }}>
+            <h4 style={{ fontSize: '1.3rem', fontWeight: 900, color: 'var(--text-main)', margin: '0 0 6px' }}>
               ¡Convocatoria Creada con Éxito! 🎾
             </h4>
             <p style={{ fontSize: '0.86rem', color: 'var(--text-muted)', maxWidth: '380px', margin: '0 auto 20px', lineHeight: 1.5 }}>
@@ -355,7 +355,7 @@ export const ScheduleMatchModal: React.FC<Props> = ({
                   required
                 >
                   {availableClubs.map(c => (
-                    <option key={c.id} value={c.name} style={{ background: '#0e1422', color: '#fff' }}>
+                    <option key={c.id} value={c.name} style={{ background: 'var(--bg-card)', color: 'var(--text-main)' }}>
                       {c.name} ({c.city})
                     </option>
                   ))}
@@ -475,8 +475,9 @@ export const ScheduleMatchModal: React.FC<Props> = ({
 const overlayStyle: React.CSSProperties = {
   position: 'fixed',
   inset: 0,
-  background: 'rgba(0, 0, 0, 0.82)',
-  backdropFilter: 'blur(8px)',
+  background: 'rgba(15, 23, 42, 0.65)',
+  backdropFilter: 'blur(12px)',
+  WebkitBackdropFilter: 'blur(12px)',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
@@ -489,27 +490,27 @@ const modalCardStyle: React.CSSProperties = {
   maxWidth: '520px',
   maxHeight: '92vh',
   overflowY: 'auto',
-  background: 'var(--bg-elevated)',
-  border: '1.5px solid var(--border-medium)',
+  background: 'var(--bg-card)',
+  border: '1px solid var(--border-subtle)',
   borderRadius: '24px',
   padding: '24px',
-  boxShadow: '0 24px 60px rgba(0, 0, 0, 0.8)'
+  boxShadow: 'var(--shadow-lg)'
 };
 
 const headerIconCircle: React.CSSProperties = {
   width: '42px',
   height: '42px',
   borderRadius: '50%',
-  background: 'rgba(0, 230, 118, 0.12)',
-  border: '1.5px solid rgba(0, 230, 118, 0.3)',
+  background: 'rgba(5, 150, 105, 0.12)',
+  border: '1.5px solid rgba(5, 150, 105, 0.3)',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center'
 };
 
 const closeBtnStyle: React.CSSProperties = {
-  background: 'rgba(255, 255, 255, 0.05)',
-  border: 'none',
+  background: 'var(--bg-elevated)',
+  border: '1px solid var(--border-subtle)',
   color: 'var(--text-muted)',
   width: '36px',
   height: '36px',
@@ -533,7 +534,7 @@ const labelStyle: React.CSSProperties = {
 const inputStyle: React.CSSProperties = {
   width: '100%',
   padding: '10px 14px',
-  background: 'rgba(0, 0, 0, 0.35)',
+  background: 'var(--bg-input, #ffffff)',
   border: '1.5px solid var(--border-medium)',
   borderRadius: '12px',
   color: 'var(--text-main)',
@@ -654,7 +655,7 @@ const whatsappShareBtn: React.CSSProperties = {
 
 const doneBtnStyle: React.CSSProperties = {
   padding: '12px',
-  background: 'rgba(255, 255, 255, 0.08)',
+  background: 'var(--bg-elevated)',
   color: 'var(--text-main)',
   border: '1px solid var(--border-medium)',
   borderRadius: '14px',
@@ -665,7 +666,7 @@ const doneBtnStyle: React.CSSProperties = {
 
 const summaryQuorumBox: React.CSSProperties = {
   padding: '14px',
-  background: 'rgba(0, 0, 0, 0.35)',
+  background: 'var(--bg-elevated)',
   border: '1px solid var(--border-subtle)',
   borderRadius: '16px',
   maxWidth: '420px',

@@ -85,7 +85,7 @@ export const InstallPwaPrompt: React.FC = () => {
               <span style={{ fontSize: '0.68rem', fontWeight: 900, color: 'var(--gold-primary)', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
                 ACCESO DIRECTO OFICIAL
               </span>
-              <h4 style={{ fontSize: '1.05rem', fontWeight: 900, color: '#fff', margin: '2px 0 0' }}>
+              <h4 style={{ fontSize: '1.05rem', fontWeight: 900, color: 'var(--text-main)', margin: '2px 0 0' }}>
                 Instalar PadelMatch
               </h4>
             </div>
@@ -106,7 +106,7 @@ export const InstallPwaPrompt: React.FC = () => {
             <div style={iosStepsBox}>
               <div style={iosStepRow}>
                 <div style={stepNumberBadge}>1</div>
-                <div style={{ flex: 1, fontSize: '0.82rem', color: '#e2e8f0' }}>
+                <div style={{ flex: 1, fontSize: '0.82rem', color: 'var(--text-main)' }}>
                   Toca el botón <strong>Compartir</strong> en Safari abajo <Share size={15} color="#38bdf8" style={{ display: 'inline', verticalAlign: 'middle', margin: '0 2px' }} />
                 </div>
               </div>
@@ -165,11 +165,11 @@ const promptCardStyle: React.CSSProperties = {
   pointerEvents: 'auto',
   width: '100%',
   maxWidth: '440px',
-  background: '#0d1527',
-  border: '1px solid rgba(0, 230, 118, 0.4)',
+  background: 'var(--bg-card)',
+  border: '1.5px solid var(--border-medium)',
   borderRadius: '20px',
   padding: '18px 20px',
-  boxShadow: '0 16px 40px rgba(0, 0, 0, 0.85), 0 0 25px rgba(0, 230, 118, 0.15)'
+  boxShadow: '0 16px 40px rgba(0, 0, 0, 0.25)'
 };
 
 const closeIconBtnStyle: React.CSSProperties = {
@@ -230,8 +230,9 @@ const stepNumberBadge: React.CSSProperties = {
   width: '22px',
   height: '22px',
   borderRadius: '50%',
-  background: 'rgba(255, 255, 255, 0.1)',
-  color: '#fff',
+  background: 'var(--bg-elevated)',
+  border: '1px solid var(--border-subtle)',
+  color: 'var(--text-main)',
   fontSize: '0.75rem',
   fontWeight: 900,
   display: 'flex',

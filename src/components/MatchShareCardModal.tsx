@@ -227,7 +227,7 @@ export const MatchShareCardModal: React.FC<Props> = ({
               <Sparkles size={18} color="var(--gold-primary)" />
             </div>
             <div>
-              <h3 style={{ fontSize: '1.1rem', fontWeight: 900, color: '#fff', margin: 0 }}>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: 900, color: 'var(--text-main)', margin: 0 }}>
                 Tarjeta Gráfica de Partido
               </h3>
               <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', margin: 0 }}>
@@ -347,7 +347,7 @@ export const MatchShareCardModal: React.FC<Props> = ({
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
                 <QrCode size={18} color="var(--gold-primary)" />
                 <div>
-                  <div style={{ fontSize: '0.85rem', fontWeight: 900, color: '#fff' }}>
+                  <div style={{ fontSize: '0.85rem', fontWeight: 900, color: 'var(--text-main)' }}>
                     QR & Registro para Jugadores Invitados
                   </div>
                   <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
@@ -453,10 +453,10 @@ const modalStyle: React.CSSProperties = {
   maxHeight: '92vh',
   display: 'flex',
   flexDirection: 'column',
-  background: '#0a0f1d',
-  border: '1px solid rgba(0, 230, 118, 0.35)',
+  background: 'var(--bg-card)',
+  border: '1.5px solid var(--border-medium)',
   borderRadius: '24px',
-  boxShadow: '0 20px 60px rgba(0, 0, 0, 0.9), 0 0 40px rgba(0, 230, 118, 0.2)',
+  boxShadow: '0 20px 50px rgba(0, 0, 0, 0.25)',
   overflow: 'hidden',
   boxSizing: 'border-box'
 };
@@ -466,8 +466,8 @@ const headerStyle: React.CSSProperties = {
   alignItems: 'center',
   justifyContent: 'space-between',
   padding: '16px 20px',
-  borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
-  background: 'rgba(15, 23, 42, 0.6)'
+  borderBottom: '1px solid var(--border-subtle)',
+  background: 'var(--bg-card)'
 };
 
 const iconBadgeStyle: React.CSSProperties = {
@@ -497,7 +497,7 @@ const previewContainerStyle: React.CSSProperties = {
   alignItems: 'center',
   justifyContent: 'center',
   padding: '16px',
-  background: '#04070e',
+  background: 'var(--bg-elevated)',
   minHeight: '340px'
 };
 
@@ -563,8 +563,8 @@ const actionButtonsContainer: React.CSSProperties = {
   flexDirection: 'column',
   gap: '10px',
   padding: '16px 20px',
-  borderTop: '1px solid rgba(255, 255, 255, 0.08)',
-  background: 'rgba(15, 23, 42, 0.6)'
+  borderTop: '1px solid var(--border-subtle)',
+  background: 'var(--bg-card)'
 };
 
 const primaryShareBtnStyle: React.CSSProperties = {
@@ -591,9 +591,9 @@ const secondaryActionBtnStyle: React.CSSProperties = {
   justifyContent: 'center',
   gap: '8px',
   padding: '11px',
-  background: 'rgba(255, 255, 255, 0.05)',
-  border: '1px solid rgba(255, 255, 255, 0.15)',
-  color: '#fff',
+  background: 'var(--bg-elevated)',
+  border: '1px solid var(--border-subtle)',
+  color: 'var(--text-main)',
   borderRadius: '12px',
   fontWeight: 800,
   fontSize: '0.82rem',
@@ -627,8 +627,8 @@ const copyClaimLinkBtnStyle: React.CSSProperties = {
   alignItems: 'center',
   gap: '5px',
   padding: '6px 10px',
-  background: 'rgba(255, 255, 255, 0.08)',
-  color: '#fff',
+  background: 'var(--bg-elevated)',
+  color: 'var(--text-main)',
   borderRadius: '8px',
   fontSize: '0.75rem',
   fontWeight: 800,

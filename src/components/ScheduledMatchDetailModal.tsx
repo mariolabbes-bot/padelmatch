@@ -170,7 +170,7 @@ export const ScheduledMatchDetailModal: React.FC<Props> = ({
               <div style={{ fontSize: '0.7rem', color: 'var(--text-dim)', fontWeight: 800, textTransform: 'uppercase' }}>
                 Fecha
               </div>
-              <div style={{ fontSize: '0.92rem', fontWeight: 900, color: '#fff' }}>
+              <div style={{ fontSize: '0.92rem', fontWeight: 900, color: 'var(--text-main)' }}>
                 {formatReadableDate(match.matchDate)}
               </div>
             </div>
@@ -538,16 +538,16 @@ const modalCardStyle: React.CSSProperties = {
   maxWidth: '520px',
   maxHeight: '92vh',
   overflowY: 'auto',
-  background: 'var(--bg-elevated)',
+  background: 'var(--bg-card)',
   border: '1.5px solid var(--border-medium)',
   borderRadius: '24px',
   padding: '24px',
-  boxShadow: '0 24px 60px rgba(0, 0, 0, 0.8)'
+  boxShadow: '0 20px 50px rgba(0, 0, 0, 0.25)'
 };
 
 const closeBtnStyle: React.CSSProperties = {
-  background: 'rgba(255, 255, 255, 0.05)',
-  border: 'none',
+  background: 'var(--bg-elevated)',
+  border: '1px solid var(--border-subtle)',
   color: 'var(--text-muted)',
   width: '36px',
   height: '36px',
@@ -563,7 +563,7 @@ const matchMetaBanner: React.CSSProperties = {
   gridTemplateColumns: '1fr 1fr',
   gap: '12px',
   padding: '14px',
-  background: 'rgba(0, 0, 0, 0.4)',
+  background: 'var(--bg-elevated)',
   border: '1px solid var(--border-subtle)',
   borderRadius: '16px',
   marginBottom: '16px'
@@ -572,8 +572,9 @@ const matchMetaBanner: React.CSSProperties = {
 const rsvpBannerStyle: React.CSSProperties = {
   padding: '16px',
   borderRadius: '16px',
-  background: 'linear-gradient(135deg, rgba(255, 214, 0, 0.12) 0%, rgba(0, 230, 118, 0.08) 100%)',
+  background: 'var(--bg-elevated)',
   border: '1.5px solid var(--gold-primary)',
+  borderLeft: '4px solid var(--gold-primary)',
   marginBottom: '16px'
 };
 
@@ -609,7 +610,7 @@ const declineBtnStyle: React.CSSProperties = {
 
 const notesBoxStyle: React.CSSProperties = {
   padding: '10px 14px',
-  background: 'rgba(255, 255, 255, 0.03)',
+  background: 'var(--bg-elevated)',
   border: '1px dashed var(--border-subtle)',
   borderRadius: '12px',
   marginBottom: '16px'
@@ -650,7 +651,7 @@ const hostBadge: React.CSSProperties = {
 const invitePartnerDrawer: React.CSSProperties = {
   padding: '14px',
   borderRadius: '16px',
-  background: 'rgba(0, 0, 0, 0.65)',
+  background: 'var(--bg-elevated)',
   border: '1px solid var(--border-medium)',
   marginBottom: '16px'
 };
@@ -660,7 +661,8 @@ const drawerPartnerItem: React.CSSProperties = {
   alignItems: 'center',
   justifyContent: 'space-between',
   padding: '8px 10px',
-  background: 'rgba(255, 255, 255, 0.04)',
+  background: 'var(--bg-card)',
+  border: '1px solid var(--border-subtle)',
   borderRadius: '10px',
   cursor: 'pointer'
 };

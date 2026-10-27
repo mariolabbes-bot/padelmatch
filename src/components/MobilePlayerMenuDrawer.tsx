@@ -110,7 +110,7 @@ export const MobilePlayerMenuDrawer: React.FC<Props> = ({
                     <span style={{ fontSize: '1.4rem', lineHeight: 1 }}>{currentUser.avatar}</span>
                   )
                 ) : (
-                  <span style={{ fontSize: '1.1rem', fontWeight: 900, color: '#fff' }}>
+                  <span style={{ fontSize: '1.1rem', fontWeight: 900, color: 'var(--text-main)' }}>
                     {currentUser.name.charAt(0).toUpperCase()}
                   </span>
                 )}
@@ -315,11 +315,11 @@ const sheetContainerStyle: React.CSSProperties = {
   width: '100%',
   maxWidth: '520px',
   margin: '0 auto',
-  background: 'var(--bg-glass, rgba(255, 255, 255, 0.95))',
+  background: 'var(--bg-card)',
   borderTopLeftRadius: '24px',
   borderTopRightRadius: '24px',
   borderTop: '1px solid var(--border-medium)',
-  boxShadow: '0 -10px 40px rgba(0, 0, 0, 0.3)',
+  boxShadow: '0 -10px 40px rgba(0, 0, 0, 0.25)',
   display: 'flex',
   flexDirection: 'column',
   maxHeight: '85vh',
@@ -359,8 +359,8 @@ const titleStyle: React.CSSProperties = {
 };
 
 const closeBtnStyle: React.CSSProperties = {
-  background: 'rgba(120, 120, 120, 0.1)',
-  border: 'none',
+  background: 'var(--bg-elevated)',
+  border: '1px solid var(--border-subtle)',
   borderRadius: '50%',
   width: '32px',
   height: '32px',
@@ -388,8 +388,9 @@ const profileCardStyle: React.CSSProperties = {
   justifyContent: 'space-between',
   padding: '12px 14px',
   borderRadius: '16px',
-  background: 'rgba(0, 230, 118, 0.06)',
-  border: '1px solid rgba(0, 230, 118, 0.2)',
+  background: 'var(--bg-elevated)',
+  border: '1.5px solid var(--border-subtle)',
+  borderLeft: '4px solid var(--team1-primary)',
   cursor: 'pointer',
   transition: 'transform 0.15s ease'
 };
@@ -402,7 +403,7 @@ const avatarWrapperStyle: React.CSSProperties = {
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  background: 'rgba(0, 0, 0, 0.15)',
+  background: 'rgba(0, 0, 0, 0.05)',
   overflow: 'hidden',
   flexShrink: 0
 };
@@ -441,8 +442,8 @@ const menuItemBtnStyle: React.CSSProperties = {
   gap: '12px',
   padding: '12px 14px',
   borderRadius: '14px',
-  background: 'rgba(120, 120, 120, 0.05)',
-  border: '1px solid var(--border-subtle)',
+  background: 'var(--bg-elevated)',
+  border: '1.5px solid var(--border-subtle)',
   color: 'var(--text-main)',
   cursor: 'pointer',
   textAlign: 'left',

@@ -119,7 +119,7 @@ export const MatchVictoryModal: React.FC<Props> = ({
             <span className="badge badge-gold" style={{ marginTop: '12px' }}>
               Partido Inconcluso Registrado
             </span>
-            <h1 style={{ fontSize: '1.5rem', fontWeight: 900, marginTop: '8px', color: '#fff' }}>
+            <h1 style={{ fontSize: '1.5rem', fontWeight: 900, marginTop: '8px', color: 'var(--text-main)' }}>
               Tiempo de Cancha Cumplido
             </h1>
             <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
@@ -136,8 +136,8 @@ export const MatchVictoryModal: React.FC<Props> = ({
               {state.sets.map((set, idx) => (
                 <div key={idx} style={setScoreBadge}>
                   <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>SET {idx + 1}</div>
-                  <div style={{ fontSize: '1.5rem', fontWeight: 900, fontFamily: 'var(--font-mono)', color: '#fff' }}>
-                    <span style={{ color: set.team1 > set.team2 ? 'var(--team1-primary)' : '#94a3b8' }}>{set.team1}</span>
+                  <div style={{ fontSize: '1.5rem', fontWeight: 900, fontFamily: 'var(--font-mono)', color: 'var(--text-main)' }}>
+                    <span style={{ color: set.team1 > set.team2 ? 'var(--team1-primary)' : 'var(--text-muted)' }}>{set.team1}</span>
                     <span style={{ opacity: 0.4 }}> - </span>
                     <span style={{ color: set.team2 > set.team1 ? 'var(--team2-primary)' : '#94a3b8' }}>{set.team2}</span>
                   </div>
@@ -225,7 +225,7 @@ export const MatchVictoryModal: React.FC<Props> = ({
           <span className="badge badge-gold" style={{ marginTop: '10px' }}>
             ¡Victoria de Partido!
           </span>
-          <h1 style={{ fontSize: '1.75rem', fontWeight: 900, marginTop: '6px', color: '#fff' }}>
+          <h1 style={{ fontSize: '1.75rem', fontWeight: 900, marginTop: '6px', color: 'var(--text-main)' }}>
             {winnerTeam.name}
           </h1>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem' }}>
@@ -242,8 +242,8 @@ export const MatchVictoryModal: React.FC<Props> = ({
             {state.sets.map((set, idx) => (
               <div key={idx} style={setScoreBadge}>
                 <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>SET {idx + 1}</div>
-                <div style={{ fontSize: '1.4rem', fontWeight: 900, fontFamily: 'var(--font-mono)', color: '#fff' }}>
-                  <span style={{ color: set.team1 > set.team2 ? 'var(--team1-primary)' : '#94a3b8' }}>{set.team1}</span>
+                <div style={{ fontSize: '1.4rem', fontWeight: 900, fontFamily: 'var(--font-mono)', color: 'var(--text-main)' }}>
+                  <span style={{ color: set.team1 > set.team2 ? 'var(--team1-primary)' : 'var(--text-muted)' }}>{set.team1}</span>
                   <span style={{ opacity: 0.4 }}> - </span>
                   <span style={{ color: set.team2 > set.team1 ? 'var(--team2-primary)' : '#94a3b8' }}>{set.team2}</span>
                 </div>
@@ -342,7 +342,7 @@ export const MatchVictoryModal: React.FC<Props> = ({
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               <UserCheck size={16} color="#38bdf8" />
-              <span style={{ fontSize: '0.82rem', fontWeight: 800, color: '#fff' }}>
+              <span style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--text-main)' }}>
                 ¿Jugaste como invitado escaneando el QR?
               </span>
             </div>
@@ -410,7 +410,7 @@ export const MatchVictoryModal: React.FC<Props> = ({
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <UserCheck size={20} color="#38bdf8" />
-                  <span style={{ fontWeight: 900, fontSize: '1.1rem', color: '#fff' }}>Reclamar Historial de Juego</span>
+                  <span style={{ fontWeight: 900, fontSize: '1.1rem', color: 'var(--text-main)' }}>Reclamar Historial de Juego</span>
                 </div>
                 <button 
                   onClick={() => {
@@ -451,7 +451,7 @@ export const MatchVictoryModal: React.FC<Props> = ({
                 setClaimResult(res);
               }}>
                 <div style={{ marginBottom: '14px' }}>
-                  <label style={{ fontSize: '0.78rem', color: '#e2e8f0', fontWeight: 700, display: 'block', marginBottom: '6px' }}>
+                  <label style={{ fontSize: '0.78rem', color: 'var(--text-main)', fontWeight: 700, display: 'block', marginBottom: '6px' }}>
                     Nombre o WhatsApp usado en cancha
                   </label>
                   <input
@@ -463,10 +463,10 @@ export const MatchVictoryModal: React.FC<Props> = ({
                     style={{
                       width: '100%',
                       padding: '10px 12px',
-                      background: 'var(--bg-elevated)',
-                      border: '1px solid var(--border-subtle)',
+                      background: 'var(--bg-input, #ffffff)',
+                      border: '1.5px solid var(--border-medium)',
                       borderRadius: '8px',
-                      color: '#fff',
+                      color: 'var(--text-main)',
                       fontSize: '0.9rem',
                       boxSizing: 'border-box'
                     }}
@@ -532,11 +532,11 @@ const overlayStyle: React.CSSProperties = {
 const modalStyle: React.CSSProperties = {
   width: '100%',
   maxWidth: '520px',
-  background: '#0d1424',
-  border: '1px solid rgba(255, 214, 0, 0.3)',
+  background: 'var(--bg-card)',
+  border: '1.5px solid var(--border-medium)',
   borderRadius: '24px',
   padding: '28px',
-  boxShadow: '0 25px 60px rgba(0, 0, 0, 0.9), 0 0 40px rgba(255, 214, 0, 0.15)',
+  boxShadow: '0 20px 50px rgba(0, 0, 0, 0.25)',
   animation: 'slideDown 0.3s ease-out'
 };
 
@@ -553,16 +553,16 @@ const trophyCircleStyle: React.CSSProperties = {
 };
 
 const setsCardStyle: React.CSSProperties = {
-  background: 'rgba(0, 0, 0, 0.35)',
+  background: 'var(--bg-elevated)',
   borderRadius: '16px',
   padding: '16px',
   textAlign: 'center',
   marginBottom: '20px',
-  border: '1px solid var(--border-subtle)'
+  border: '1.5px solid var(--border-subtle)'
 };
 
 const setScoreBadge: React.CSSProperties = {
-  background: 'var(--bg-elevated)',
+  background: 'var(--bg-card)',
   padding: '8px 14px',
   borderRadius: '12px',
   border: '1px solid var(--border-subtle)',
@@ -586,7 +586,7 @@ const eloPlayerRow: React.CSSProperties = {
   display: 'flex',
   justifyContent: 'space-between',
   fontSize: '0.8rem',
-  color: '#e2e8f0',
+  color: 'var(--text-main)',
   marginTop: '4px'
 };
 
@@ -598,10 +598,11 @@ const rematchBtnStyle: React.CSSProperties = {
   padding: '14px',
   borderRadius: '12px',
   background: 'var(--bg-elevated)',
-  color: '#fff',
+  color: 'var(--text-main)',
   fontWeight: 700,
   fontSize: '0.95rem',
-  border: '1px solid var(--border-subtle)'
+  border: '1px solid var(--border-subtle)',
+  cursor: 'pointer'
 };
 
 const newMatchBtnStyle: React.CSSProperties = {
@@ -672,11 +673,11 @@ const proModalOverlayStyle: React.CSSProperties = {
 const proModalCardStyle: React.CSSProperties = {
   width: '100%',
   maxWidth: '440px',
-  background: '#0d1527',
-  border: '1px solid rgba(255, 214, 0, 0.4)',
+  background: 'var(--bg-card)',
+  border: '1.5px solid var(--border-medium)',
   borderRadius: '20px',
   padding: '24px',
-  boxShadow: '0 20px 50px rgba(0, 0, 0, 0.9), 0 0 30px rgba(255, 214, 0, 0.15)'
+  boxShadow: '0 20px 50px rgba(0, 0, 0, 0.25)'
 };
 
 

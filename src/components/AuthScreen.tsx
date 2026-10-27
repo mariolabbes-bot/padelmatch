@@ -633,7 +633,7 @@ export const AuthScreen: React.FC<Props> = ({ onAuthenticated }) => {
                   <UserPlus size={20} />
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontWeight: 900, fontSize: '0.88rem', color: '#fff' }}>
+                  <div style={{ fontWeight: 900, fontSize: '0.88rem', color: 'var(--text-main)' }}>
                     ¡Invitación de Partner de {partnerInviterName || 'un amigo'}! 🎾
                   </div>
                   <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', marginTop: '2px', lineHeight: 1.35 }}>
@@ -669,7 +669,7 @@ export const AuthScreen: React.FC<Props> = ({ onAuthenticated }) => {
                   <MessageCircle size={20} />
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontWeight: 900, fontSize: '0.88rem', color: '#fff' }}>
+                  <div style={{ fontWeight: 900, fontSize: '0.88rem', color: 'var(--text-main)' }}>
                     ¡Te han invitado al Grupo de Pádel!
                   </div>
                   <div style={{ fontSize: '0.78rem', color: '#25D366', fontWeight: 800, marginTop: '1px' }}>
@@ -695,7 +695,7 @@ export const AuthScreen: React.FC<Props> = ({ onAuthenticated }) => {
               }}>
                 <Sparkles size={20} color="var(--gold-primary)" style={{ flexShrink: 0 }} />
                 <div>
-                  <div style={{ fontWeight: 900, fontSize: '0.84rem', color: '#fff' }}>
+                  <div style={{ fontWeight: 900, fontSize: '0.84rem', color: 'var(--text-main)' }}>
                     ¡Reclamando Partido para {claimingGuestName}!
                   </div>
                   <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '2px' }}>
@@ -963,6 +963,8 @@ const cardStyle: React.CSSProperties = {
   maxWidth: '460px',
   padding: 'clamp(20px, 4.5vw, 32px)',
   zIndex: 1,
+  background: 'var(--bg-card)',
+  border: '1.5px solid var(--border-medium)',
   boxShadow: 'var(--shadow-lg)',
   borderRadius: 'var(--radius-lg)'
 };
@@ -993,11 +995,11 @@ const logoBadgeStyle: React.CSSProperties = {
 const tabContainerStyle: React.CSSProperties = {
   display: 'grid',
   gridTemplateColumns: '1fr 1fr',
-  background: 'rgba(0, 0, 0, 0.4)',
+  background: 'var(--bg-elevated)',
   borderRadius: 'var(--radius-md)',
   padding: '4px',
   marginBottom: '20px',
-  border: '1px solid var(--border-subtle)'
+  border: '1.5px solid var(--border-subtle)'
 };
 
 const tabBtnStyle: React.CSSProperties = {
@@ -1024,7 +1026,7 @@ const labelStyle: React.CSSProperties = {
 const inputStyle: React.CSSProperties = {
   width: '100%',
   padding: '12px 14px',
-  background: 'rgba(0, 0, 0, 0.35)',
+  background: 'var(--bg-input, #ffffff)',
   border: '1.5px solid var(--border-medium)',
   borderRadius: '12px',
   color: 'var(--text-main)',
@@ -1052,7 +1054,7 @@ const eyeIconBtnStyle: React.CSSProperties = {
 const selectStyle: React.CSSProperties = {
   width: '100%',
   padding: '12px 14px',
-  background: 'rgba(0, 0, 0, 0.35)',
+  background: 'var(--bg-input, #ffffff)',
   border: '1.5px solid var(--border-medium)',
   borderRadius: '12px',
   color: 'var(--text-main)',

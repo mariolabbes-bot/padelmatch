@@ -320,9 +320,9 @@ const modalBoxStyle: React.CSSProperties = {
   display: 'flex',
   flexDirection: 'column',
   borderRadius: '24px',
-  border: '1px solid rgba(255, 255, 255, 0.12)',
-  background: 'linear-gradient(180deg, rgba(22, 28, 42, 0.98) 0%, rgba(10, 14, 24, 0.99) 100%)',
-  boxShadow: '0 25px 60px rgba(0, 0, 0, 0.65)'
+  border: '1px solid var(--border-subtle)',
+  background: 'var(--bg-card)',
+  boxShadow: 'var(--shadow-lg)'
 };
 
 const headerStyle: React.CSSProperties = {
@@ -330,7 +330,9 @@ const headerStyle: React.CSSProperties = {
   justifyContent: 'space-between',
   alignItems: 'center',
   padding: '20px 24px',
-  borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+  borderBottom: '1px solid var(--border-subtle)',
+  background: 'var(--bg-glass)',
+  backdropFilter: 'blur(12px)',
   flexShrink: 0
 };
 
@@ -382,8 +384,9 @@ const bodyScrollableStyle: React.CSSProperties = {
 };
 
 const infoBannerStyle: React.CSSProperties = {
-  background: 'rgba(255, 255, 255, 0.03)',
-  border: '1px solid rgba(255, 255, 255, 0.06)',
+  background: 'var(--bg-elevated)',
+  border: '1px solid var(--border-subtle)',
+  borderLeft: '4px solid var(--gold-primary)',
   borderRadius: '14px',
   padding: '12px 14px',
   marginBottom: '20px'
@@ -393,10 +396,10 @@ const settingRowStyle: React.CSSProperties = {
   display: 'flex',
   flexDirection: 'column',
   gap: '10px',
-  background: 'rgba(255, 255, 255, 0.02)',
+  background: 'var(--bg-elevated)',
   padding: '14px',
   borderRadius: '16px',
-  border: '1px solid rgba(255, 255, 255, 0.05)'
+  border: '1px solid var(--border-subtle)'
 };
 
 const settingLabelGroup: React.CSSProperties = {
@@ -419,11 +422,11 @@ const settingDescStyle: React.CSSProperties = {
 
 const segmentedControlStyle: React.CSSProperties = {
   display: 'flex',
-  background: 'rgba(0, 0, 0, 0.35)',
+  background: 'var(--bg-card)',
   padding: '3px',
   borderRadius: '10px',
   gap: '4px',
-  border: '1px solid rgba(255, 255, 255, 0.06)'
+  border: '1px solid var(--border-subtle)'
 };
 
 const segmentBtnStyle: React.CSSProperties = {
@@ -449,15 +452,15 @@ const footerStyle: React.CSSProperties = {
   justifyContent: 'flex-end',
   gap: '12px',
   padding: '16px 24px',
-  borderTop: '1px solid rgba(255, 255, 255, 0.08)',
-  background: 'rgba(12, 16, 28, 0.95)',
+  borderTop: '1px solid var(--border-subtle)',
+  background: 'var(--bg-card)',
   borderBottomLeftRadius: '24px',
   borderBottomRightRadius: '24px'
 };
 
 const cancelBtnStyle: React.CSSProperties = {
-  background: 'transparent',
-  border: '1px solid rgba(255, 255, 255, 0.15)',
+  background: 'var(--bg-elevated)',
+  border: '1px solid var(--border-medium)',
   color: 'var(--text-muted)',
   padding: '10px 18px',
   borderRadius: '12px',

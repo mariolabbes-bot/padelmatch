@@ -268,7 +268,7 @@ export const CommunityDashboard: React.FC<Props> = ({ onBackToScoreboard, curren
                       </div>
                       <div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <h3 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#fff', margin: 0 }}>{player.name}</h3>
+                          <h3 style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>{player.name}</h3>
                           {player.dominantHand === 'zurdo' && (
                             <span style={{ fontSize: '0.65rem', background: 'rgba(255, 214, 0, 0.2)', color: 'var(--gold-primary)', padding: '1px 5px', borderRadius: '4px', fontWeight: 800 }}>
                               ⭐ ZURDO
@@ -571,7 +571,7 @@ export const CommunityDashboard: React.FC<Props> = ({ onBackToScoreboard, curren
             <span className="badge badge-gold" style={{ marginBottom: '12px' }}>
               MODELO B2B • CLUBES & COMPLEJOS (SaaS)
             </span>
-            <h2 style={{ fontSize: '1.4rem', fontWeight: 900, color: '#fff' }}>PadelMatch Court Engine SaaS</h2>
+            <h2 style={{ fontSize: '1.4rem', fontWeight: 900, color: 'var(--text-main)' }}>PadelMatch Court Engine SaaS</h2>
             <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '6px' }}>
               Convierte las canchas de tu club en pistas inteligentes con marcadores en TV, voz y hardware.
             </p>
@@ -600,7 +600,7 @@ export const CommunityDashboard: React.FC<Props> = ({ onBackToScoreboard, curren
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <UserPlus size={20} color="var(--team1-primary)" />
-                <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#fff' }}>Registrar Jugador Real</h3>
+                <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-main)' }}>Registrar Jugador Real</h3>
               </div>
               <button onClick={() => setIsAddModalOpen(false)} style={closeBtnStyle}>
                 <X size={18} />
@@ -801,10 +801,11 @@ const backBtnStyle: React.CSSProperties = {
   padding: '10px 18px',
   borderRadius: '12px',
   background: 'var(--bg-elevated)',
-  color: '#fff',
+  color: 'var(--text-main)',
   fontWeight: 700,
   fontSize: '0.9rem',
-  border: '1px solid var(--border-subtle)'
+  border: '1px solid var(--border-subtle)',
+  cursor: 'pointer'
 };
 
 const tabsRowStyle: React.CSSProperties = {
@@ -910,7 +911,7 @@ const searchInputStyle: React.CSSProperties = {
   background: 'transparent',
   border: 'none',
   outline: 'none',
-  color: '#fff',
+  color: 'var(--text-main)',
   fontSize: '0.85rem'
 };
 
@@ -1066,11 +1067,11 @@ const modalOverlayStyle: React.CSSProperties = {
 const addModalCard: React.CSSProperties = {
   width: '100%',
   maxWidth: '480px',
-  background: '#0d1424',
-  border: '1px solid rgba(255, 255, 255, 0.12)',
+  background: 'var(--bg-card)',
+  border: '1.5px solid var(--border-medium)',
   borderRadius: '20px',
   padding: '24px',
-  boxShadow: '0 20px 50px rgba(0,0,0,0.8)'
+  boxShadow: '0 20px 50px rgba(0,0,0,0.25)'
 };
 
 const closeBtnStyle: React.CSSProperties = {
@@ -1088,17 +1089,17 @@ const fieldLabelStyle: React.CSSProperties = {
   display: 'block',
   fontSize: '0.78rem',
   fontWeight: 700,
-  color: '#cbd5e1',
+  color: 'var(--text-main)',
   marginBottom: '4px'
 };
 
 const fieldInputStyle: React.CSSProperties = {
   width: '100%',
   padding: '10px 12px',
-  background: 'var(--bg-elevated)',
-  border: '1px solid var(--border-subtle)',
+  background: 'var(--bg-input, #ffffff)',
+  border: '1.5px solid var(--border-medium)',
   borderRadius: '8px',
-  color: '#fff',
+  color: 'var(--text-main)',
   fontSize: '0.88rem',
   fontFamily: 'inherit',
   outline: 'none'
@@ -1107,10 +1108,10 @@ const fieldInputStyle: React.CSSProperties = {
 const fieldSelectStyle: React.CSSProperties = {
   width: '100%',
   padding: '10px 12px',
-  background: 'var(--bg-elevated)',
-  border: '1px solid var(--border-subtle)',
+  background: 'var(--bg-input, #ffffff)',
+  border: '1.5px solid var(--border-medium)',
   borderRadius: '8px',
-  color: '#fff',
+  color: 'var(--text-main)',
   fontSize: '0.88rem',
   fontFamily: 'inherit',
   outline: 'none'
@@ -1119,10 +1120,12 @@ const fieldSelectStyle: React.CSSProperties = {
 const cancelBtnStyle: React.CSSProperties = {
   padding: '10px 18px',
   borderRadius: '10px',
-  background: 'rgba(255, 255, 255, 0.06)',
-  color: '#cbd5e1',
+  background: 'var(--bg-elevated)',
+  color: 'var(--text-main)',
+  border: '1px solid var(--border-subtle)',
   fontWeight: 600,
-  fontSize: '0.88rem'
+  fontSize: '0.88rem',
+  cursor: 'pointer'
 };
 
 const saveBtnStyle: React.CSSProperties = {

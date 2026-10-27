@@ -79,7 +79,7 @@ export const InviteExternalPartnerModal: React.FC<Props> = ({
               <Share2 size={20} color="#25D366" />
             </div>
             <div>
-              <h3 style={{ fontSize: '1.15rem', fontWeight: 900, color: '#fff', margin: 0, letterSpacing: '-0.02em' }}>
+              <h3 style={{ fontSize: '1.15rem', fontWeight: 900, color: 'var(--text-main)', margin: 0, letterSpacing: '-0.02em' }}>
                 Invitar Partner por WhatsApp
               </h3>
               <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
@@ -142,7 +142,7 @@ export const InviteExternalPartnerModal: React.FC<Props> = ({
           </div>
 
           <div style={previewBoxStyle}>
-            <div style={{ fontSize: '0.78rem', color: '#e2e8f0', whiteSpace: 'pre-wrap', lineHeight: 1.45, fontFamily: 'sans-serif' }}>
+            <div style={{ fontSize: '0.78rem', color: 'var(--text-main)', whiteSpace: 'pre-wrap', lineHeight: 1.45, fontFamily: 'sans-serif' }}>
               {generatedText}
             </div>
           </div>
@@ -205,10 +205,10 @@ const modalOverlayStyle: React.CSSProperties = {
 const modalCardStyle: React.CSSProperties = {
   width: '100%',
   maxWidth: '480px',
-  background: 'linear-gradient(145deg, rgba(14, 21, 36, 0.95) 0%, rgba(10, 15, 26, 0.98) 100%)',
+  background: 'var(--bg-card)',
   borderRadius: '20px',
-  border: '1px solid rgba(37, 211, 102, 0.35)',
-  boxShadow: '0 20px 50px rgba(0, 0, 0, 0.7), 0 0 30px rgba(37, 211, 102, 0.15)',
+  border: '1.5px solid var(--border-medium)',
+  boxShadow: '0 20px 50px rgba(0, 0, 0, 0.25)',
   padding: '20px',
   boxSizing: 'border-box',
   maxHeight: '90vh',
@@ -228,7 +228,7 @@ const iconBadgeStyle: React.CSSProperties = {
 };
 
 const closeBtnStyle: React.CSSProperties = {
-  background: 'rgba(255, 255, 255, 0.06)',
+  background: 'var(--bg-elevated)',
   border: '1px solid var(--border-subtle)',
   color: 'var(--text-muted)',
   borderRadius: '50%',
@@ -246,8 +246,9 @@ const valueBannerStyle: React.CSSProperties = {
   gap: '10px',
   padding: '10px 14px',
   borderRadius: '12px',
-  background: 'rgba(255, 214, 0, 0.08)',
-  border: '1px solid rgba(255, 214, 0, 0.25)',
+  background: 'var(--bg-elevated)',
+  border: '1px solid var(--border-subtle)',
+  borderLeft: '4px solid var(--gold-primary)',
   marginBottom: '14px'
 };
 
@@ -265,8 +266,8 @@ const textInputStyle: React.CSSProperties = {
   width: '100%',
   padding: '10px 12px',
   borderRadius: '10px',
-  background: 'rgba(255, 255, 255, 0.04)',
-  border: '1px solid var(--border-subtle)',
+  background: 'var(--bg-input, #ffffff)',
+  border: '1.5px solid var(--border-medium)',
   color: 'var(--text-main)',
   fontSize: '0.86rem',
   boxSizing: 'border-box',
@@ -274,8 +275,8 @@ const textInputStyle: React.CSSProperties = {
 };
 
 const previewBoxStyle: React.CSSProperties = {
-  background: 'rgba(0, 0, 0, 0.45)',
-  border: '1px solid rgba(37, 211, 102, 0.25)',
+  background: 'var(--bg-elevated)',
+  border: '1.5px solid var(--border-subtle)',
   borderRadius: '12px',
   padding: '12px 14px',
   maxHeight: '160px',

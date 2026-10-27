@@ -206,7 +206,7 @@ export const MatchLobbyQrView: React.FC<Props> = ({
           <div>
             {player ? (
               <>
-                <div style={{ fontWeight: 800, fontSize: '0.95rem', color: '#fff' }}>
+                <div style={{ fontWeight: 800, fontSize: '0.95rem', color: 'var(--text-main)' }}>
                   {player.name}
                   {slotNumber === 1 && (
                     <span style={hostBadgeStyle}>ANFITRIÓN</span>
@@ -411,7 +411,7 @@ export const MatchLobbyQrView: React.FC<Props> = ({
                       style={rosterItemBtnStyle}
                     >
                       <div>
-                        <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#fff' }}>{p.name}</div>
+                        <div style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-main)' }}>{p.name}</div>
                         <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                           Cat: {p.category} • ELO: {p.elo}
                         </div>
@@ -484,7 +484,9 @@ const qrCardStyle: React.CSSProperties = {
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
-  borderRadius: 'var(--radius-lg)'
+  borderRadius: 'var(--radius-lg)',
+  background: 'var(--bg-card)',
+  border: '1.5px solid var(--border-subtle)'
 };
 
 const qrWrapperStyle: React.CSSProperties = {
@@ -500,10 +502,10 @@ const qrWrapperStyle: React.CSSProperties = {
 const linkInputStyle: React.CSSProperties = {
   flex: 1,
   padding: '10px 12px',
-  background: 'var(--bg-elevated)',
-  border: '1px solid var(--border-subtle)',
+  background: 'var(--bg-input, #ffffff)',
+  border: '1.5px solid var(--border-medium)',
   borderRadius: 'var(--radius-sm)',
-  color: 'var(--text-muted)',
+  color: 'var(--text-main)',
   fontSize: '0.8rem',
   outline: 'none'
 };
@@ -513,10 +515,10 @@ const copyBtnStyle: React.CSSProperties = {
   alignItems: 'center',
   gap: '6px',
   padding: '10px 14px',
-  background: 'var(--bg-card)',
-  border: '1px solid var(--border-medium)',
+  background: 'var(--bg-elevated)',
+  border: '1.5px solid var(--border-subtle)',
   borderRadius: 'var(--radius-sm)',
-  color: '#fff',
+  color: 'var(--text-main)',
   fontSize: '0.85rem',
   fontWeight: 700
 };
@@ -526,15 +528,18 @@ const rulesSummaryPillStyle: React.CSSProperties = {
   display: 'flex',
   gap: '8px',
   fontSize: '0.75rem',
-  color: 'var(--text-dim)',
+  color: 'var(--text-muted)',
   padding: '6px 12px',
-  background: 'rgba(0,0,0,0.3)',
+  background: 'var(--bg-elevated)',
+  border: '1.5px solid var(--border-subtle)',
   borderRadius: 'var(--radius-full)'
 };
 
 const slotsCardStyle: React.CSSProperties = {
   padding: '24px',
-  borderRadius: 'var(--radius-lg)'
+  borderRadius: 'var(--radius-lg)',
+  background: 'var(--bg-card)',
+  border: '1.5px solid var(--border-subtle)'
 };
 
 const statusBadgeStyle: React.CSSProperties = {
@@ -626,16 +631,18 @@ const modalDialogStyle: React.CSSProperties = {
   maxWidth: '420px',
   padding: '20px',
   borderRadius: 'var(--radius-lg)',
-  background: 'var(--bg-card)'
+  background: 'var(--bg-card)',
+  border: '1.5px solid var(--border-medium)',
+  boxShadow: '0 20px 45px rgba(0, 0, 0, 0.25)'
 };
 
 const searchInputStyle: React.CSSProperties = {
   flex: 1,
   padding: '10px 12px',
-  background: 'var(--bg-elevated)',
-  border: '1px solid var(--border-medium)',
+  background: 'var(--bg-input, #ffffff)',
+  border: '1.5px solid var(--border-medium)',
   borderRadius: 'var(--radius-sm)',
-  color: '#fff',
+  color: 'var(--text-main)',
   fontSize: '0.9rem',
   outline: 'none'
 };

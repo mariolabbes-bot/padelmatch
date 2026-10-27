@@ -259,7 +259,7 @@ export const MatchSetupModal: React.FC<Props> = ({
                     background: localRules.format === opt.id ? 'rgba(0, 230, 118, 0.1)' : 'var(--bg-elevated)'
                   }}
                 >
-                  <div style={{ fontWeight: 700, fontSize: '0.85rem', color: localRules.format === opt.id ? 'var(--team1-primary)' : '#fff' }}>
+                  <div style={{ fontWeight: 700, fontSize: '0.85rem', color: localRules.format === opt.id ? 'var(--team1-primary)' : 'var(--text-main)' }}>
                     {opt.label}
                   </div>
                   <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{opt.desc}</div>
@@ -293,7 +293,7 @@ export const MatchSetupModal: React.FC<Props> = ({
                     background: localRules.gameRule === opt.id ? 'rgba(255, 214, 0, 0.1)' : 'var(--bg-elevated)'
                   }}
                 >
-                  <div style={{ fontWeight: 700, fontSize: '0.85rem', color: localRules.gameRule === opt.id ? 'var(--gold-primary)' : '#fff' }}>
+                  <div style={{ fontWeight: 700, fontSize: '0.85rem', color: localRules.gameRule === opt.id ? 'var(--gold-primary)' : 'var(--text-main)' }}>
                     {opt.label}
                   </div>
                   <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{opt.desc}</div>
@@ -342,7 +342,7 @@ export const MatchSetupModal: React.FC<Props> = ({
                       padding: '8px',
                       borderRadius: '8px',
                       background: localRules.superTieBreakTarget === target ? 'var(--team1-primary)' : 'var(--bg-elevated)',
-                      color: localRules.superTieBreakTarget === target ? '#000' : '#fff',
+                      color: localRules.superTieBreakTarget === target ? '#000' : 'var(--text-main)',
                       fontWeight: 800,
                       fontSize: '0.85rem',
                       border: '1px solid var(--border-subtle)'
@@ -683,11 +683,11 @@ const modalStyle: React.CSSProperties = {
   maxWidth: '560px',
   maxHeight: '90vh',
   overflowY: 'auto',
-  background: '#0d1424',
-  border: '1px solid rgba(255, 255, 255, 0.12)',
+  background: 'var(--bg-card)',
+  border: '1.5px solid var(--border-medium)',
   borderRadius: '20px',
   padding: '24px',
-  boxShadow: '0 20px 50px rgba(0, 0, 0, 0.8)',
+  boxShadow: '0 20px 50px rgba(0, 0, 0, 0.25)',
   animation: 'slideDown 0.25s ease-out'
 };
 
@@ -718,8 +718,10 @@ const closeBtnStyle: React.CSSProperties = {
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  background: 'rgba(255, 255, 255, 0.05)',
-  color: 'var(--text-muted)'
+  background: 'var(--bg-elevated)',
+  border: '1px solid var(--border-subtle)',
+  color: 'var(--text-muted)',
+  cursor: 'pointer'
 };
 
 const sectionTitleStyle: React.CSSProperties = {
@@ -749,10 +751,10 @@ const optionCardStyle: React.CSSProperties = {
 const selectStyle: React.CSSProperties = {
   width: '100%',
   padding: '10px 12px',
-  background: 'var(--bg-elevated)',
-  border: '1px solid var(--border-subtle)',
+  background: 'var(--bg-input, #ffffff)',
+  border: '1.5px solid var(--border-medium)',
   borderRadius: '10px',
-  color: '#fff',
+  color: 'var(--text-main)',
   fontSize: '0.85rem',
   fontFamily: 'inherit',
   outline: 'none'
@@ -761,10 +763,10 @@ const selectStyle: React.CSSProperties = {
 const inputStyle: React.CSSProperties = {
   width: '100%',
   padding: '9px 12px',
-  background: 'var(--bg-elevated)',
-  border: '1px solid var(--border-subtle)',
+  background: 'var(--bg-input, #ffffff)',
+  border: '1.5px solid var(--border-medium)',
   borderRadius: '8px',
-  color: '#fff',
+  color: 'var(--text-main)',
   fontSize: '0.85rem',
   fontFamily: 'inherit',
   outline: 'none'
@@ -779,10 +781,12 @@ const footerStyle: React.CSSProperties = {
 const secondaryBtnStyle: React.CSSProperties = {
   padding: '10px 18px',
   borderRadius: '10px',
-  background: 'rgba(255, 255, 255, 0.06)',
-  color: '#cbd5e1',
+  background: 'var(--bg-elevated)',
+  color: 'var(--text-main)',
+  border: '1px solid var(--border-subtle)',
   fontWeight: 600,
-  fontSize: '0.9rem'
+  fontSize: '0.9rem',
+  cursor: 'pointer'
 };
 
 const primaryBtnStyle: React.CSSProperties = {

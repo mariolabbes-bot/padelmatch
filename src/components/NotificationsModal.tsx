@@ -58,7 +58,7 @@ export const NotificationsModal: React.FC<Props> = ({ isOpen, onClose }) => {
               <BellRing size={20} color="var(--gold-primary)" />
             </div>
             <div>
-              <h3 style={{ fontSize: '1.25rem', fontWeight: 900, color: '#fff', margin: 0 }}>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 900, color: 'var(--text-main)', margin: 0 }}>
                 Centro de Notificaciones & Partidos
               </h3>
               <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', margin: '2px 0 0' }}>
@@ -193,7 +193,7 @@ export const NotificationsModal: React.FC<Props> = ({ isOpen, onClose }) => {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '4px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                     {!notif.read && <div style={unreadDot} />}
-                    <span style={{ fontWeight: 800, fontSize: '0.9rem', color: '#fff' }}>
+                    <span style={{ fontWeight: 800, fontSize: '0.9rem', color: 'var(--text-main)' }}>
                       {notif.title}
                     </span>
                   </div>
@@ -284,11 +284,11 @@ const overlayStyle: React.CSSProperties = {
 const modalCardStyle: React.CSSProperties = {
   width: '100%',
   maxWidth: '540px',
-  background: '#0d1527',
-  border: '1px solid rgba(255, 214, 0, 0.35)',
+  background: 'var(--bg-card)',
+  border: '1.5px solid var(--border-medium)',
   borderRadius: '24px',
   padding: '24px',
-  boxShadow: '0 25px 60px rgba(0, 0, 0, 0.9), 0 0 35px rgba(255, 214, 0, 0.12)'
+  boxShadow: '0 20px 50px rgba(0, 0, 0, 0.25)'
 };
 
 const bellIconBadge: React.CSSProperties = {
@@ -311,10 +311,11 @@ const closeBtnStyle: React.CSSProperties = {
 };
 
 const permissionBannerCard: React.CSSProperties = {
-  background: 'rgba(255, 255, 255, 0.03)',
+  background: 'var(--bg-elevated)',
   borderRadius: '14px',
   padding: '12px 14px',
   border: '1px solid var(--border-subtle)',
+  borderLeft: '4px solid var(--gold-primary)',
   marginBottom: '4px'
 };
 
@@ -349,8 +350,8 @@ const testAlertBtnStyle: React.CSSProperties = {
 
 const simulatorBtnStyle: React.CSSProperties = {
   padding: '6px 8px',
-  background: 'rgba(255, 255, 255, 0.04)',
-  color: '#e2e8f0',
+  background: 'var(--bg-elevated)',
+  color: 'var(--text-main)',
   borderRadius: '6px',
   fontWeight: 700,
   fontSize: '0.72rem',
@@ -389,7 +390,7 @@ const closeModalBtnStyle: React.CSSProperties = {
   padding: '8px 18px',
   borderRadius: '10px',
   background: 'var(--bg-elevated)',
-  color: '#fff',
+  color: 'var(--text-main)',
   fontWeight: 700,
   fontSize: '0.82rem',
   border: '1px solid var(--border-subtle)',

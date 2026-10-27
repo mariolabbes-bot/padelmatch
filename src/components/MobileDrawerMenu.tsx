@@ -396,7 +396,7 @@ export const MobileDrawerMenu: React.FC<Props> = ({
           {/* Match Actions */}
           {onTogglePause && (
             <button onClick={() => { onTogglePause(); onClose(); }} style={menuItemStyle}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: isPaused ? 'var(--gold-primary)' : '#fff' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: isPaused ? 'var(--gold-primary)' : 'var(--text-main)' }}>
                 {isPaused ? <Play size={18} color="var(--gold-primary)" /> : <Pause size={18} color="var(--gold-primary)" />}
                 <span>{isPaused ? 'Reanudar Partido' : 'Pausar Partido'}</span>
               </div>

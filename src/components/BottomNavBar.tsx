@@ -120,7 +120,7 @@ const navContainerStyle: React.CSSProperties = {
   paddingRight: 'var(--safe-right)',
   backdropFilter: 'blur(16px)',
   WebkitBackdropFilter: 'blur(16px)',
-  boxShadow: '0 -4px 20px rgba(0, 0, 0, 0.4)'
+  boxShadow: '0 -4px 20px rgba(0, 0, 0, 0.08)'
 };
 
 const innerNavGrid: React.CSSProperties = {

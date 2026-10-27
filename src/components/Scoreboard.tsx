@@ -451,7 +451,7 @@ export const Scoreboard: React.FC<Props> = ({
                 style={{
                   ...setChipStyle,
                   borderColor: isCurrent ? 'var(--team1-primary)' : 'var(--border-subtle)',
-                  background: isCurrent ? 'rgba(0, 230, 118, 0.12)' : 'rgba(255, 255, 255, 0.04)',
+                  background: isCurrent ? 'rgba(0, 230, 118, 0.15)' : 'var(--bg-elevated)',
                   boxShadow: isCurrent ? '0 0 12px var(--team1-glow)' : 'none'
                 }}
               >
@@ -493,8 +493,9 @@ export const Scoreboard: React.FC<Props> = ({
           style={{
             ...teamCardStyle,
             borderColor: state.servingTeam === 'team1' ? 'var(--team1-primary)' : 'var(--border-subtle)',
-            background: 'linear-gradient(145deg, rgba(0, 230, 118, 0.12) 0%, rgba(10, 16, 28, 0.98) 100%)',
-            boxShadow: state.servingTeam === 'team1' ? '0 0 35px -8px var(--team1-glow), inset 0 0 25px -10px var(--team1-glow)' : 'var(--shadow-sm)',
+            borderLeft: '5px solid var(--team1-primary)',
+            background: 'var(--bg-card)',
+            boxShadow: state.servingTeam === 'team1' ? '0 0 25px -6px var(--team1-glow)' : 'var(--shadow-sm)',
             transform: lastScoredTeam === 'team1' ? 'scale(1.015)' : 'scale(1)',
             transition: 'transform 0.18s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.25s ease'
           }}
@@ -551,7 +552,7 @@ export const Scoreboard: React.FC<Props> = ({
                 display: 'flex',
                 alignItems: 'baseline',
                 gap: '2px',
-                background: 'rgba(0, 0, 0, 0.45)',
+                background: 'var(--bg-elevated)',
                 border: '1.5px solid rgba(0, 230, 118, 0.35)',
                 padding: '2px 12px',
                 borderRadius: '10px'
@@ -610,8 +611,9 @@ export const Scoreboard: React.FC<Props> = ({
           style={{
             ...teamCardStyle,
             borderColor: state.servingTeam === 'team2' ? 'var(--team2-primary)' : 'var(--border-subtle)',
-            background: 'linear-gradient(145deg, rgba(0, 176, 255, 0.12) 0%, rgba(10, 16, 28, 0.98) 100%)',
-            boxShadow: state.servingTeam === 'team2' ? '0 0 35px -8px var(--team2-glow), inset 0 0 25px -10px var(--team2-glow)' : 'var(--shadow-sm)',
+            borderLeft: '5px solid var(--team2-primary)',
+            background: 'var(--bg-card)',
+            boxShadow: state.servingTeam === 'team2' ? '0 0 25px -6px var(--team2-glow)' : 'var(--shadow-sm)',
             transform: lastScoredTeam === 'team2' ? 'scale(1.015)' : 'scale(1)',
             transition: 'transform 0.18s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.25s ease'
           }}
@@ -668,7 +670,7 @@ export const Scoreboard: React.FC<Props> = ({
                 display: 'flex',
                 alignItems: 'baseline',
                 gap: '2px',
-                background: 'rgba(0, 0, 0, 0.45)',
+                background: 'var(--bg-elevated)',
                 border: '1.5px solid rgba(0, 176, 255, 0.35)',
                 padding: '2px 12px',
                 borderRadius: '10px'
@@ -778,7 +780,7 @@ const containerStyle: React.CSSProperties = {
   gap: '6px',
   boxSizing: 'border-box',
   overflow: 'hidden',
-  background: 'radial-gradient(ellipse at 50% 20%, #0d1527 0%, var(--bg-deep) 75%)'
+  background: 'var(--bg-deep)'
 };
 
 const topBarStyle: React.CSSProperties = {
@@ -916,8 +918,8 @@ const restBannerStyle: React.CSSProperties = {
   alignItems: 'center',
   justifyContent: 'space-between',
   padding: '6px 12px',
-  background: 'linear-gradient(90deg, rgba(0, 230, 118, 0.12) 0%, rgba(14, 21, 36, 0.95) 100%)',
-  border: '1px solid rgba(0, 230, 118, 0.4)',
+  background: 'var(--bg-card)',
+  border: '1.5px solid var(--team1-primary)',
   borderRadius: 'var(--radius-md)',
   animation: 'fadeIn 0.2s ease-out'
 };
@@ -927,7 +929,7 @@ const restTimerBadgeStyle: React.CSSProperties = {
   alignItems: 'center',
   gap: '6px',
   padding: '3px 8px',
-  background: 'rgba(0, 0, 0, 0.4)',
+  background: 'var(--bg-elevated)',
   border: '1px solid var(--team1-primary)',
   borderRadius: '6px'
 };

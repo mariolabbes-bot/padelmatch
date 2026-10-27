@@ -2465,8 +2465,8 @@ const formLabel: React.CSSProperties = {
 const formInput: React.CSSProperties = {
   width: '100%',
   padding: '10px 12px',
-  background: 'var(--bg-elevated)',
-  border: '1px solid var(--border-medium)',
+  background: 'var(--bg-input, #ffffff)',
+  border: '1.5px solid var(--border-medium)',
   borderRadius: 'var(--radius-md)',
   color: 'var(--text-main)',
   fontSize: '0.85rem',

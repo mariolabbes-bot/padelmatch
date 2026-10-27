@@ -120,7 +120,7 @@ export const MatchParticipantJoinView: React.FC<Props> = ({
             alt="PadelMatch Logo" 
             style={{ width: '28px', height: '28px', borderRadius: '50%', objectFit: 'cover' }} 
           />
-          <span style={{ fontWeight: 900, letterSpacing: '-0.02em', fontSize: '1.1rem', color: '#fff' }}>
+          <span style={{ fontWeight: 900, letterSpacing: '-0.02em', fontSize: '1.1rem', color: 'var(--text-main)' }}>
             PADEL<span style={{ color: 'var(--team1-primary)' }}>MATCH</span>
           </span>
           <span className="badge badge-team1" style={{ fontSize: '0.65rem' }}>
@@ -154,7 +154,7 @@ export const MatchParticipantJoinView: React.FC<Props> = ({
                 <MapPin size={14} color="var(--team1-primary)" />
                 <span>{room.courtName}</span>
               </div>
-              <h1 style={{ fontSize: '1.4rem', fontWeight: 900, color: '#fff', marginTop: '4px' }}>
+              <h1 style={{ fontSize: '1.4rem', fontWeight: 900, color: 'var(--text-main)', marginTop: '4px' }}>
                 Partido de {room.hostName}
               </h1>
             </div>
@@ -183,7 +183,7 @@ export const MatchParticipantJoinView: React.FC<Props> = ({
             <div style={matchLiveAlertBox}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Flame size={18} color="var(--gold-primary)" className="pulsing-dot" />
-                <span style={{ fontWeight: 800, fontSize: '0.88rem', color: '#fff' }}>
+                <span style={{ fontWeight: 800, fontSize: '0.88rem', color: 'var(--text-main)' }}>
                   ¡El partido ya está en juego!
                 </span>
               </div>
@@ -199,7 +199,7 @@ export const MatchParticipantJoinView: React.FC<Props> = ({
         <div style={slotsListCardStyle} className="glass-panel">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
             <div>
-              <h2 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#fff' }}>
+              <h2 style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-main)' }}>
                 Jugadores en Cancha
               </h2>
               <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
@@ -221,7 +221,7 @@ export const MatchParticipantJoinView: React.FC<Props> = ({
               <div style={slotNumberBadge}>1</div>
               <div style={{ flex: 1 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <span style={{ fontWeight: 800, color: '#fff', fontSize: '0.95rem' }}>
+                  <span style={{ fontWeight: 800, color: 'var(--text-main)', fontSize: '0.95rem' }}>
                     {room.slots.slot1.name}
                   </span>
                   <span style={hostPillStyle}>ORGANIZADOR</span>
@@ -260,7 +260,7 @@ export const MatchParticipantJoinView: React.FC<Props> = ({
                     {player ? (
                       <>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <span style={{ fontWeight: 800, color: '#fff', fontSize: '0.95rem' }}>
+                          <span style={{ fontWeight: 800, color: 'var(--text-main)', fontSize: '0.95rem' }}>
                             {player.name}
                           </span>
                           {isMe && <span style={mePillStyle}>TÚ</span>}
@@ -300,7 +300,7 @@ export const MatchParticipantJoinView: React.FC<Props> = ({
               <div style={successIconBadge}>
                 <ShieldCheck size={36} color="var(--team1-primary)" />
               </div>
-              <h3 style={{ fontSize: '1.25rem', fontWeight: 900, color: '#fff', marginTop: '10px' }}>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 900, color: 'var(--text-main)', marginTop: '10px' }}>
                 ¡Estás inscrito en la cancha!
               </h3>
               <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '4px', maxWidth: '380px', margin: '4px auto 16px' }}>
@@ -342,7 +342,7 @@ export const MatchParticipantJoinView: React.FC<Props> = ({
                   <Sparkles size={12} />
                   INGRESO EN 1 TOQUE
                 </span>
-                <h3 style={{ fontSize: '1.25rem', fontWeight: 900, color: '#fff', margin: 0 }}>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: 900, color: 'var(--text-main)', margin: 0 }}>
                   ¿Quién juega este partido?
                 </h3>
               </div>
@@ -355,7 +355,7 @@ export const MatchParticipantJoinView: React.FC<Props> = ({
 
               {/* Player Name - Primary & Mandatory Field */}
               <div style={{ marginBottom: '14px' }}>
-                <label style={{ ...labelStyle, fontSize: '0.85rem', color: '#fff', fontWeight: 800 }}>
+                <label style={{ ...labelStyle, fontSize: '0.85rem', color: 'var(--text-main)', fontWeight: 800 }}>
                   Tu Nombre o Apodo <span style={{ color: 'var(--team1-primary)' }}>*</span>
                 </label>
                 <input
@@ -533,8 +533,8 @@ export const MatchParticipantJoinView: React.FC<Props> = ({
                           cursor: isTaken ? 'not-allowed' : 'pointer',
                           opacity: isTaken ? 0.4 : 1,
                           background: isSelected ? 'var(--team1-gradient)' : 'var(--bg-elevated)',
-                          color: isSelected ? '#070a10' : '#fff',
-                          border: '1px solid ' + (isSelected ? 'var(--team1-primary)' : 'var(--border-subtle)')
+                          color: isSelected ? '#070a10' : 'var(--text-main)',
+                          border: '1.5px solid ' + (isSelected ? 'var(--team1-primary)' : 'var(--border-subtle)')
                         }}
                       >
                         <div style={{ fontWeight: 900, fontSize: '0.85rem' }}>Espacio {idx + 2}</div>
@@ -624,7 +624,9 @@ const contentGridStyle: React.CSSProperties = {
 
 const matchInfoCardStyle: React.CSSProperties = {
   padding: '20px',
-  borderRadius: 'var(--radius-lg)'
+  borderRadius: 'var(--radius-lg)',
+  background: 'var(--bg-card)',
+  border: '1.5px solid var(--border-subtle)'
 };
 
 const rulesTagsRow: React.CSSProperties = {
@@ -668,7 +670,9 @@ const watchLiveBtnStyle: React.CSSProperties = {
 
 const slotsListCardStyle: React.CSSProperties = {
   padding: '20px',
-  borderRadius: 'var(--radius-lg)'
+  borderRadius: 'var(--radius-lg)',
+  background: 'var(--bg-card)',
+  border: '1.5px solid var(--border-subtle)'
 };
 
 const slotCardStyle: React.CSSProperties = {
@@ -716,7 +720,9 @@ const mePillStyle: React.CSSProperties = {
 
 const joinActionCardStyle: React.CSSProperties = {
   padding: '22px',
-  borderRadius: 'var(--radius-lg)'
+  borderRadius: 'var(--radius-lg)',
+  background: 'var(--bg-card)',
+  border: '1.5px solid var(--border-subtle)'
 };
 
 const successIconBadge: React.CSSProperties = {
@@ -766,10 +772,10 @@ const labelStyle: React.CSSProperties = {
 const inputStyle: React.CSSProperties = {
   width: '100%',
   padding: '12px 14px',
-  background: 'var(--bg-elevated)',
-  border: '1px solid var(--border-medium)',
+  background: 'var(--bg-input, #ffffff)',
+  border: '1.5px solid var(--border-medium)',
   borderRadius: 'var(--radius-md)',
-  color: '#fff',
+  color: 'var(--text-main)',
   fontSize: '0.95rem',
   outline: 'none',
   boxSizing: 'border-box'
