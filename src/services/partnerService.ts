@@ -286,17 +286,42 @@ class PartnerService {
     return [...this.posts].sort((a, b) => b.timestamp - a.timestamp);
   }
 
-  public createPost(author: UserSession, content: string): PartnerPost {
+  public createPost(
+    author: UserSession, 
+    content: string, 
+    options?: {
+      type?: 'user_update' | 'match_result' | 'club_announcement' | 'tournament_promo' | 'brand_deal';
+      matchSnippet?: {
+        courtName: string;
+        scoreSets: string;
+        isVictory: boolean;
+        rivalsNames?: string;
+      };
+      b2bMeta?: {
+        sponsorName: string;
+        sponsorLogo?: string;
+        actionLabel?: string;
+        actionUrl?: string;
+        discountCode?: string;
+        badgeText?: string;
+      };
+    }
+  ): PartnerPost {
     const newPost: PartnerPost = {
       id: 'post-' + Date.now().toString(36),
       authorId: author.id,
       authorName: author.name,
       authorCategory: author.category,
       authorAvatar: author.avatar,
+      authorClub: author.club,
       timestamp: Date.now(),
       content: content.trim(),
+      type: options?.type || (options?.matchSnippet ? 'match_result' : 'user_update'),
+      matchSnippet: options?.matchSnippet,
+      b2bMeta: options?.b2bMeta,
       clapsCount: 0,
       hasClapped: false,
+      reactions: [],
       comments: []
     };
 
@@ -309,6 +334,46 @@ class PartnerService {
     return newPost;
   }
 
+  public toggleReaction(postId: string, user: UserSession, reactionType: 'clap' | 'fire' | 'trophy' | 'muscle') {
+    const post = this.posts.find(p => p.id === postId);
+    if (!post) return;
+
+    if (!post.reactions) post.reactions = [];
+
+    const existingIdx = post.reactions.findIndex(r => r.userId === user.id);
+    if (existingIdx >= 0) {
+      if (post.reactions[existingIdx].type === reactionType) {
+        // Toggle off
+        post.reactions.splice(existingIdx, 1);
+        post.userReaction = undefined;
+        if (reactionType === 'clap') {
+          post.clapsCount = Math.max(0, post.clapsCount - 1);
+          post.hasClapped = false;
+        }
+      } else {
+        // Change reaction type
+        post.reactions[existingIdx].type = reactionType;
+        post.userReaction = reactionType;
+      }
+    } else {
+      // Add new reaction
+      post.reactions.push({
+        userId: user.id,
+        userName: user.name,
+        type: reactionType,
+        timestamp: Date.now()
+      });
+      post.userReaction = reactionType;
+      if (reactionType === 'clap') {
+        post.clapsCount = (post.clapsCount || 0) + 1;
+        post.hasClapped = true;
+      }
+    }
+
+    this.savePosts();
+    setDoc(doc(db, 'partner_posts', post.id), cleanForFirestore(post), { merge: true }).catch(console.warn);
+  }
+
   public toggleClap(postId: string) {
     const post = this.posts.find(p => p.id === postId);
     if (!post) return;
@@ -316,14 +381,28 @@ class PartnerService {
     if (post.hasClapped) {
       post.clapsCount = Math.max(0, post.clapsCount - 1);
       post.hasClapped = false;
+      post.userReaction = undefined;
     } else {
-      post.clapsCount += 1;
+      post.clapsCount = (post.clapsCount || 0) + 1;
       post.hasClapped = true;
+      post.userReaction = 'clap';
     }
     this.savePosts();
 
     // Push to Cloud Firestore
     setDoc(doc(db, 'partner_posts', post.id), cleanForFirestore(post), { merge: true }).catch(console.warn);
+  }
+
+  public deletePost(postId: string, userId: string, isAdmin?: boolean): boolean {
+    const idx = this.posts.findIndex(p => p.id === postId);
+    if (idx < 0) return false;
+
+    const post = this.posts[idx];
+    if (post.authorId !== userId && !isAdmin) return false;
+
+    this.posts.splice(idx, 1);
+    this.savePosts();
+    return true;
   }
 
   public addComment(postId: string, author: UserSession, content: string) {

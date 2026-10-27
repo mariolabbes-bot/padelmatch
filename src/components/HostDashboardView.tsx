@@ -12,6 +12,9 @@ import { scheduleService } from '../services/scheduleService';
 import { ScheduleMatchModal } from './ScheduleMatchModal';
 import { ScheduledMatchDetailModal } from './ScheduledMatchDetailModal';
 import { InviteExternalPartnerModal } from './InviteExternalPartnerModal';
+import { PrivacySettingsModal } from './PrivacySettingsModal';
+import { PartnerChatModal } from './PartnerChatModal';
+import { directChatService } from '../services/directChatService';
 import type { ScheduledMatch } from '../types/padel';
 import { 
   Trophy, 
@@ -37,7 +40,8 @@ import {
   Calendar,
   Plus,
   Share2,
-  ShieldCheck
+  ShieldCheck,
+  Trash2
 } from 'lucide-react';
 
 interface Props {
@@ -98,6 +102,11 @@ export const HostDashboardView: React.FC<Props> = ({
   const [isInviteExternalOpen, setIsInviteExternalOpen] = useState(false);
   const [inviteFriendName, setInviteFriendName] = useState('');
 
+  // 1-to-1 Direct Chat & Privacy States
+  const [selectedChatPartner, setSelectedChatPartner] = useState<CommunityPlayer | null>(null);
+  const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState(false);
+  const [totalUnreadChat, setTotalUnreadChat] = useState(() => directChatService.getTotalUnreadCount(user.id));
+
   useEffect(() => {
     return themeService.subscribe(setTheme);
   }, []);
@@ -117,12 +126,16 @@ export const HostDashboardView: React.FC<Props> = ({
     const unsubSchedule = scheduleService.subscribe(() => {
       setScheduledData(scheduleService.getMatchesForUser(user));
     });
+    const unsubChat = directChatService.subscribe(() => {
+      setTotalUnreadChat(directChatService.getTotalUnreadCount(user.id));
+    });
 
     return () => {
       unsubNotifs();
       unsubPartners();
       unsubGroups();
       unsubSchedule();
+      unsubChat();
     };
   }, [user]);
 
@@ -156,8 +169,13 @@ export const HostDashboardView: React.FC<Props> = ({
     setNewPostContent('');
   };
 
-  const handleToggleClap = (postId: string) => {
-    partnerService.toggleClap(postId);
+  const handleToggleReaction = (postId: string, reactionType: 'clap' | 'fire' | 'trophy' | 'muscle') => {
+    partnerService.toggleReaction(postId, user, reactionType);
+  };
+
+  const handleDeletePost = (postId: string) => {
+    const isAdmin = user.email?.toLowerCase() === 'mariolabbes@gmail.com' || user.email?.toLowerCase().includes('admin');
+    partnerService.deletePost(postId, user.id, isAdmin);
   };
 
   const handleAddComment = (postId: string) => {
@@ -255,6 +273,39 @@ export const HostDashboardView: React.FC<Props> = ({
               <Crown size={13} />
               <span style={{ fontSize: '0.68rem', fontWeight: 900 }}>{isSubscribed ? 'PRO' : 'PLANES'}</span>
             </button>
+          )}
+
+          {/* Privacy Settings Button */}
+          <button
+            type="button"
+            onClick={() => setIsPrivacyModalOpen(true)}
+            style={{ ...iconHeaderBtnStyle, padding: '6px' }}
+            title="Centro de Privacidad y Control de Datos"
+            aria-label="Privacidad"
+          >
+            <ShieldCheck size={15} color="var(--gold-primary)" />
+          </button>
+
+          {/* Unread Direct Chat Badge */}
+          {totalUnreadChat > 0 && (
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                padding: '4px 8px',
+                borderRadius: '8px',
+                background: 'rgba(0, 229, 255, 0.15)',
+                border: '1px solid rgba(0, 229, 255, 0.4)',
+                color: '#00e5ff',
+                fontSize: '0.68rem',
+                fontWeight: 900
+              }}
+              title={`${totalUnreadChat} mensaje(s) directo(s) no leído(s)`}
+            >
+              <MessageSquare size={11} />
+              <span>{totalUnreadChat}</span>
+            </div>
           )}
 
           {/* Day / Night Theme Switcher */}
@@ -767,24 +818,49 @@ export const HostDashboardView: React.FC<Props> = ({
             <span style={{ ...partnerNameStyle, color: '#25D366' }}>+ Invitar WA</span>
           </div>
 
-          {partners.map(p => (
-            <div key={p.id} style={partnerBubbleStyle}>
-              <div style={partnerAvatarCircle}>
-                {p.avatar ? (
-                  isImageAvatar(p.avatar) ? (
-                    <img src={p.avatar} alt={p.name} style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
+          {partners.map(p => {
+            const chatId = directChatService.getChatId(user.id, p.id);
+            const msgs = directChatService.getMessages(chatId);
+            const unread = msgs.filter(m => m.recipientId === user.id && !m.read).length;
+
+            return (
+              <div 
+                key={p.id} 
+                style={{ ...partnerBubbleStyle, cursor: 'pointer' }}
+                onClick={() => setSelectedChatPartner(p)}
+                title={`Abrir chat privado con ${p.name}`}
+                role="button"
+                tabIndex={0}
+              >
+                <div style={{ ...partnerAvatarCircle, position: 'relative' }}>
+                  {p.avatar ? (
+                    isImageAvatar(p.avatar) ? (
+                      <img src={p.avatar} alt={p.name} style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
+                    ) : (
+                      <span style={{ fontSize: '1.3rem', lineHeight: 1 }}>{p.avatar}</span>
+                    )
                   ) : (
-                    <span style={{ fontSize: '1.3rem', lineHeight: 1 }}>{p.avatar}</span>
-                  )
-                ) : (
-                  p.name.charAt(0).toUpperCase()
-                )}
-                <span style={partnerStatusDotStyle} className="pulsing-dot" />
+                    p.name.charAt(0).toUpperCase()
+                  )}
+                  <span style={partnerStatusDotStyle} className="pulsing-dot" />
+                  {unread > 0 && (
+                    <span style={chatUnreadBadgeStyle}>{unread}</span>
+                  )}
+                </div>
+                <span style={partnerNameStyle}>{p.name.split(' ')[0]}</span>
+                <span style={{ 
+                  ...partnerMetaStyle, 
+                  color: unread > 0 ? '#00E676' : 'var(--text-dim)', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '3px' 
+                }}>
+                  <MessageSquare size={10} color={unread > 0 ? '#00E676' : 'var(--text-muted)'} />
+                  <span>{unread > 0 ? `${unread} nuevo` : `${p.category} Cat`}</span>
+                </span>
               </div>
-              <span style={partnerNameStyle}>{p.name.split(' ')[0]}</span>
-              <span style={partnerMetaStyle}>{p.category} Cat</span>
-            </div>
-          ))}
+            );
+          })}
 
           {partners.length === 0 && (
             <div style={{ display: 'flex', alignItems: 'center', color: 'var(--text-muted)', fontSize: '0.8rem', padding: '10px' }}>
@@ -913,30 +989,93 @@ export const HostDashboardView: React.FC<Props> = ({
                   {post.content}
                 </p>
 
-                {/* Post Actions: Claps & Comments */}
-                <div style={postActionsRowStyle}>
-                  <button
-                    type="button"
-                    onClick={() => handleToggleClap(post.id)}
-                    style={{
-                      ...postActionBtnStyle,
-                      color: post.hasClapped ? 'var(--gold-primary)' : 'var(--text-muted)',
-                      background: post.hasClapped ? 'rgba(255, 214, 0, 0.12)' : 'rgba(255, 255, 255, 0.04)',
-                      borderColor: post.hasClapped ? 'var(--gold-primary)' : 'var(--border-subtle)'
-                    }}
-                  >
-                    <span>👏 Chócala ({post.clapsCount})</span>
-                  </button>
+                {/* Post Actions: Reactions (Clap / Fire), Comments, Direct Chat & Delete */}
+                {(() => {
+                  const fireCount = post.reactions ? post.reactions.filter(r => r.type === 'fire').length : 0;
+                  const hasFired = post.userReaction === 'fire' || (post.reactions && post.reactions.some(r => r.userId === user.id && r.type === 'fire'));
+                  const hasClapped = post.hasClapped || post.userReaction === 'clap' || (post.reactions && post.reactions.some(r => r.userId === user.id && r.type === 'clap'));
+                  const isOwnPost = post.authorId === user.id;
+                  const isAdminUser = user.email?.toLowerCase() === 'mariolabbes@gmail.com' || user.email?.toLowerCase().includes('admin');
+                  const authorPartner = !isOwnPost ? (
+                    partners.find(p => p.id === post.authorId || p.name.toLowerCase() === post.authorName.toLowerCase()) ||
+                    communityService.getPlayers().find(p => (p.id === post.authorId || p.name.toLowerCase() === post.authorName.toLowerCase()) && p.id !== user.id)
+                  ) : null;
 
-                  <button
-                    type="button"
-                    onClick={() => setOpenCommentsPostId(isCommentsOpen ? null : post.id)}
-                    style={postActionBtnStyle}
-                  >
-                    <MessageSquare size={13} />
-                    <span>Comentarios ({post.comments.length})</span>
-                  </button>
-                </div>
+                  return (
+                    <div style={postActionsRowStyle}>
+                      <button
+                        type="button"
+                        onClick={() => handleToggleReaction(post.id, 'clap')}
+                        style={{
+                          ...postActionBtnStyle,
+                          color: hasClapped ? 'var(--gold-primary)' : 'var(--text-muted)',
+                          background: hasClapped ? 'rgba(255, 214, 0, 0.12)' : 'rgba(255, 255, 255, 0.04)',
+                          borderColor: hasClapped ? 'var(--gold-primary)' : 'var(--border-subtle)'
+                        }}
+                        title="¡Chócala! Apoyo deportivo"
+                      >
+                        <span>👏 Chócala ({post.clapsCount || 0})</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleToggleReaction(post.id, 'fire')}
+                        style={{
+                          ...postActionBtnStyle,
+                          color: hasFired ? '#ff5722' : 'var(--text-muted)',
+                          background: hasFired ? 'rgba(255, 87, 34, 0.15)' : 'rgba(255, 255, 255, 0.04)',
+                          borderColor: hasFired ? '#ff5722' : 'var(--border-subtle)'
+                        }}
+                        title="¡Puntazo tremendo!"
+                      >
+                        <span>🔥 Puntazo{fireCount > 0 ? ` (${fireCount})` : ''}</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setOpenCommentsPostId(isCommentsOpen ? null : post.id)}
+                        style={postActionBtnStyle}
+                      >
+                        <MessageSquare size={13} />
+                        <span>Comentarios ({post.comments.length})</span>
+                      </button>
+
+                      {authorPartner && (
+                        <button
+                          type="button"
+                          onClick={() => setSelectedChatPartner(authorPartner)}
+                          style={{
+                            ...postActionBtnStyle,
+                            color: '#00e5ff',
+                            background: 'rgba(0, 229, 255, 0.06)',
+                            borderColor: 'rgba(0, 229, 255, 0.25)'
+                          }}
+                          title={`Mensaje directo en la app a ${authorPartner.name}`}
+                        >
+                          <Send size={12} />
+                          <span>Mensaje</span>
+                        </button>
+                      )}
+
+                      {(isOwnPost || isAdminUser) && (
+                        <button
+                          type="button"
+                          onClick={() => handleDeletePost(post.id)}
+                          style={{
+                            ...postActionBtnStyle,
+                            color: '#ff5252',
+                            background: 'rgba(255, 82, 82, 0.06)',
+                            borderColor: 'rgba(255, 82, 82, 0.2)',
+                            marginLeft: 'auto'
+                          }}
+                          title="Eliminar publicación"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      )}
+                    </div>
+                  );
+                })()}
 
                 {/* Collapsible Comments Section */}
                 {isCommentsOpen && (
@@ -1304,6 +1443,31 @@ export const HostDashboardView: React.FC<Props> = ({
         currentUser={user}
         initialFriendName={inviteFriendName}
       />
+
+      {/* 1-to-1 Direct Chat Modal with Partner */}
+      {selectedChatPartner && (
+        <PartnerChatModal
+          isOpen={!!selectedChatPartner}
+          onClose={() => setSelectedChatPartner(null)}
+          currentUser={user}
+          partner={selectedChatPartner}
+          onOpenScheduleInvite={(_partner) => {
+            setSelectedChatPartner(null);
+            setIsScheduleModalOpen(true);
+          }}
+          onOpenProfile={(_partner) => {
+            setSelectedChatPartner(null);
+            if (onOpenCommunity) onOpenCommunity();
+          }}
+        />
+      )}
+
+      {/* Privacy Settings & Data Governance Modal */}
+      <PrivacySettingsModal
+        isOpen={isPrivacyModalOpen}
+        onClose={() => setIsPrivacyModalOpen(false)}
+        currentUser={user}
+      />
     </div>
   );
 };
@@ -1620,6 +1784,24 @@ const partnerStatusDotStyle: React.CSSProperties = {
   borderRadius: '50%',
   background: 'var(--team1-primary)',
   border: '2px solid #070a10'
+};
+
+const chatUnreadBadgeStyle: React.CSSProperties = {
+  position: 'absolute',
+  top: '-3px',
+  right: '-3px',
+  background: '#00E676',
+  color: '#070a10',
+  fontSize: '0.62rem',
+  fontWeight: 900,
+  minWidth: '16px',
+  height: '16px',
+  borderRadius: '8px',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  padding: '0 3px',
+  boxShadow: '0 2px 6px rgba(0, 230, 118, 0.5)'
 };
 
 const addPartnerBubbleStyle: React.CSSProperties = {

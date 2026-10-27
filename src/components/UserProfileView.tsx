@@ -36,8 +36,11 @@ import {
   X,
   UserCheck,
   TrendingUp,
-  ShieldCheck
+  ShieldCheck,
+  MessageSquare
 } from 'lucide-react';
+import { PrivacySettingsModal } from './PrivacySettingsModal';
+import { PartnerChatModal } from './PartnerChatModal';
 
 interface Props {
   currentUser: UserSession;
@@ -102,6 +105,10 @@ export const UserProfileView: React.FC<Props> = ({
   const [referralStats, setReferralStats] = useState(() => referralService.getStatsForInviter(currentUser.id));
   const [allPlatformReferrals, setAllPlatformReferrals] = useState(() => referralService.getAllReferrals());
   const [topReferrers, setTopReferrers] = useState(() => referralService.getTopReferrers());
+
+  // Privacy & Chat Modals State
+  const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState(false);
+  const [selectedChatPartner, setSelectedChatPartner] = useState<CommunityPlayer | null>(null);
 
   const isAdmin = currentUser.email?.toLowerCase() === 'mariolabbes@gmail.com' || currentUser.email?.toLowerCase().includes('admin');
 
@@ -561,8 +568,8 @@ export const UserProfileView: React.FC<Props> = ({
               color: activeTab === 'security' ? '#ff5252' : 'var(--text-muted)'
             }}
           >
-            <Lock size={16} />
-            <span>Seguridad & Contraseña</span>
+            <ShieldCheck size={16} />
+            <span>Seguridad & Privacidad</span>
           </button>
         </nav>
 
@@ -1115,7 +1122,29 @@ export const UserProfileView: React.FC<Props> = ({
 
                       <div style={{ marginTop: '10px', paddingTop: '8px', borderTop: '1px solid rgba(255, 255, 255, 0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.72rem', color: 'var(--text-dim)' }}>
                         <span>📍 {p.city || 'Chile'}</span>
-                        <span style={{ color: 'var(--team1-primary)', fontWeight: 700 }}>Conectado</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <button
+                            type="button"
+                            onClick={() => setSelectedChatPartner(p)}
+                            style={{
+                              background: 'rgba(0, 230, 118, 0.12)',
+                              border: '1px solid rgba(0, 230, 118, 0.3)',
+                              color: '#00E676',
+                              padding: '4px 10px',
+                              borderRadius: '8px',
+                              fontSize: '0.72rem',
+                              fontWeight: 800,
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              cursor: 'pointer'
+                            }}
+                            title={`Abrir chat con ${p.name}`}
+                          >
+                            <MessageSquare size={12} />
+                            <span>Chat</span>
+                          </button>
+                        </div>
                       </div>
                     </div>
                   );
@@ -1329,20 +1358,91 @@ export const UserProfileView: React.FC<Props> = ({
           </div>
         )}
 
-        {/* TAB 4: SEGURIDAD & CONTRASEÑA */}
+        {/* TAB 4: SEGURIDAD & PRIVACIDAD */}
         {activeTab === 'security' && (
-          <form onSubmit={handleChangePassword} style={tabCardStyle} className="glass-panel apple-card">
-            <div style={cardHeaderStyle}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Shield size={18} color="#ff5252" />
-                <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-main)' }}>
-                  Cambiar Contraseña de Acceso
-                </h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            {/* Tarjeta de Gobernanza & Privacidad */}
+            <div style={tabCardStyle} className="glass-panel apple-card">
+              <div style={cardHeaderStyle}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <ShieldCheck size={20} color="var(--team1-primary)" />
+                  <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-main)' }}>
+                    Gobernanza y Privacidad de Datos
+                  </h3>
+                </div>
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: '4px 0 0' }}>
+                  Define con precisión qué información compartes con tus Partners y con la comunidad general.
+                </p>
               </div>
-              <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: '4px 0 0' }}>
-                Actualiza tu clave de acceso. Se sincronizará inmediatamente en tu dispositivo y en la base central segura.
-              </p>
+
+              <div style={{ padding: '16px 0 4px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '14px 16px',
+                  background: 'rgba(0, 230, 118, 0.05)',
+                  borderRadius: '12px',
+                  border: '1px solid rgba(0, 230, 118, 0.2)',
+                  flexWrap: 'wrap',
+                  gap: '12px'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: '220px', flex: 1 }}>
+                    <div style={{
+                      width: '40px',
+                      height: '40px',
+                      borderRadius: '10px',
+                      background: 'rgba(0, 230, 118, 0.15)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0
+                    }}>
+                      <ShieldCheck size={22} color="var(--team1-primary)" />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#fff' }}>
+                        Centro de Configuración de Privacidad
+                      </div>
+                      <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                        Teléfono, Progreso ELO, Fichas de Partidos y Presencia en Cancha
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsPrivacyModalOpen(true)}
+                    style={{
+                      padding: '9px 18px',
+                      background: 'linear-gradient(135deg, var(--team1-primary), #00b0ff)',
+                      border: 'none',
+                      borderRadius: '10px',
+                      color: '#070a10',
+                      fontSize: '0.82rem',
+                      fontWeight: 900,
+                      cursor: 'pointer',
+                      whiteSpace: 'nowrap',
+                      boxShadow: '0 4px 12px rgba(0, 230, 118, 0.25)'
+                    }}
+                  >
+                    ⚙️ Gestionar Privacidad
+                  </button>
+                </div>
+              </div>
             </div>
+
+            <form onSubmit={handleChangePassword} style={tabCardStyle} className="glass-panel apple-card">
+              <div style={cardHeaderStyle}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Shield size={18} color="#ff5252" />
+                  <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-main)' }}>
+                    Cambiar Contraseña de Acceso
+                  </h3>
+                </div>
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: '4px 0 0' }}>
+                  Actualiza tu clave de acceso. Se sincronizará inmediatamente en tu dispositivo y en la base central segura.
+                </p>
+              </div>
 
             {pwdSuccessMsg && (
               <div style={successBanner}>
@@ -1419,6 +1519,7 @@ export const UserProfileView: React.FC<Props> = ({
               </div>
             </div>
           </form>
+          </div>
         )}
       </main>
 
@@ -1521,6 +1622,25 @@ export const UserProfileView: React.FC<Props> = ({
             </div>
           </div>
         </div>
+      )}
+
+      {/* MODAL DE PRIVACIDAD */}
+      {isPrivacyModalOpen && (
+        <PrivacySettingsModal
+          isOpen={isPrivacyModalOpen}
+          onClose={() => setIsPrivacyModalOpen(false)}
+          currentUser={currentUser}
+        />
+      )}
+
+      {/* MODAL DE CHAT DIRECTO ENTRE PARTNERS */}
+      {selectedChatPartner && (
+        <PartnerChatModal
+          isOpen={!!selectedChatPartner}
+          onClose={() => setSelectedChatPartner(null)}
+          currentUser={currentUser}
+          partner={selectedChatPartner}
+        />
       )}
     </div>
   );

@@ -251,6 +251,57 @@ export interface PadelGroup {
 }
 
 // ==========================================
+// MÓDULO PRIVACIDAD Y GOBERNANZA DE DATOS
+// ==========================================
+
+export type PrivacyScope = 'public' | 'partners' | 'private';
+
+export interface UserPrivacySettings {
+  phoneVisibility: PrivacyScope;        // Quién puede ver mi WhatsApp / teléfono
+  historyVisibility: PrivacyScope;      // Quién puede ver mis tanteadores e historial de partidos
+  eloVisibility: PrivacyScope;          // Quién puede ver mi gráfica de evolución de ELO
+  presenceVisibility: 'partners' | 'private'; // Quién puede ver si estoy jugando ahora
+  invitesAllowed: 'all' | 'partners' | 'none'; // Quién puede invitarme a partidos
+  updatedAt?: number;
+}
+
+export const DEFAULT_USER_PRIVACY: UserPrivacySettings = {
+  phoneVisibility: 'partners',
+  historyVisibility: 'partners',
+  eloVisibility: 'public',
+  presenceVisibility: 'partners',
+  invitesAllowed: 'all'
+};
+
+// ==========================================
+// MÓDULO MENSAJERÍA DIRECTA ENTRE PARTNERS (CHAT 1-TO-1)
+// ==========================================
+
+export interface DirectChatMessage {
+  id: string;
+  chatId: string;
+  senderId: string;
+  senderName: string;
+  senderAvatar?: string;
+  recipientId: string;
+  text: string;
+  timestamp: number;
+  read: boolean;
+  matchInviteId?: string; // ID de partido para invitar directamente en 1 tap
+}
+
+export interface DirectChatConversation {
+  chatId: string;
+  partnerId: string;
+  partnerName: string;
+  partnerAvatar?: string;
+  partnerCategory?: PlayerCategory;
+  lastMessage?: DirectChatMessage;
+  unreadCount: number;
+  updatedAt: number;
+}
+
+// ==========================================
 // MÓDULO PARTNERS (RED DE AMIGOS DE PÁDEL)
 // ==========================================
 
@@ -276,21 +327,43 @@ export interface PartnerComment {
   timestamp: number;
 }
 
+export type PostReactionType = 'clap' | 'fire' | 'trophy' | 'muscle';
+
+export interface PostReactionRecord {
+  userId: string;
+  userName: string;
+  type: PostReactionType;
+  timestamp: number;
+}
+
 export interface PartnerPost {
   id: string;
   authorId: string;
   authorName: string;
   authorCategory: PlayerCategory;
   authorAvatar?: string;
+  authorClub?: string;
   timestamp: number;
   content: string;
+  type?: 'user_update' | 'match_result' | 'club_announcement' | 'tournament_promo' | 'brand_deal';
   matchSnippet?: {
     courtName: string;
     scoreSets: string;
     isVictory: boolean;
+    rivalsNames?: string;
+  };
+  b2bMeta?: {
+    sponsorName: string;
+    sponsorLogo?: string;
+    actionLabel?: string;
+    actionUrl?: string;
+    discountCode?: string;
+    badgeText?: string;
   };
   clapsCount: number;
   hasClapped?: boolean;
+  reactions?: PostReactionRecord[];
+  userReaction?: PostReactionType;
   comments: PartnerComment[];
 }
 

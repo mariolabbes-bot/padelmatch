@@ -1,4 +1,5 @@
-import type { CommunityPlayer, DominantHand, UserPlan, SubscriptionTier } from '../types/padel';
+import type { CommunityPlayer, DominantHand, UserPlan, SubscriptionTier, UserPrivacySettings } from '../types/padel';
+import { DEFAULT_USER_PRIVACY } from '../types/padel';
 import { communityService } from './communityService';
 import { DEFAULT_INITIAL_ELO } from '../engine/eloEngine';
 import { 
@@ -28,6 +29,7 @@ export interface UserSession {
   avatar?: string;
   elo: number;
   loggedInAt: number;
+  privacy?: UserPrivacySettings;
   invitedBy?: {
     userId: string;
     userName?: string;
@@ -51,6 +53,7 @@ export interface StoredUserCredential {
   subscriptionExpiresAt?: number;
   hostedMatchesCount?: number;
   avatar?: string;
+  privacy?: UserPrivacySettings;
   createdAt: number;
   invitedBy?: {
     userId: string;
@@ -590,6 +593,7 @@ class AuthService {
     city?: string;
     club?: string;
     avatar?: string;
+    privacy?: UserPrivacySettings;
   }): Promise<{ success: boolean; error?: string; user?: UserSession }> {
     if (!this.currentUser) {
       return { success: false, error: 'No hay sesión de usuario activa.' };
@@ -608,7 +612,8 @@ class AuthService {
       category: data.category || this.currentUser.category,
       city: data.city !== undefined ? data.city : this.currentUser.city,
       club: data.club !== undefined ? data.club : this.currentUser.club,
-      avatar: data.avatar || this.currentUser.avatar
+      avatar: data.avatar || this.currentUser.avatar,
+      privacy: data.privacy ? { ...(this.currentUser.privacy || DEFAULT_USER_PRIVACY), ...data.privacy } : this.currentUser.privacy
     };
 
     // Update in registry
@@ -624,7 +629,8 @@ class AuthService {
         category: this.currentUser.category,
         city: this.currentUser.city,
         club: this.currentUser.club,
-        avatar: this.currentUser.avatar
+        avatar: this.currentUser.avatar,
+        privacy: this.currentUser.privacy
       };
       this.saveRegistry(registry);
     }
@@ -644,7 +650,8 @@ class AuthService {
       city: this.currentUser.city,
       club: this.currentUser.club,
       avatar: this.currentUser.avatar,
-      plan: this.currentUser.plan
+      plan: this.currentUser.plan,
+      privacy: this.currentUser.privacy
     }), { merge: true }).catch(console.warn);
 
     // Sync to communityService player
@@ -682,6 +689,54 @@ class AuthService {
     this.notify();
 
     return { success: true, user: this.currentUser };
+  }
+
+  public async updatePrivacySettings(
+    settings: Partial<UserPrivacySettings>,
+    targetUser?: UserSession
+  ): Promise<boolean> {
+    const user = targetUser || this.currentUser;
+    if (!user) return false;
+
+    const current = user.privacy || DEFAULT_USER_PRIVACY;
+    const merged: UserPrivacySettings = { ...current, ...settings, updatedAt: Date.now() };
+
+    user.privacy = merged;
+    if (this.currentUser && this.currentUser.id === user.id) {
+      this.currentUser.privacy = merged;
+      this.saveSession(this.currentUser);
+    }
+
+    const registry = this.getRegistry();
+    const userEmail = (user.email || '').toLowerCase();
+    if (userEmail && registry[userEmail]) {
+      registry[userEmail].privacy = merged;
+      this.saveRegistry(registry);
+    }
+
+    try {
+      if (userEmail) {
+        await setDoc(doc(db, 'users', userEmail), { privacy: cleanForFirestore(merged) }, { merge: true });
+      }
+    } catch {
+      // offline / test environment fallback
+    }
+
+    return true;
+  }
+
+  public getPrivacySettings(userOrUserId?: UserSession | string | null): UserPrivacySettings {
+    if (typeof userOrUserId === 'string') {
+      const registry = this.getRegistry();
+      const found = Object.values(registry).find(u => u.id === userOrUserId || u.email.toLowerCase() === userOrUserId.toLowerCase());
+      if (found?.privacy) return found.privacy;
+      if (this.currentUser && (this.currentUser.id === userOrUserId || this.currentUser.email.toLowerCase() === userOrUserId.toLowerCase())) {
+        return this.currentUser.privacy || DEFAULT_USER_PRIVACY;
+      }
+      return DEFAULT_USER_PRIVACY;
+    }
+    const target = userOrUserId || this.currentUser;
+    return target?.privacy || DEFAULT_USER_PRIVACY;
   }
 
   public async changePassword(
