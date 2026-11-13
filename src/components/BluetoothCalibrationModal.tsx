@@ -148,14 +148,15 @@ export const BluetoothCalibrationModal: React.FC<Props> = ({
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span style={{ fontSize: '1.2rem' }}>⌚</span>
               <span style={{ fontWeight: 800, fontSize: '0.9rem', color: 'var(--team2-primary)' }}>
-                ¿Cómo conectar Apple Watch (Serie 1 a Ultra) y Wear OS?
+                ¿Cómo conectar Apple Watch y Samsung Galaxy Watch (Wear OS)?
               </span>
             </div>
-            <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: 1.4 }}>
-              <strong>1.</strong> Activa el botón <strong>WATCH</strong> en la barra superior del marcador (inicia audio silencioso para mantener activo Safari en segundo plano).<br />
-              <strong>2.</strong> En tu Apple Watch, abre la aplicación nativa <strong>"En Reproducción"</strong>.<br />
-              <strong>3.</strong> Pulsa <strong>[⏮]</strong> para punto Pareja 1, <strong>[⏭]</strong> para punto Pareja 2 y <strong>[⏯]</strong> para Deshacer.<br />
-              <em>Nota técnica: watchOS no soporta emulación de teclado Bluetooth HID directo, por lo que el estándar universal oficial de Apple es Media Session.</em>
+            <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: 1.45 }}>
+              <strong>1.</strong> Pulsa el botón <strong>WATCH</strong> en el marcador para activar la sesión multimedia de fondo.<br />
+              <strong>2.</strong> En <strong>Apple Watch</strong>: abre la app nativa <em>"En Reproducción"</em>.<br />
+              <strong>3.</strong> En <strong>Samsung Galaxy Watch</strong>: asegúrate de tenerlo vinculado al teléfono por <em>Galaxy Wearable</em> y abre la app o mosaico <em>"Controlador multimedia"</em> (icono de nota musical).<br />
+              <strong>4. Controles:</strong> <strong>[⏮]</strong> Punto Pareja 1 • <strong>[⏭]</strong> Punto Pareja 2 • <strong>[⏸ / Pausa central]</strong> Deshacer último punto.<br />
+              <em>Nota: Los smartwatches no usan Bluetooth directo HID, se controlan a través del reproductor multimedia nativo de tu teléfono.</em>
             </p>
           </div>
         </div>

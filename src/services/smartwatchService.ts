@@ -35,6 +35,11 @@ class SmartwatchService {
   private lastCommand: string | null = null;
   private lastCommandTime: number | null = null;
 
+  // Track TTS and point scoring to safely distinguish user [⏸] Pause clicks from OS audio ducking
+  private isTTSSpeaking: boolean = false;
+  private lastTTSEndTime: number = 0;
+  private lastPointScoredTime: number = 0;
+
   // 5-second PCM 8kHz mono silent WAV base64 fallback
   private readonly FALLBACK_SILENT_WAV = 
     'data:audio/wav;base64,UklGRiRxAgBXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQBxAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==';
@@ -48,6 +53,10 @@ class SmartwatchService {
     if (typeof window === 'undefined') return;
     try {
       ttsService.subscribeSpeakingState(isSpeaking => {
+        this.isTTSSpeaking = isSpeaking;
+        if (!isSpeaking) {
+          this.lastTTSEndTime = Date.now();
+        }
         // When speech finishes, if background audio was paused by iOS system ducking, resume it immediately
         if (!isSpeaking && this.isActive && this.audioElement && this.audioElement.paused) {
           setTimeout(() => {
@@ -270,12 +279,22 @@ class SmartwatchService {
         this.forceKeepPlayingState();
       });
 
-      // 5. Pause Button [⏸] / OS Audio Interruption -> Maintain playback (NEVER trigger undo!)
+      // 5. Pause Button [⏸] / Center button on Apple Watch & Wear OS
       navigator.mediaSession.setActionHandler('pause', () => {
-        // CRITICAL BUGFIX: In iOS Safari and Android/WearOS, system audio ducking
-        // (triggered whenever TTS speaks the score) automatically dispatches 'pause'.
-        // Mapping 'pause' to 'undo' caused every scored point to be immediately undone.
-        // We now safely resume background playback so the watch connection stays alive.
+        const now = Date.now();
+        // Distinguish system audio ducking (TTS speech interruption) from deliberate user press:
+        const isDuckInterruption = this.isTTSSpeaking || 
+                                   (now - this.lastTTSEndTime < 1200) || 
+                                   (now - this.lastPointScoredTime < 1800);
+
+        if (!isDuckInterruption) {
+          // Legitimate deliberate user tap on [⏸] / Pause to UNDO the last score error!
+          this.triggerCommand('undo');
+        } else {
+          console.log('[SmartwatchService] Pause ignored (system TTS audio ducking suppression)');
+        }
+
+        // Always safely resume playback so the smartwatch Now Playing screen stays active
         if (this.isActive && this.audioElement) {
           setTimeout(() => {
             if (this.isActive && this.audioElement && this.audioElement.paused) {
@@ -318,6 +337,9 @@ class SmartwatchService {
 
     this.lastCommand = command;
     this.lastCommandTime = now;
+    if (command === 'team1' || command === 'team2') {
+      this.lastPointScoredTime = now;
+    }
 
     // Haptic feedback on phone
     if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {

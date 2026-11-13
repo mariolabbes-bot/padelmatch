@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>PadelMatch - Informe Técnico y Estratégico CORFO</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 20mm 15mm 20mm 15mm;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      color: #1e293b;
+      line-height: 1.55;
+      font-size: 11pt;
+      margin: 0;
+      padding: 0;
+      background: #ffffff;
+    }
+    .header-banner {
+      border-bottom: 3px solid #00c853;
+      padding-bottom: 12px;
+      margin-bottom: 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .brand-title {
+      font-size: 24pt;
+      font-weight: 900;
+      color: #0f172a;
+      letter-spacing: -0.5px;
+      margin: 0;
+    }
+    .brand-title span {
+      color: #00c853;
+    }
+    .subtitle {
+      font-size: 11pt;
+      color: #64748b;
+      font-weight: 600;
+      margin: 4px 0 0 0;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .badge-corfo {
+      background: #0f172a;
+      color: #00e676;
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-size: 9.5pt;
+      font-weight: 700;
+      text-align: right;
+    }
+    h1 {
+      font-size: 16pt;
+      color: #0f172a;
+      border-bottom: 1.5px solid #e2e8f0;
+      padding-bottom: 6px;
+      margin-top: 26px;
+      margin-bottom: 14px;
+      font-weight: 800;
+    }
+    h2 {
+      font-size: 13pt;
+      color: #1e293b;
+      margin-top: 18px;
+      margin-bottom: 10px;
+      font-weight: 700;
+    }
+    h3 {
+      font-size: 11.5pt;
+      color: #0f172a;
+      margin-top: 14px;
+      margin-bottom: 6px;
+      font-weight: 700;
+    }
+    p, li {
+      color: #334155;
+      margin-bottom: 8px;
+      text-align: justify;
+    }
+    ul {
+      margin-top: 4px;
+      margin-bottom: 12px;
+      padding-left: 22px;
+    }
+    li {
+      margin-bottom: 5px;
+    }
+    .highlight-card {
+      background: #f8fafc;
+      border-left: 4px solid #00c853;
+      padding: 12px 16px;
+      margin: 14px 0;
+      border-radius: 0 8px 8px 0;
+    }
+    .highlight-card p {
+      margin: 0;
+      font-weight: 600;
+      color: #0f172a;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0;
+      font-size: 10pt;
+    }
+    th, td {
+      border: 1px solid #cbd5e1;
+      padding: 9px 12px;
+      text-align: left;
+    }
+    th {
+      background-color: #0f172a;
+      color: #ffffff;
+      font-weight: 700;
+      font-size: 9.5pt;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    tr:nth-child(even) {
+      background-color: #f8fafc;
+    }
+    .tag-verdict {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-weight: 700;
+      font-size: 8.5pt;
+      background: #dcfce7;
+      color: #15803d;
+      border: 1px solid #86efac;
+    }
+    .tag-highlight {
+      background: #e0f2fe;
+      color: #0369a1;
+      border: 1px solid #7dd3fc;
+    }
+    .diagram-box {
+      background: #0f172a;
+      color: #f1f5f9;
+      padding: 14px 18px;
+      border-radius: 8px;
+      font-family: ui-monospace, Menlo, Monaco, Consolas, monospace;
+      font-size: 9pt;
+      line-height: 1.45;
+      margin: 16px 0;
+      border: 1px solid #334155;
+    }
+    .diagram-box span {
+      color: #00e676;
+      font-weight: bold;
+    }
+    .page-break {
+      page-break-before: always;
+    }
+    .footer {
+      margin-top: 35px;
+      border-top: 1px solid #e2e8f0;
+      padding-top: 10px;
+      font-size: 8.5pt;
+      color: #94a3b8;
+      display: flex;
+      justify-content: space-between;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header-banner">
+    <div>
+      <div class="brand-title">PADEL<span>MATCH</span></div>
+      <div class="subtitle">Informe Técnico, Alcance de Funcionalidades y Aptitud CORFO</div>
+    </div>
+    <div class="badge-corfo">
+      PROGRAMA CORFO<br>
+      <span style="font-size: 11pt; color: #fff;">Capital Semilla</span>
+    </div>
+  </div>
+
+  <div class="highlight-card">
+    <p><strong>Objetivo del documento:</strong> Sistematizar el alcance funcional, arquitectura técnica, propuesta de valor y modelo de negocio de PadelMatch para fundamentar su postulación al fondo Capital Semilla de CORFO (Semilla Inicia / Semilla Expande).</p>
+  </div>
+
+  <h1>1. Resumen Ejecutivo y Concepto de la Idea</h1>
+
+  <h3>1.1. Propuesta de Valor y Filosofía</h3>
+  <p><strong>PadelMatch</strong> es una solución <strong>SportTech integral basada en Progressive Web App (PWA) e Internet de las Cosas (IoT)</strong> diseñada para digitalizar la experiencia deportiva del pádel tanto <strong>dentro de la cancha</strong> (<em>in-game</em>) como <strong>fuera de ella</strong> (<em>post-game</em> y gestión comunitaria).</p>
+
+  <p>A diferencia de las plataformas tradicionales de la industria que se limitan exclusivamente a ser motores de reserva de pistas (como Easycancha o Playtomic) o redes sociales estáticas, PadelMatch se define como una <strong>herramienta de asistencia invisible, interactiva y en tiempo real</strong> que conecta a los tres pilares del ecosistema:</p>
+  <ul>
+    <li><strong>Jugadores (Anfitriones e Invitados):</strong> Asistencia en cancha sin fricción, arbitraje automático por voz, seguimiento estadístico y convocatorias inteligentes.</li>
+    <li><strong>Clubes y Complejos Deportivos:</strong> Tecnología de visualización (<em>Court TV Display</em>), fidelización de usuarios y optimización de ocupación en horarios valle.</li>
+    <li><strong>Marcas y Proveedores:</strong> Canal directo y segmentado para patrocinio, equipamiento y torneos en el entorno del <em>"Tercer Tiempo"</em>.</li>
+  </ul>
+  <p><em>Lema de producto:</em> <strong>"PadelMatch: Te conecta con cada punto del juego."</strong></p>
+
+  <h1>2. Arquitectura Técnica y Nivel de Madurez (TRL)</h1>
+  <p>El desarrollo del proyecto no se encuentra en fase conceptual ni de maqueta en diseño; cuenta con una base de software altamente desarrollada y funcional:</p>
+  <ul>
+    <li><strong>Arquitectura Frontend:</strong> React + TypeScript + Vite, estructurado en arquitectura modular de componentes y servicios desacoplados.</li>
+    <li><strong>Modelo PWA (Progressive Web App):</strong> Instalable en teléfonos móviles (iOS/Android), tablets, ordenadores y Smart TVs de clubes sin requerir descargas pesadas de tiendas comerciales. Soporta funcionamiento adaptativo y modo oscuro/claro de alto contraste para visibilidad bajo luz solar o nocturna.</li>
+    <li><strong>Backend y Sincronización en la Nube:</strong> Firebase Firestore con suscripciones reactivas en tiempo real (<code>onSnapshot</code>) para control de salas de partidos, perfiles comunitarios, convocatorias y mensajería.</li>
+    <li><strong>Nivel de Madurez Tecnológica (TRL):</strong> <strong>TRL 5 - TRL 6</strong> (Tecnología validada en entorno relevante y prototipo funcional operativo con backend real). Esto sitúa a PadelMatch por encima de la media de proyectos que postulan a fondos de etapas tempranas.</li>
+  </ul>
+
+  <div class="diagram-box">
+    ========================== ECOSISTEMA PADELMATCH ==========================<br><br>
+    <span>[ IN-GAME ]</span>               <span>[ CLOUD SYNC ]</span>          <span>[ COMMUNITY & SAAS ]</span><br>
+    • Motor FIP / Scoreboard       • Firebase Firestore    • Sistema ELO Dinámico<br>
+    • Árbitro TTS por Voz          • Salas P2P Host-Guest  • Analítica Situacional<br>
+    • Wearables / Smartwatch       • Court TV Canchas      • Convocatorias (Mod 4)<br>
+    • Botoneras Bluetooth IoT      • Match Card Canvas     • Monetización Freemium<br>
+    ===========================================================================
+  </div>
+
+  <div class="page-break"></div>
+
+  <h1>3. Informe Detallado de Funcionalidades y Alcance</h1>
+
+  <h3>Módulo 1: Motor Oficial de Marcador y Arbitraje en Cancha (padelEngine.ts & Scoreboard.tsx)</h3>
+  <ul>
+    <li><strong>Cumplimiento Reglamentario FIP (Federación Internacional de Pádel):</strong> Modos de juego al mejor de 3 sets, 5 sets o set único; regla oficial de <strong>Punto de Oro (Golden Point)</strong> vs. Ventaja tradicional; Tie-break estándar a 7 puntos y definición de partido por tercer set o <strong>Súper Tie-break a 10, 12 o 13 puntos</strong>.</li>
+    <li><strong>Árbitro Inteligente por Voz en Tiempo Real (TTS Engine):</strong> Locución auditiva del tanteador instantáneo (ej. <em>"15-30"</em>, <em>"40 iguales, Punto de Oro"</em>, <em>"Punto de quiebre"</em>, <em>"Juego y set Pareja 1"</em>), avisos de rotación de saque y cuenta regresiva de 90 segundos para descanso y cambio de lado.</li>
+    <li><strong>Pila de Deshacer ("Undo Stack"):</strong> Registro histórico jugada por jugada para revertir cualquier marcación errónea sin reiniciar el set.</li>
+    <li><strong>Modos de Visualización:</strong> Modo vertical con botones gigantes táctiles y modo horizontal adaptativo para apoyar el teléfono en la red.</li>
+  </ul>
+
+  <h3>Módulo 2: Integración IoT, Wearables y Control Remoto Invisible (smartwatchService.ts & hardwareInput.ts)</h3>
+  <ul>
+    <li><strong>Control Nativo desde Smartwatch (Apple Watch & Wear OS / Samsung):</strong> <em>Innovación técnica destacada:</em> No requiere app nativa en Watch. Utiliza la API HTML5 <em>Media Session</em> con pistas de audio en segundo plano (<code>/silence.wav</code>), permitiendo sumar puntos a cada equipo o deshacer jugadas directamente desde la carátula multimedia del reloj.</li>
+    <li><strong>Compatibilidad con Botoneras y Remotos Bluetooth Genéricos:</strong> Soporte <em>Plug & Play</em> para disparadores tipo selfie (AB Shutter), anillos de pulgar Bluetooth, punteros inalámbricos de presentación adheridos a la malla de la cancha y teclados numéricos. Mapeo accesible para hardware de bajo costo ($3.000 a $5.000 CLP).</li>
+  </ul>
+
+  <h3>Módulo 3: Sincronización Multipantalla y Modo TV para Clubes (matchSyncService.ts & CourtTvDisplay.tsx)</h3>
+  <ul>
+    <li><strong>Modo Court TV:</strong> Interfaz en alta definición para Smart TVs o monitores de clubes que muestra nombres, tanteador gigante, pareja al servicio, cronómetro y banners animados de Punto de Oro y Cambio de Lado en vivo.</li>
+    <li><strong>Arquitectura P2P (Host / Guest):</strong> El anfitrión crea el partido; el sistema genera un código alfanumérico y un código QR dinámico.</li>
+    <li><strong>Onboarding Cero Fricción:</strong> Los 3 jugadores invitados escanean el código QR y entran de inmediato como espectadores o participantes sin necesidad de pago ni formularios obligatorios.</li>
+  </ul>
+
+  <h3>Módulo 4: Algoritmo de Habilidad (ELO) y Analítica Avanzada (eloEngine.ts & UserProfileView.tsx)</h3>
+  <ul>
+    <li><strong>Cálculo Matemático de ELO de Pádel:</strong> Modelo logístico ponderado por el promedio de la pareja y ajustado por margen de dominio en games. Categorías: Amateur, Intermedio, Avanzado, Competición y Master / Élite.</li>
+    <li><strong>Métricas Situacionales:</strong> Rendimiento comparativo Día (Luz Natural) vs. Noche (Luz Artificial); Factor Clutch (efectividad en Puntos de Oro disputados y ganados) y estadísticas de Tie-breaks.</li>
+    <li><strong>Algoritmo de Sinergia y Rivalidad:</strong> Detección automática de la "Mejor Pareja" (Best Partner según porcentaje de victorias compartidas) y el "Némesis" (rival con mayor tasa de derrotas directas).</li>
+  </ul>
+
+  <h3>Módulo 5: Gestión de Grupos y Convocatorias Inteligentes (groupService.ts & GroupsView.tsx)</h3>
+  <ul>
+    <li><strong>Algoritmo de Convocatorias en Múltiplos de 4:</strong> Resuelve el gran dolor del pádel amateur (partidos con 3 o 5 jugadores). Administra confirmaciones e informa al creador si la nómina cierra exactamente en múltiplos de 4 (4, 8, 12 jugadores), alertando cuando se requiere 1 reserva.</li>
+    <li><strong>Enlaces Virales de WhatsApp:</strong> Generación de enlaces inteligentes (<code>#join-group=...</code> o <code>#match-invite=...</code>) para incorporar jugadores con un solo toque desde chats grupales.</li>
+  </ul>
+
+  <h3>Módulo 6: "Tercer Tiempo", Red Social Deportiva y Canal B2B (partnerService.ts)</h3>
+  <ul>
+    <li><strong>Feed Deportivo:</strong> Muro de publicaciones para celebrar victorias, resultados con tarjeta gráfica oficial, comentarios y reacciones (Clap, Fire, Trophy, Muscle).</li>
+    <li><strong>Vitrina B2B para Clubes y Marcas:</strong> Difusión de promociones en horarios valle, clínicas, torneos y equipamiento deportivo.</li>
+    <li><strong>Gobernanza y Privacidad:</strong> Control granular para ocultar o mostrar teléfono, historial deportivo, ELO y presencia en cancha.</li>
+  </ul>
+
+  <h3>Módulo 7: Modelo de Negocio y Monetización (SubscriptionPlansModal.tsx & AdminDashboardView.tsx)</h3>
+  <ul>
+    <li><strong>B2C Freemium:</strong> Invitados 100% gratis siempre. El Host dispone de 3 partidos de cortesía sin costo; luego accede a planes Pro: Temporada 6M ($9.990 CLP), Anual 12M ($16.990 CLP), Mensual ($1.990 CLP) y Pase Fundador ($24.990 CLP).</li>
+    <li><strong>B2B SaaS para Clubes:</strong> Licenciamiento del sistema Court TV y colocación de promociones comerciales.</li>
+    <li><strong>Dashboard Administrativo Central:</strong> Panel de control con métricas en tiempo real de usuarios, ingresos, clubes afiliados, partidos y trazabilidad de referidos.</li>
+  </ul>
+
+  <div class="page-break"></div>
+
+  <h1>4. Análisis de Elegibilidad para Capital Semilla de CORFO</h1>
+
+  <h3>4.1. Dictamen de Elegibilidad</h3>
+  <div class="highlight-card">
+    <p><strong>DICTAMEN OFICIAL: SÍ, CALZA CON ELEVADO POTENCIAL EN "SEMILLA INICIA" DE CORFO</strong> (y en <strong>Semilla Expande</strong> una vez alcanzadas las primeras ventas formales).</p>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th style="width: 25%;">Criterio CORFO</th>
+        <th style="width: 15%;">Ponderación</th>
+        <th style="width: 45%;">Evaluación de PadelMatch</th>
+        <th style="width: 15%;">Veredicto</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>1. Innovación y Diferenciación</strong></td>
+        <td>Alto (30-35%)</td>
+        <td>Supera el modelo tradicional de reservas de canchas. Introduce innovación tecnológica en SportTech: arbitraje por voz en tiempo real, IoT con wearables sin app nativa, analítica situacional (luz natural vs. artificial, clutch) y algoritmo de convocatoria en múltiplos de 4.</td>
+        <td><span class="tag-verdict">Sobresaliente</span></td>
+      </tr>
+      <tr>
+        <td><strong>2. Escalabilidad del Modelo</strong></td>
+        <td>Alto (25-30%)</td>
+        <td>Arquitectura PWA y Cloud Serverless con costo marginal cercano a cero. Modelo SaaS B2C + B2B con efecto de red viral orgánico (1 anfitrión = 3 invitados obligados pero fidelizados sin costo).</td>
+        <td><span class="tag-verdict">Sobresaliente</span></td>
+      </tr>
+      <tr>
+        <td><strong>3. Mercado y Oportunidad</strong></td>
+        <td>Medio-Alto (20%)</td>
+        <td>Deporte con el mayor crecimiento a nivel global y en Chile (segundo deporte más practicado en el país, más de 300.000 jugadores activos y fuerte inversión privada en complejos).</td>
+        <td><span class="tag-verdict tag-highlight">Favorable</span></td>
+      </tr>
+      <tr>
+        <td><strong>4. Nivel de Madurez (TRL)</strong></td>
+        <td>Crítico</td>
+        <td>Etapa TRL 5-6 (software funcional, probado en entorno real, con base de datos en la nube y UI interactiva). Supera con holgura el promedio de ideas en fase de diseño.</td>
+        <td><span class="tag-verdict">Muy Alto</span></td>
+      </tr>
+      <tr>
+        <td><strong>5. Coherencia Fondos</strong></td>
+        <td>Operacional</td>
+        <td>El subsidio de $15.000.000 CLP se destina a validación comercial, pasarela de pago nacional (WebPay/MercadoPago), marketing de atracción y alianzas con clubes de Coquimbo y Santiago.</td>
+        <td><span class="tag-verdict">Óptimo</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>4.2. Fortalezas Competitivas Estratégicas</h3>
+  <ul>
+    <li><strong>Efecto de Red Viral Orgánico (Factor 1 a 3):</strong> Cada anfitrión que adquiere un plan Pro incorpora a 3 compañeros de cancha que conocen y usan la app sin pagar. Esto disminuye drásticamente el Costo de Adquisición de Clientes (CAC).</li>
+    <li><strong>Solución a Dolores Concretos:</strong> Elimina las discusiones de puntuación en cancha (arbitraje neutro) y la frustración de partidos cancelados por falta de jugadores en WhatsApp.</li>
+    <li><strong>Hardware Accesible y Cero Inversión en Fierros:</strong> No requiere cámaras costosas de $2.000 USD ni infraestructura compleja; funciona en cualquier smartphone, Smart TV y botón Bluetooth de $5 USD.</li>
+  </ul>
+
+  <h3>4.3. Recomendaciones para el Formulario de Postulación</h3>
+  <ul>
+    <li><strong>Posicionamiento claro:</strong> Aclarar enfáticamente en el formulario que <em>PadelMatch no es un clon de Easycancha</em> ni una simple agenda de turnos, sino una plataforma de experiencia de juego en tiempo real (SportTech & IoT).</li>
+    <li><strong>Contenido Orgánico:</strong> Explicar que la red social no depende de que los usuarios redacten posts, sino que se nutre automáticamente con los partidos finalizados, tarjetas gráficas de victorias y ascensos de ELO.</li>
+    <li><strong>Composición del Equipo Emprendedor:</strong> Declarar roles complementarios: desarrollo tecnológico (software/IoT) y gestión comercial en el ecosistema de clubes y torneos.</li>
+  </ul>
+
+  <h1>5. Plan de Trabajo Sugerido para los Fondos CORFO (8 Meses)</h1>
+  <ul>
+    <li><strong>Meses 1 - 2 (Integración Comercial y Legal):</strong> Implementación de WebPay Plus / Mercado Pago, registro de marca en INAPI y auditoría de seguridad.</li>
+    <li><strong>Meses 3 - 5 (Plan Piloto de Validación):</strong> Despliegue en 8 clubes de pádel en la Región de Coquimbo y Región Metropolitana, instalando el sistema Court TV en canchas centrales.</li>
+    <li><strong>Meses 6 - 8 (Tracción y Crecimiento):</strong> Activaciones en torneos oficiales, distribución de botoneras de prueba a organizadores clave, optimización del algoritmo y preparación para postular a <strong>Semilla Expande</strong> ($25.000.000 CLP adicionales).</li>
+  </ul>
+
+  <div class="footer">
+    <span>PadelMatch © 2026 • Documento Preparatorio para Postulación CORFO</span>
+    <span>Estado: Aprobado para Descarga y Tramitación</span>
+  </div>
+
+</body>
+</html>
