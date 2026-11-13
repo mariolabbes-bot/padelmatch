@@ -4,6 +4,8 @@ class TTSService {
   private synth: SpeechSynthesis | null = null;
   private isUnlocked: boolean = false;
   private speakingCallbacks: Set<(isSpeaking: boolean) => void> = new Set();
+  private activeUtterance: SpeechSynthesisUtterance | null = null;
+  private speechTimeout: any = null;
 
   constructor() {
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
@@ -13,6 +15,10 @@ class TTSService {
 
   public isSupported(): boolean {
     return this.synth !== null;
+  }
+
+  public isSpeaking(): boolean {
+    return this.activeUtterance !== null;
   }
 
   public subscribeSpeakingState(callback: (isSpeaking: boolean) => void): () => void {
@@ -55,9 +61,24 @@ class TTSService {
   public speak(text: string, settings: TTSSettings) {
     if (!this.synth || !settings.enabled || !text) return;
 
-    this.synth.cancel();
+    if (this.speechTimeout) {
+      clearTimeout(this.speechTimeout);
+      this.speechTimeout = null;
+    }
+
+    try {
+      this.synth.cancel();
+    } catch {
+      // ignore
+    }
 
     const utterance = new SpeechSynthesisUtterance(text);
+    // CRITICAL for iOS Safari: Keep reference to prevent GC from collecting utterance before onend fires
+    this.activeUtterance = utterance;
+    if (typeof window !== 'undefined') {
+      (window as any).__padelActiveSpeechUtterance = utterance;
+    }
+
     utterance.pitch = settings.pitch || 1.0;
     utterance.rate = settings.rate || 1.05;
     utterance.volume = settings.volume ?? 1.0;
@@ -83,25 +104,43 @@ class TTSService {
       utterance.lang = 'es-ES';
     }
 
+    const finishSpeaking = () => {
+      if (this.speechTimeout) {
+        clearTimeout(this.speechTimeout);
+        this.speechTimeout = null;
+      }
+      this.activeUtterance = null;
+      this.notifySpeakingState(false);
+    };
+
     utterance.onstart = () => {
       this.notifySpeakingState(true);
+      // Hard fallback timer for WebKit iOS Safari where onend frequently fails to fire
+      const expectedDurationMs = Math.min(3000, Math.max(1200, text.length * 80));
+      this.speechTimeout = setTimeout(finishSpeaking, expectedDurationMs);
     };
 
-    utterance.onend = () => {
-      this.notifySpeakingState(false);
-    };
-
+    utterance.onend = finishSpeaking;
     utterance.onerror = (e) => {
       console.warn('TTS Announcement error:', e);
-      this.notifySpeakingState(false);
+      finishSpeaking();
     };
 
     this.synth.speak(utterance);
   }
 
   public stop() {
+    if (this.speechTimeout) {
+      clearTimeout(this.speechTimeout);
+      this.speechTimeout = null;
+    }
+    this.activeUtterance = null;
     if (this.synth) {
-      this.synth.cancel();
+      try {
+        this.synth.cancel();
+      } catch {
+        // ignore
+      }
       this.notifySpeakingState(false);
     }
   }

@@ -279,49 +279,55 @@ class SmartwatchService {
         this.forceKeepPlayingState();
       });
 
-      // 5. Pause Button [⏸] / Center button on Apple Watch & Wear OS
+      // 5. Pause Button [⏸] / Center button on Apple Watch, Galaxy Watch & Wear OS
       navigator.mediaSession.setActionHandler('pause', () => {
-        const now = Date.now();
-        // Distinguish system audio ducking (TTS speech interruption) from deliberate user press:
-        const isDuckInterruption = this.isTTSSpeaking || 
-                                   (now - this.lastTTSEndTime < 1200) || 
-                                   (now - this.lastPointScoredTime < 1800);
-
-        if (!isDuckInterruption) {
-          // Legitimate deliberate user tap on [⏸] / Pause to UNDO the last score error!
-          this.triggerCommand('undo');
-        } else {
-          console.log('[SmartwatchService] Pause ignored (system TTS audio ducking suppression)');
-        }
-
-        // Always safely resume playback so the smartwatch Now Playing screen stays active
-        if (this.isActive && this.audioElement) {
-          setTimeout(() => {
-            if (this.isActive && this.audioElement && this.audioElement.paused) {
-              this.audioElement.play().catch(() => {});
-              this.forceKeepPlayingState();
-            }
-          }, 120);
-        }
+        this.handleCenterMediaButton('pause');
       });
 
-      // 6. Play Button [▶] -> Repeat score announcement (and resume playback)
+      // 6. Play Button [▶] / Center toggle on Galaxy Watch (Tizen) & Smartwatches
       navigator.mediaSession.setActionHandler('play', () => {
-        this.triggerCommand('repeat');
-        if (this.isActive && this.audioElement) {
-          this.audioElement.play().catch(() => {});
-          this.forceKeepPlayingState();
-        }
+        this.handleCenterMediaButton('play');
       });
 
-      // 7. Stop Button -> Repeat score announcement
+      // 7. Stop Button
       navigator.mediaSession.setActionHandler('stop', () => {
-        this.triggerCommand('repeat');
-        this.forceKeepPlayingState();
+        this.handleCenterMediaButton('stop');
       });
 
     } catch (e) {
       console.warn('SmartwatchService: media session handlers setup error', e);
+    }
+  }
+
+  /**
+   * Universal Center Button Handler (Pause / Play / Stop):
+   * When playing padel, the center button on any smartwatch (Apple Watch, Galaxy Watch 46mm, etc.)
+   * represents UNDO / Deshacer.
+   * We filter out automatic audio-ducking interruptions caused by TTS speech,
+   * but deliberate clicks trigger 'undo' whether the OS sends 'pause' or 'play'.
+   */
+  private handleCenterMediaButton(source: 'pause' | 'play' | 'stop') {
+    const now = Date.now();
+    // Distinguish system audio ducking (TTS speech interruption) from deliberate user press:
+    const isDuckInterruption = this.isTTSSpeaking || 
+                               (now - this.lastTTSEndTime < 800) || 
+                               (now - this.lastPointScoredTime < 1400);
+
+    if (!isDuckInterruption) {
+      console.log(`[SmartwatchService] Center button pressed (${source}) -> triggering UNDO`);
+      this.triggerCommand('undo');
+    } else {
+      console.log(`[SmartwatchService] ${source} ignored (TTS speech / point audio ducking suppression)`);
+    }
+
+    // Always immediately resume playback so the smartwatch Now Playing / Music screen stays permanently active
+    if (this.isActive && this.audioElement) {
+      setTimeout(() => {
+        if (this.isActive && this.audioElement) {
+          this.audioElement.play().catch(() => {});
+          this.forceKeepPlayingState();
+        }
+      }, 100);
     }
   }
 
