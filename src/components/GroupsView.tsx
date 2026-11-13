@@ -2468,7 +2468,8 @@ const formInput: React.CSSProperties = {
   background: 'var(--bg-input, #ffffff)',
   border: '1.5px solid var(--border-medium)',
   borderRadius: 'var(--radius-md)',
-  color: 'var(--text-main)',
+  color: '#0f172a',
+  fontWeight: 600,
   fontSize: '0.85rem',
   outline: 'none',
   boxSizing: 'border-box'

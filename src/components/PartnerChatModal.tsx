@@ -458,7 +458,8 @@ const chatInputStyle: React.CSSProperties = {
   borderRadius: '20px',
   padding: '10px 16px',
   fontSize: '0.85rem',
-  color: 'var(--text-main)',
+  color: '#0f172a',
+  fontWeight: 500,
   outline: 'none'
 };
 

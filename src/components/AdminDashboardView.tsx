@@ -1336,7 +1336,8 @@ const searchInputStyle: React.CSSProperties = {
   background: 'none',
   border: 'none',
   outline: 'none',
-  color: 'var(--text-main)',
+  color: '#0f172a',
+  fontWeight: 600,
   fontSize: '0.82rem',
   width: '100%'
 };
@@ -1346,7 +1347,8 @@ const filterSelectStyle: React.CSSProperties = {
   borderRadius: '8px',
   background: 'var(--bg-input, #ffffff)',
   border: '1.5px solid var(--border-medium)',
-  color: 'var(--text-main)',
+  color: '#0f172a',
+  fontWeight: 600,
   fontSize: '0.78rem',
   outline: 'none'
 };
@@ -1538,7 +1540,8 @@ const modalInputStyle: React.CSSProperties = {
   borderRadius: '8px',
   background: 'var(--bg-input, #ffffff)',
   border: '1.5px solid var(--border-medium)',
-  color: 'var(--text-main)',
+  color: '#0f172a',
+  fontWeight: 600,
   fontSize: '0.85rem',
   outline: 'none',
   boxSizing: 'border-box'
@@ -1550,7 +1553,8 @@ const modalSelectStyle: React.CSSProperties = {
   borderRadius: '8px',
   background: 'var(--bg-input, #ffffff)',
   border: '1.5px solid var(--border-medium)',
-  color: 'var(--text-main)',
+  color: '#0f172a',
+  fontWeight: 600,
   fontSize: '0.85rem',
   outline: 'none',
   boxSizing: 'border-box'

@@ -231,7 +231,8 @@ const linkInputStyle: React.CSSProperties = {
   background: 'var(--bg-input, #ffffff)',
   border: '1.5px solid var(--border-medium)',
   borderRadius: '8px',
-  color: 'var(--text-muted)',
+  color: '#0f172a',
+  fontWeight: 600,
   fontSize: '0.82rem',
   fontFamily: 'var(--font-mono)',
   outline: 'none'

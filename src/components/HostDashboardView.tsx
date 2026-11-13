@@ -1858,7 +1858,8 @@ const postTextareaStyle: React.CSSProperties = {
   background: 'var(--bg-input, #ffffff)',
   border: '1.5px solid var(--border-medium)',
   borderRadius: '12px',
-  color: 'var(--text-main)',
+  color: '#0f172a',
+  fontWeight: 500,
   fontSize: '0.85rem',
   outline: 'none',
   resize: 'none',
@@ -1961,7 +1962,8 @@ const commentInputStyle: React.CSSProperties = {
   background: 'var(--bg-input, #ffffff)',
   border: '1.5px solid var(--border-medium)',
   borderRadius: '8px',
-  color: 'var(--text-main)',
+  color: '#0f172a',
+  fontWeight: 600,
   fontSize: '0.8rem',
   outline: 'none'
 };
@@ -2094,7 +2096,8 @@ const searchInputStyle: React.CSSProperties = {
   background: 'var(--bg-input, #ffffff)',
   border: '1.5px solid var(--border-medium)',
   borderRadius: '12px',
-  color: 'var(--text-main)',
+  color: '#0f172a',
+  fontWeight: 600,
   fontSize: '0.88rem',
   outline: 'none',
   boxSizing: 'border-box'

@@ -268,7 +268,8 @@ const textInputStyle: React.CSSProperties = {
   borderRadius: '10px',
   background: 'var(--bg-input, #ffffff)',
   border: '1.5px solid var(--border-medium)',
-  color: 'var(--text-main)',
+  color: '#0f172a',
+  fontWeight: 600,
   fontSize: '0.86rem',
   boxSizing: 'border-box',
   outline: 'none'

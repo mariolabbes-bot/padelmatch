@@ -466,7 +466,8 @@ export const MatchVictoryModal: React.FC<Props> = ({
                       background: 'var(--bg-input, #ffffff)',
                       border: '1.5px solid var(--border-medium)',
                       borderRadius: '8px',
-                      color: 'var(--text-main)',
+                      color: '#0f172a',
+                      fontWeight: 600,
                       fontSize: '0.9rem',
                       boxSizing: 'border-box'
                     }}

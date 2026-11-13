@@ -8,6 +8,8 @@
   --bg-card-hover: #141d30;
   --bg-elevated: #1a243a;
   --bg-glass: rgba(14, 21, 36, 0.75);
+  --bg-input: #ffffff;
+  --text-input: #0f172a;
 
   --border-subtle: rgba(255, 255, 255, 0.08);
   --border-medium: rgba(255, 255, 255, 0.16);
@@ -69,6 +71,7 @@
   --bg-elevated: #f8fafc;
   --bg-glass: rgba(255, 255, 255, 0.94);
   --bg-input: #ffffff;
+  --text-input: #0f172a;
 
   --border-subtle: #e2e8f0;
   --border-medium: #cbd5e1;
@@ -239,6 +242,18 @@ html, body {
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.04em;
+}
+
+/* High Contrast Form Input, Placeholder & Select Options */
+input::placeholder,
+textarea::placeholder {
+  color: #64748b;
+  opacity: 0.95;
+}
+
+select option {
+  background-color: #ffffff;
+  color: #0f172a;
 }
 
 /* Button & Interactive Resets */

@@ -765,7 +765,8 @@ const searchInputStyle: React.CSSProperties = {
   background: 'transparent',
   border: 'none',
   outline: 'none',
-  color: 'var(--text-main)',
+  color: '#0f172a',
+  fontWeight: 600,
   fontSize: '0.9rem',
   fontFamily: 'inherit'
 };
@@ -823,7 +824,8 @@ const modalInputStyle: React.CSSProperties = {
   background: 'var(--bg-input, #ffffff)',
   border: '1.5px solid var(--border-medium)',
   borderRadius: '8px',
-  color: 'var(--text-main)',
+  color: '#0f172a',
+  fontWeight: 600,
   fontSize: '0.88rem',
   fontFamily: 'inherit',
   outline: 'none'
