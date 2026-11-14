@@ -355,7 +355,7 @@ export const ScheduleMatchModal: React.FC<Props> = ({
                   required
                 >
                   {availableClubs.map(c => (
-                    <option key={c.id} value={c.name} style={{ background: 'var(--bg-card)', color: 'var(--text-main)' }}>
+                    <option key={c.id} value={c.name} style={{ background: '#ffffff', color: '#0f172a' }}>
                       {c.name} ({c.city})
                     </option>
                   ))}

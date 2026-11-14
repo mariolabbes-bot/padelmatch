@@ -35,10 +35,8 @@ class SmartwatchService {
   private lastCommand: string | null = null;
   private lastCommandTime: number | null = null;
 
-  // Track TTS and point scoring to safely distinguish user [⏸] Pause clicks from OS audio ducking
+  // Track TTS speaking state to safely distinguish deliberate user [⏸] Pause clicks from OS audio ducking
   private isTTSSpeaking: boolean = false;
-  private lastTTSEndTime: number = 0;
-  private lastPointScoredTime: number = 0;
 
   // 5-second PCM 8kHz mono silent WAV base64 fallback
   private readonly FALLBACK_SILENT_WAV = 
@@ -54,9 +52,6 @@ class SmartwatchService {
     try {
       ttsService.subscribeSpeakingState(isSpeaking => {
         this.isTTSSpeaking = isSpeaking;
-        if (!isSpeaking) {
-          this.lastTTSEndTime = Date.now();
-        }
         // When speech finishes, if background audio was paused by iOS system ducking, resume it immediately
         if (!isSpeaking && this.isActive && this.audioElement && this.audioElement.paused) {
           setTimeout(() => {
@@ -307,17 +302,13 @@ class SmartwatchService {
    * but deliberate clicks trigger 'undo' whether the OS sends 'pause' or 'play'.
    */
   private handleCenterMediaButton(source: 'pause' | 'play' | 'stop') {
-    const now = Date.now();
-    // Distinguish system audio ducking (TTS speech interruption) from deliberate user press:
-    const isDuckInterruption = this.isTTSSpeaking || 
-                               (now - this.lastTTSEndTime < 800) || 
-                               (now - this.lastPointScoredTime < 1400);
-
-    if (!isDuckInterruption) {
+    // Deliberate click on the smartwatch center button triggers UNDO
+    // Only suppress if TTS audio synthesizer is actively playing voice sound right now
+    if (!this.isTTSSpeaking) {
       console.log(`[SmartwatchService] Center button pressed (${source}) -> triggering UNDO`);
       this.triggerCommand('undo');
     } else {
-      console.log(`[SmartwatchService] ${source} ignored (TTS speech / point audio ducking suppression)`);
+      console.log(`[SmartwatchService] ${source} ignored (TTS actively speaking)`);
     }
 
     // Always immediately resume playback so the smartwatch Now Playing / Music screen stays permanently active
@@ -327,25 +318,23 @@ class SmartwatchService {
           this.audioElement.play().catch(() => {});
           this.forceKeepPlayingState();
         }
-      }, 100);
+      }, 80);
     }
   }
 
-  private readonly DEBOUNCE_MS = 500; // Protection against Apple Watch duplicate events (nexttrack + seekforward) and crown scrub bursts
+  private readonly DEBOUNCE_MS = 450; // Protection against Apple Watch / Galaxy Watch duplicate burst events
 
   private triggerCommand(command: 'team1' | 'team2' | 'undo' | 'repeat') {
     const now = Date.now();
-    // Debounce guard: Drop duplicate commands arriving within 500ms
-    if (this.lastCommandTime && now - this.lastCommandTime < this.DEBOUNCE_MS) {
-      console.warn(`[SmartwatchService] Command '${command}' debounced (${now - this.lastCommandTime}ms since last event)`);
+    // Debounce guard: Drop duplicate commands OF THE SAME ACTION arriving within DEBOUNCE_MS
+    // But allow 'undo' immediately after team1/team2 so user can instantly correct a mistaken point!
+    if (command === this.lastCommand && this.lastCommandTime && now - this.lastCommandTime < this.DEBOUNCE_MS) {
+      console.warn(`[SmartwatchService] Duplicate command '${command}' debounced (${now - this.lastCommandTime}ms)`);
       return;
     }
 
     this.lastCommand = command;
     this.lastCommandTime = now;
-    if (command === 'team1' || command === 'team2') {
-      this.lastPointScoredTime = now;
-    }
 
     // Haptic feedback on phone
     if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {

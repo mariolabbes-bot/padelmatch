@@ -7,6 +7,7 @@
   --bg-card: #0e1524;
   --bg-card-hover: #141d30;
   --bg-elevated: #1a243a;
+  --bg-surface: #0e1524;
   --bg-glass: rgba(14, 21, 36, 0.75);
   --bg-input: #ffffff;
   --text-input: #0f172a;
@@ -69,6 +70,7 @@
   --bg-card: #ffffff;
   --bg-card-hover: #f8fafc;
   --bg-elevated: #f8fafc;
+  --bg-surface: #ffffff;
   --bg-glass: rgba(255, 255, 255, 0.94);
   --bg-input: #ffffff;
   --text-input: #0f172a;
@@ -247,13 +249,16 @@ html, body {
 /* High Contrast Form Input, Placeholder & Select Options */
 input::placeholder,
 textarea::placeholder {
-  color: #64748b;
-  opacity: 0.95;
+  color: #64748b !important;
+  opacity: 0.95 !important;
 }
 
-select option {
-  background-color: #ffffff;
-  color: #0f172a;
+select,
+select option,
+select optgroup {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  font-weight: 600 !important;
 }
 
 /* Button & Interactive Resets */
